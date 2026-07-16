@@ -70,7 +70,7 @@
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 24px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
-            width: 100%; max-width: 440px;
+            width: 100%; max-width: 420px;
             animation: cardAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             opacity: 0; transform: translateY(30px) scale(0.95);
         }
@@ -81,8 +81,8 @@
         .glass-input {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 14px; padding: 14px 16px 14px 48px;
-            color: #f1f5f9; font-size: 0.9rem; width: 100%;
+            border-radius: 14px; padding: 16px 16px 16px 48px;
+            color: #f1f5f9; font-size: 0.95rem; width: 100%;
             transition: all 0.3s ease; outline: none;
         }
         .glass-input::placeholder { color: rgba(255,255,255,0.3); }
@@ -94,8 +94,8 @@
 
         .glass-btn {
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            border: none; border-radius: 14px; padding: 14px 24px;
-            color: white; font-size: 0.95rem; font-weight: 600; width: 100%;
+            border: none; border-radius: 14px; padding: 16px 24px;
+            color: white; font-size: 1rem; font-weight: 600; width: 100%;
             cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;
         }
         .glass-btn::before {
@@ -180,13 +180,13 @@
     <div class="particles" id="particles"></div>
 
     <div class="login-container">
-        <div class="glass-card p-8 sm:p-10">
+        <div class="glass-card p-8 sm:p-10 lg:p-12">
             {{-- Logo & Brand --}}
-            <div class="text-center mb-8">
-                <div class="brand-logo mx-auto mb-5">
+            <div class="text-center mb-10">
+                <div class="brand-logo mx-auto mb-6">
                     <span class="text-white font-black text-2xl tracking-tight">FM</span>
                 </div>
-                <h1 class="text-2xl font-bold text-white mb-1">Farmmantra</h1>
+                <h1 class="text-2xl font-bold text-white mb-1.5">Farmmantra</h1>
                 <p class="text-sm" style="color:rgba(255,255,255,0.4)">Agro Chemicals Limited</p>
             </div>
 
@@ -201,7 +201,7 @@
             @endif
 
             {{-- Form --}}
-            <form method="POST" action="{{ route('web.login.submit') }}" class="space-y-5">
+            <form method="POST" action="{{ route('web.login.submit') }}" class="space-y-6">
                 @csrf
                 <div class="input-group">
                     <i class="fas fa-envelope input-icon"></i>
@@ -216,7 +216,7 @@
                         <i class="fas fa-eye"></i>
                     </span>
                 </div>
-                <button type="submit" class="glass-btn mt-2">
+                <button type="submit" class="glass-btn mt-3">
                     <span class="relative z-10 flex items-center justify-center gap-2">
                         <i class="fas fa-arrow-right-to-bracket"></i>
                         Sign In
@@ -225,16 +225,16 @@
             </form>
 
             {{-- Feature pills --}}
-            <div class="flex flex-wrap gap-2 justify-center mt-6">
+            <div class="flex flex-wrap gap-2 justify-center mt-8">
                 <span class="feature-pill"><i class="fas fa-shield-halved text-indigo-400"></i> Secure Login</span>
                 <span class="feature-pill"><i class="fas fa-bolt text-amber-400"></i> Real-time</span>
                 <span class="feature-pill"><i class="fas fa-mobile-screen text-cyan-400"></i> Mobile Ready</span>
             </div>
 
             {{-- Footer --}}
-            <div class="text-center mt-6 pt-5" style="border-top:1px solid rgba(255,255,255,0.06)">
+            <div class="text-center mt-8 pt-6" style="border-top:1px solid rgba(255,255,255,0.06)">
                 <p class="text-xs" style="color:rgba(255,255,255,0.25)">Franchise Distribution Management System</p>
-                <p class="text-xs mt-1" style="color:rgba(255,255,255,0.15)">&copy; {{ date('Y') }} Farmmantra Agro Chemicals Ltd</p>
+                <p class="text-xs mt-1.5" style="color:rgba(255,255,255,0.15)">&copy; {{ date('Y') }} Farmmantra Agro Chemicals Ltd</p>
             </div>
         </div>
     </div>
