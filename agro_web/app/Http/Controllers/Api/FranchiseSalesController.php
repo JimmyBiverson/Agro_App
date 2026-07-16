@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FranchiseInventory;
 use App\Models\Sale;
 use App\Models\Product;
+use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -55,7 +56,8 @@ class FranchiseSalesController extends Controller
                     ]);
                 }
 
-                $totalAmount += $item['quantity'] * $inventory->product->standard_price;
+                $unitPrice = $inventory->product->getBestPrice($item['quantity']);
+                $totalAmount += $item['quantity'] * $unitPrice;
             }
 
             $discount = $request->discount ?? 0;
@@ -77,12 +79,13 @@ class FranchiseSalesController extends Controller
 
             foreach ($request->items as $item) {
                 $product = Product::find($item['product_id']);
-                $subtotal = $item['quantity'] * $product->standard_price;
+                $unitPrice = $product->getBestPrice($item['quantity']);
+                $subtotal = $item['quantity'] * $unitPrice;
 
                 $sale->items()->create([
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
-                    'unit_price' => $product->standard_price,
+                    'unit_price' => $unitPrice,
                     'subtotal' => $subtotal,
                 ]);
 
@@ -99,6 +102,8 @@ class FranchiseSalesController extends Controller
         });
 
         $result->load(['customer', 'items.product']);
+
+        ActivityLogger::saleCreated($result);
 
         return response()->json([
             'message' => 'Sale recorded successfully.',

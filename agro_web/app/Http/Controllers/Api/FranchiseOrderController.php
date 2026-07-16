@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +70,8 @@ class FranchiseOrderController extends Controller
         });
 
         $result->load('items.product');
+
+        ActivityLogger::orderPlaced($result);
 
         return response()->json([
             'message' => 'Order placed successfully.',

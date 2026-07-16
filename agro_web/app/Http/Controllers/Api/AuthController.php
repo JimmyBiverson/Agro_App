@@ -37,6 +37,8 @@ class AuthController extends Controller
 
         $user->update(['last_login_at' => now()]);
 
+        ActivityLogger::userLogin($user);
+
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([

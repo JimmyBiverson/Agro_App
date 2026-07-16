@@ -41,22 +41,22 @@ class AuditController extends Controller
         $dateFrom = $request->date_from ? now()->parse($request->date_from)->startOfDay() : now()->startOfMonth()->startOfDay();
         $dateTo = $request->date_to ? now()->parse($request->date_to)->endOfDay() : now()->endOfDay();
 
-        $byAction = ActivityLog::whereBetween('created_at', [$dateFrom, $dateTo])
+        $byAction = ActivityLog::whereBetween('activity_logs.created_at', [$dateFrom, $dateTo])
             ->select('action', \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'))
             ->groupBy('action')
             ->orderByDesc('count')
             ->get();
 
-        $byUser = ActivityLog::whereBetween('created_at', [$dateFrom, $dateTo])
-            ->join('users', 'users.id', '=', 'activity_logs.user_id')
+        $byUser = ActivityLog::join('users', 'users.id', '=', 'activity_logs.user_id')
+            ->whereRaw('activity_logs.created_at between ? and ?', [$dateFrom, $dateTo])
             ->select('activity_logs.user_id', 'users.name', \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'))
             ->groupBy('activity_logs.user_id', 'users.name')
             ->orderByDesc('count')
             ->get();
 
-        $byDay = ActivityLog::whereBetween('created_at', [$dateFrom, $dateTo])
-            ->select(\Illuminate\Support\Facades\DB::raw('DATE(created_at) as date'), \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'))
-            ->groupBy(\Illuminate\Support\Facades\DB::raw('DATE(created_at)'))
+        $byDay = ActivityLog::whereRaw('activity_logs.created_at between ? and ?', [$dateFrom, $dateTo])
+            ->select(\Illuminate\Support\Facades\DB::raw('DATE(activity_logs.created_at) as date'), \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'))
+            ->groupBy(\Illuminate\Support\Facades\DB::raw('DATE(activity_logs.created_at)'))
             ->orderBy('date')
             ->get();
 
@@ -67,7 +67,7 @@ class AuditController extends Controller
                 'by_action' => $byAction,
                 'by_user' => $byUser,
                 'by_day' => $byDay,
-                'total_logs' => ActivityLog::whereBetween('created_at', [$dateFrom, $dateTo])->count(),
+                'total_logs' => ActivityLog::whereBetween('activity_logs.created_at', [$dateFrom, $dateTo])->count(),
             ],
         ]);
     }

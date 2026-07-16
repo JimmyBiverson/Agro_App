@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentSubmission;
+use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -51,6 +52,8 @@ class PaymentController extends Controller
             'status' => 'pending',
             'submitted_at' => now(),
         ]);
+
+        ActivityLogger::paymentSubmitted($payment);
 
         return response()->json(['message' => 'Payment submitted successfully.', 'data' => $payment], 201);
     }

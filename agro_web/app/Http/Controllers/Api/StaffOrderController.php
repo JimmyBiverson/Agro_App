@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\StockReceipt;
 use App\Models\WarehouseInventory;
+use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -91,6 +92,8 @@ class StaffOrderController extends Controller
 
         $result->load(['franchise', 'items.product', 'stockReceipt.items.product']);
 
+        ActivityLogger::orderApproved($result, $request->user()->id);
+
         return response()->json([
             'message' => 'Order approved. Warehouse stock reserved and stock receipt created.',
             'data' => $result,
@@ -111,6 +114,8 @@ class StaffOrderController extends Controller
             'approved_at' => now(),
             'decline_reason' => $request->decline_reason,
         ]);
+
+        ActivityLogger::orderDeclined($order, $request->user()->id, $request->decline_reason);
 
         return response()->json(['message' => 'Order declined.', 'data' => $order->fresh()]);
     }

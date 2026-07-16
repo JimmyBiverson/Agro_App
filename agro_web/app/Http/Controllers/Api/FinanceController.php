@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Franchise;
 use App\Models\PaymentSubmission;
+use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -45,6 +46,8 @@ class FinanceController extends Controller
             'finance_notes' => $request->finance_notes,
         ]);
 
+        ActivityLogger::paymentVerified($paymentSubmission, $request->user()->id);
+
         return response()->json(['message' => 'Payment verified.', 'data' => $paymentSubmission->fresh('franchise')]);
     }
 
@@ -64,6 +67,8 @@ class FinanceController extends Controller
         $franchise->account_balance += $paymentSubmission->verified_amount;
         $franchise->save();
 
+        ActivityLogger::paymentAccepted($paymentSubmission, $request->user()->id);
+
         return response()->json([
             'message' => 'Payment accepted. Franchise balance updated.',
             'data' => [
@@ -77,12 +82,18 @@ class FinanceController extends Controller
     {
         $request->validate(['rejection_reason' => 'required|string']);
 
+        if (!in_array($paymentSubmission->status, ['pending', 'verified'])) {
+            return response()->json(['message' => 'Payment cannot be rejected in its current status.'], 422);
+        }
+
         $paymentSubmission->update([
             'status' => 'rejected',
             'verified_by' => $request->user()->id,
             'verified_at' => now(),
             'rejection_reason' => $request->rejection_reason,
         ]);
+
+        ActivityLogger::paymentRejected($paymentSubmission, $request->user()->id, $request->rejection_reason);
 
         return response()->json(['message' => 'Payment rejected.', 'data' => $paymentSubmission->fresh('franchise')]);
     }

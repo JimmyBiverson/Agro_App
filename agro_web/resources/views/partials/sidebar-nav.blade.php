@@ -1,0 +1,174 @@
+@php
+    $user = auth()->user();
+    $role = $user->role?->name ?? '';
+    $current = request()->route()->getName();
+    $pending_orders = \App\Models\Order::where('status', 'pending')->count();
+    $pending_payments = \App\Models\PaymentSubmission::where('status', 'pending')->count();
+    $pending_count = $role === 'System Administrator' ? $pending_orders + $pending_payments : ($role === 'Farmmantra Staff' ? $pending_orders : ($role === 'Finance Department' ? $pending_payments : 0));
+@endphp
+
+<div class="flex h-16 items-center gap-3 px-5 border-b" style="border-color:rgba(255,255,255,0.08)">
+    <div class="h-9 w-9 rounded-lg gradient-indigo flex items-center justify-center flex-shrink-0">
+        <span class="text-white font-bold text-sm">FM</span>
+    </div>
+    <div>
+        <span class="text-white font-bold text-base leading-tight block">Farmmantra</span>
+        <span class="text-gray-400 text-[10px] font-medium tracking-wider uppercase">Agro Chemicals</span>
+    </div>
+</div>
+
+<nav class="flex flex-1 flex-col py-3 px-3">
+    <ul class="space-y-0.5">
+
+        <li>
+            <a href="{{ route('web.dashboard') }}" class="sidebar-link {{ str_starts_with($current, 'web.dashboard') ? 'active' : '' }}">
+                <i class="fas fa-th-large w-5 text-center text-sm"></i> Dashboard
+            </a>
+        </li>
+
+        {{-- ═══ ADMIN ═══ --}}
+        @if($role === 'System Administrator')
+        <li><div class="sidebar-section">Management</div></li>
+        <li>
+            <a href="{{ route('web.admin.franchises') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.franchise') ? 'active' : '' }}">
+                <i class="fas fa-store w-5 text-center text-sm"></i> Franchises
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.admin.users') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.user') ? 'active' : '' }}">
+                <i class="fas fa-users w-5 text-center text-sm"></i> Users
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.admin.products') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.product') ? 'active' : '' }}">
+                <i class="fas fa-boxes-stacked w-5 text-center text-sm"></i> Products
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.admin.orders') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.order') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-list w-5 text-center text-sm"></i> All Orders
+                @if($pending_orders > 0)
+                <span class="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $pending_orders }}</span>
+                @endif
+            </a>
+        </li>
+
+        <li><div class="sidebar-section">Finance</div></li>
+        <li>
+            <a href="{{ route('web.admin.payments') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.payment') ? 'active' : '' }}">
+                <i class="fas fa-money-bill-wave w-5 text-center text-sm"></i> Payments
+                @if($pending_payments > 0)
+                <span class="ml-auto bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $pending_payments }}</span>
+                @endif
+            </a>
+        </li>
+
+        <li><div class="sidebar-section">Analytics</div></li>
+        <li>
+            <a href="{{ route('web.admin.reports') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.report') ? 'active' : '' }}">
+                <i class="fas fa-chart-bar w-5 text-center text-sm"></i> Reports
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.admin.audit') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.audit') ? 'active' : '' }}">
+                <i class="fas fa-shield-halved w-5 text-center text-sm"></i> Audit Logs
+            </a>
+        </li>
+
+        <li><div class="sidebar-section">Configuration</div></li>
+        <li>
+            <a href="{{ route('web.admin.settings.general') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.settings') ? 'active' : '' }}">
+                <i class="fas fa-cog w-5 text-center text-sm"></i> Settings
+            </a>
+        </li>
+        @endif
+
+        {{-- ═══ STAFF ═══ --}}
+        @if($role === 'Farmmantra Staff')
+        <li><div class="sidebar-section">Operations</div></li>
+        <li>
+            <a href="{{ route('web.staff.orders') }}" class="sidebar-link {{ str_starts_with($current, 'web.staff.order') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-list w-5 text-center text-sm"></i> Orders
+                @if($pending_orders > 0)
+                <span class="ml-auto bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $pending_orders }}</span>
+                @endif
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.staff.inventory') }}" class="sidebar-link {{ str_starts_with($current, 'web.staff.inventory') ? 'active' : '' }}">
+                <i class="fas fa-warehouse w-5 text-center text-sm"></i> Warehouse Stock
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.staff.franchiseStock') }}" class="sidebar-link {{ str_starts_with($current, 'web.staff.franchiseStock') ? 'active' : '' }}">
+                <i class="fas fa-store w-5 text-center text-sm"></i> Franchise Stock
+            </a>
+        </li>
+        @endif
+
+        {{-- ═══ FINANCE ═══ --}}
+        @if($role === 'Finance Department')
+        <li><div class="sidebar-section">Finance</div></li>
+        <li>
+            <a href="{{ route('web.finance.payments') }}" class="sidebar-link {{ str_starts_with($current, 'web.finance') ? 'active' : '' }}">
+                <i class="fas fa-money-bill-wave w-5 text-center text-sm"></i> Payments
+                @if($pending_payments > 0)
+                <span class="ml-auto bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $pending_payments }}</span>
+                @endif
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.finance.reports') }}" class="sidebar-link {{ str_starts_with($current, 'web.finance.report') ? 'active' : '' }}">
+                <i class="fas fa-chart-pie w-5 text-center text-sm"></i> Reports
+            </a>
+        </li>
+        @endif
+
+        {{-- ═══ FRANCHISE ═══ --}}
+        @if($role === 'Franchise Partner')
+        <li><div class="sidebar-section">My Franchise</div></li>
+        <li>
+            <a href="{{ route('web.franchise.orders') }}" class="sidebar-link {{ str_starts_with($current, 'web.franchise.order') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-list w-5 text-center text-sm"></i> Orders
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.franchise.sales') }}" class="sidebar-link {{ str_starts_with($current, 'web.franchise.sale') ? 'active' : '' }}">
+                <i class="fas fa-shopping-cart w-5 text-center text-sm"></i> Sales
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.franchise.inventory') }}" class="sidebar-link {{ str_starts_with($current, 'web.franchise.inventory') ? 'active' : '' }}">
+                <i class="fas fa-boxes-stacked w-5 text-center text-sm"></i> Inventory
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.franchise.payments') }}" class="sidebar-link {{ str_starts_with($current, 'web.franchise.payment') ? 'active' : '' }}">
+                <i class="fas fa-money-bill-wave w-5 text-center text-sm"></i> Payments
+                @if($pending_payments > 0)
+                <span class="ml-auto bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $pending_payments }}</span>
+                @endif
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.franchise.chat') }}" class="sidebar-link {{ str_starts_with($current, 'web.franchise.chat') ? 'active' : '' }}">
+                <i class="fas fa-comments w-5 text-center text-sm"></i> Messages
+            </a>
+        </li>
+        @endif
+
+    </ul>
+
+    {{-- Bottom User Info --}}
+    <div class="mt-auto pt-4 border-t" style="border-color:rgba(255,255,255,0.08)">
+        <div class="flex items-center gap-3 px-2 py-3 rounded-lg" style="background:rgba(255,255,255,0.04)">
+            <div class="h-8 w-8 rounded-full gradient-indigo flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                {{ substr($user->name, 0, 1) }}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-white text-sm font-medium truncate">{{ $user->name }}</p>
+                <p class="text-gray-400 text-xs truncate">{{ $user->email }}</p>
+            </div>
+        </div>
+    </div>
+</nav>
