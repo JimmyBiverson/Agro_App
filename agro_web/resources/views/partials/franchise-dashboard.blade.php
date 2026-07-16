@@ -37,7 +37,7 @@
         <div class="card-header"><h3 class="text-sm font-bold" style="color:var(--text-primary)">Sales by Category</h3></div>
         <div class="card-body">
             @if(!empty($d['sales_by_category']) && count($d['sales_by_category']) > 0)
-            <canvas id="categoryChart" height="200"></canvas>
+            <div style="position:relative; height:280px;"><canvas id="categoryChart"></canvas></div>
             @else
             <p class="text-sm text-center py-8" style="color:var(--text-muted)">No sales this month</p>
             @endif
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: {!! json_encode($d['sales_by_category']->pluck('category_name')->toArray()) !!},
             datasets: [{ data: {!! json_encode($d['sales_by_category']->pluck('total_sales')->toArray()) !!}, backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'], borderWidth: 0, hoverOffset: 8 }]
         },
-        options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: textColor, padding: 12, boxWidth: 10, font: { size: 11 } } } } }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: textColor, padding: 12, boxWidth: 10, font: { size: 11 } } } } }
     });
     @endif
 });

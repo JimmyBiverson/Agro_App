@@ -55,7 +55,7 @@
     <div class="card-full">
         <div class="card-header"><h3 class="text-sm font-bold" style="color:var(--text-primary)">Order Status</h3></div>
         <div class="card-body">
-            <canvas id="staffOrderStatusChart" height="200"></canvas>
+            <div style="position:relative; height:280px;"><canvas id="staffOrderStatusChart"></canvas></div>
         </div>
     </div>
 </div>
@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: {!! json_encode($d['orders_by_status']->pluck('status')->toArray()) !!},
             datasets: [{ data: {!! json_encode($d['orders_by_status']->pluck('count')->toArray()) !!}, backgroundColor: ['#f59e0b','#6366f1','#ef4444','#10b981'], borderWidth: 0, hoverOffset: 8 }]
         },
-        options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: textColor, padding: 12, boxWidth: 10, font: { size: 11 } } } } }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: textColor, padding: 12, boxWidth: 10, font: { size: 11 } } } } }
     });
     @endif
 });

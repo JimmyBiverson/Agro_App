@@ -45,7 +45,7 @@
         </div>
         <div class="card-body">
             @if(!empty($d['sales_trend']) && count($d['sales_trend']) > 0)
-            <canvas id="salesTrendChart" height="110"></canvas>
+            <div style="position:relative; height:320px;"><canvas id="salesTrendChart"></canvas></div>
             @else
             <p class="text-center py-8 text-sm" style="color:var(--text-muted)">No sales data yet</p>
             @endif
@@ -60,7 +60,7 @@
         </div>
         <div class="card-body">
             @if(!empty($d['sales_by_franchise']) && count($d['sales_by_franchise']) > 0)
-            <canvas id="franchiseChart" height="180"></canvas>
+            <div style="position:relative; height:260px;"><canvas id="franchiseChart"></canvas></div>
             @else
             <p class="text-center py-8 text-sm" style="color:var(--text-muted)">No data</p>
             @endif
@@ -182,7 +182,7 @@
         <div class="card-header"><h3 class="text-sm font-bold" style="color:var(--text-primary)">Order Status Overview</h3></div>
         <div class="card-body">
             @if(!empty($d['order_status_breakdown']) && count($d['order_status_breakdown']) > 0)
-            <canvas id="orderStatusChart" height="120"></canvas>
+            <div style="position:relative; height:240px;"><canvas id="orderStatusChart"></canvas></div>
             @else
             <p class="text-center py-8 text-sm" style="color:var(--text-muted)">No orders data</p>
             @endif
