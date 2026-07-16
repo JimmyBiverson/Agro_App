@@ -17,7 +17,7 @@
             </div>
             <div class="flex-1 min-w-0">
                 <p class="text-[11px] font-semibold uppercase tracking-wider" style="color:var(--text-muted)">{{ $stat['label'] }}</p>
-                <p class="text-xl font-extrabold mt-1" style="color:var(--text-primary)">{{ $stat['value'] }}</p>
+                <p class="text-lg sm:text-xl font-extrabold mt-1" style="color:var(--text-primary)">{{ $stat['value'] }}</p>
                 @if(($stat['has_progress'] ?? false) && ($d['summary']['credit_used_percentage'] ?? 0) > 0)
                     <div class="mt-2 w-full rounded-full h-1.5" style="background:var(--bg-input)">
                         <div class="h-1.5 rounded-full {{ ($d['summary']['credit_used_percentage'] ?? 0) > 80 ? 'gradient-rose' : 'gradient-indigo' }}" style="width: {{ min($d['summary']['credit_used_percentage'] ?? 0, 100) }}%"></div>

@@ -17,7 +17,7 @@
             </div>
             <div>
                 <p class="text-[11px] font-semibold uppercase tracking-wider" style="color:var(--text-muted)">{{ $stat['label'] }}</p>
-                <p class="text-xl font-extrabold mt-1" style="color:var(--text-primary)">{{ $stat['value'] }}</p>
+                <p class="text-lg sm:text-xl font-extrabold mt-1" style="color:var(--text-primary)">{{ $stat['value'] }}</p>
                 @if($stat['sub'] ?? null)
                     <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ $stat['sub'] }}</p>
                 @endif

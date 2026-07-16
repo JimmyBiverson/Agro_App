@@ -3,21 +3,21 @@
 @section('page-title', 'All Orders')
 
 @section('content')
-<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
     <div class="card-stat text-center">
-        <p class="text-2xl font-bold" style="color:var(--text-primary)">{{ $summary['total'] }}</p>
+        <p class="text-lg sm:text-2xl font-bold" style="color:var(--text-primary)">{{ $summary['total'] }}</p>
         <p class="text-xs" style="color:var(--text-muted)">Total Orders</p>
     </div>
     <div class="card-stat text-center">
-        <p class="text-2xl font-bold text-amber-500">{{ $summary['pending'] }}</p>
+        <p class="text-lg sm:text-2xl font-bold text-amber-500">{{ $summary['pending'] }}</p>
         <p class="text-xs" style="color:var(--text-muted)">Pending</p>
     </div>
     <div class="card-stat text-center">
-        <p class="text-2xl font-bold text-emerald-500">{{ $summary['approved'] }}</p>
+        <p class="text-lg sm:text-2xl font-bold text-emerald-500">{{ $summary['approved'] }}</p>
         <p class="text-xs" style="color:var(--text-muted)">Approved</p>
     </div>
     <div class="card-stat text-center">
-        <p class="text-2xl font-bold text-red-500">{{ $summary['declined'] }}</p>
+        <p class="text-lg sm:text-2xl font-bold text-red-500">{{ $summary['declined'] }}</p>
         <p class="text-xs" style="color:var(--text-muted)">Declined</p>
     </div>
 </div>

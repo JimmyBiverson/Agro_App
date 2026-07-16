@@ -36,6 +36,7 @@
                 <h3 class="text-sm font-semibold" style="color:var(--text-primary)">All Users</h3>
             </div>
             <div class="card-body p-0">
+                <div class="overflow-x-auto">
                 <table class="w-full table-dark">
                     <thead>
                         <tr class="border-b" style="border-color:var(--border-color)">
@@ -74,8 +75,9 @@
                         @endforelse
                     </tbody>
                 </table>
+                </div>
             </div>
-            <div class="px-4 py-3" style="border-top:1px solid var(--border-color)">
+            <div class="px-4 py-3 overflow-x-auto" style="border-top:1px solid var(--border-color)">
                 {{ $users->links() }}
             </div>
         </div>

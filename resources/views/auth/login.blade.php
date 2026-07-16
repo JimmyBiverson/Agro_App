@@ -23,7 +23,7 @@
         }
         html.dark { --bg: #0f172a; }
         * { font-family: 'Inter', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: var(--bg); min-height: 100vh; overflow: hidden; }
+        body { background: var(--bg); min-height: 100vh; min-height: 100dvh; overflow: auto; }
 
         .login-bg {
             position: fixed; inset: 0; z-index: 0;
