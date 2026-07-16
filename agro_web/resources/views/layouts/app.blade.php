@@ -148,9 +148,13 @@
         .fade-number { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
 
         @media (max-width: 1024px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); }
+            .sidebar { transform: translateX(-100%); width: 280px; max-width: 85vw; }
+            .sidebar.open { transform: translateX(0); box-shadow: 0 0 60px rgba(0,0,0,0.5); }
             .main-content { margin-left: 0; }
+        }
+        @media (max-width: 480px) {
+            .card-full .card-header { flex-wrap: wrap; gap: 0.5rem; }
+            .card-stat { padding: 1rem; }
         }
     </style>
     @yield('head')
@@ -168,7 +172,7 @@
     {{-- Main --}}
     <div class="main-content">
         {{-- Topbar --}}
-        <header class="topbar flex items-center px-4 lg:px-6 justify-between">
+        <header class="topbar flex items-center px-3 sm:px-4 lg:px-6 justify-between">
             <div class="flex items-center gap-3">
                 <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-xl transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
                     <i class="fas fa-bars" style="color:var(--text-muted)"></i>
@@ -205,10 +209,10 @@
                          class="absolute right-0 top-full mt-2 w-52 rounded-2xl border py-2 z-50"
                          style="background:var(--bg-card-solid); border-color:var(--border-color); box-shadow:var(--shadow-lg); backdrop-filter:var(--glass-blur)">
                         <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-sm transition" style="color:var(--text-primary)" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
-                            <i class="fas fa-user text-xs w-4 text-center" style="color:var(--text-muted)"></i> My Profile
+                            <i class="fas fa-user text-xs w-4 text-center" style="color:var(--text-muted)"></i> <span class="hidden sm:inline">My Profile</span>
                         </a>
                         <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-sm transition" style="color:var(--text-primary)" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
-                            <i class="fas fa-cog text-xs w-4 text-center" style="color:var(--text-muted)"></i> Settings
+                            <i class="fas fa-cog text-xs w-4 text-center" style="color:var(--text-muted)"></i> <span class="hidden sm:inline">Settings</span>
                         </a>
                         <hr class="my-1.5" style="border-color:var(--border-color)">
                         <form method="POST" action="{{ route('web.logout') }}">
@@ -223,7 +227,7 @@
         </header>
 
         {{-- Page Content --}}
-        <main class="p-4 lg:p-6 page-enter">
+        <main class="p-3 sm:p-4 lg:p-6 page-enter">
             @if(session('success'))
                 <div class="mb-5 rounded-2xl p-4 flex items-center gap-3" style="background:var(--bg-card); border:1px solid rgba(16,185,129,0.2); box-shadow:var(--shadow)">
                     <div class="h-9 w-9 rounded-xl gradient-green flex items-center justify-center flex-shrink-0">

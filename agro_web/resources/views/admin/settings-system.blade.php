@@ -39,7 +39,7 @@
         <div class="card-full">
             <div class="card-header"><h3 class="text-sm font-semibold" style="color:var(--text-primary)">Database Statistics</h3></div>
             <div class="card-body">
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     @php
                     $stats = [
                         ['label' => 'Users', 'count' => \App\Models\User::count(), 'icon' => 'fa-users', 'color' => 'gradient-indigo'],

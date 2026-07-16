@@ -3,18 +3,18 @@
 @section('page-title', 'Financial Reports')
 
 @section('content')
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
     <div class="card-stat text-center">
-        <p class="text-2xl font-bold text-emerald-500">UGX {{ number_format($data['total_collected_month']) }}</p>
-        <p class="text-xs" style="color:var(--text-muted)">Collected This Month</p>
+        <p class="text-lg sm:text-2xl font-bold text-emerald-500 break-words">UGX {{ number_format($data['total_collected_month']) }}</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">Collected This Month</p>
     </div>
     <div class="card-stat text-center">
-        <p class="text-2xl font-bold" style="color:var(--text-primary)">UGX {{ number_format($data['total_collected_ytd']) }}</p>
-        <p class="text-xs" style="color:var(--text-muted)">Collected Year-to-Date</p>
+        <p class="text-lg sm:text-2xl font-bold break-words" style="color:var(--text-primary)">UGX {{ number_format($data['total_collected_ytd']) }}</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">Collected Year-to-Date</p>
     </div>
     <div class="card-stat text-center">
-        <p class="text-2xl font-bold text-red-500">UGX {{ number_format($data['total_outstanding']) }}</p>
-        <p class="text-xs" style="color:var(--text-muted)">Total Outstanding</p>
+        <p class="text-lg sm:text-2xl font-bold text-red-500 break-words">UGX {{ number_format($data['total_outstanding']) }}</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">Total Outstanding</p>
     </div>
 </div>
 
@@ -36,7 +36,7 @@
                 <div class="flex-1 h-6 rounded-full overflow-hidden" style="background:var(--bg-card)">
                     <div class="h-full rounded-full gradient-indigo transition-all duration-500" style="width: {{ $maxVal > 0 ? ($val / $maxVal) * 100 : 0 }}%"></div>
                 </div>
-                <span class="text-xs font-medium w-24 text-right" style="color:var(--text-primary)">UGX {{ number_format($val) }}</span>
+                <span class="text-xs font-medium w-20 sm:w-24 text-right whitespace-nowrap" style="color:var(--text-primary)">UGX {{ number_format($val) }}</span>
             </div>
             @endforeach
         </div>

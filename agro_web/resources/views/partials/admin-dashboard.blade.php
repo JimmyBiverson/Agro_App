@@ -16,7 +16,7 @@
         <div class="flex items-start justify-between">
             <div>
                 <p class="text-[11px] font-semibold uppercase tracking-wider" style="color:var(--text-muted)">{{ $stat['label'] }}</p>
-                <p class="text-2xl font-extrabold mt-2" style="color:var(--text-primary)">{{ $stat['value'] }}</p>
+                <p class="text-xl sm:text-2xl font-extrabold mt-2" style="color:var(--text-primary)">{{ $stat['value'] }}</p>
                 @if(isset($stat['change']) && $stat['change'])
                     @php $change = ($d['summary']['total_sales_last_month'] ?? 0) > 0 ? round((($d['summary']['total_sales_this_month'] ?? 0) - ($d['summary']['total_sales_last_month'] ?? 0)) / ($d['summary']['total_sales_last_month'] ?? 1) * 100) : 0; @endphp
                     <p class="text-xs mt-1.5 font-medium {{ $change >= 0 ? 'text-emerald-500' : 'text-red-500' }}">

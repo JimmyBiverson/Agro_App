@@ -18,6 +18,7 @@
         <div class="card-full">
             <div class="card-header"><h3 class="text-sm font-semibold" style="color:var(--text-primary)">System Roles</h3></div>
             <div class="card-body p-0">
+                <div class="overflow-x-auto">
                 <table class="w-full table-dark">
                     <thead><tr class="border-b" style="border-color:var(--border-color)">
                         <th class="px-4 py-3 text-left">Role</th>
@@ -40,6 +41,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </div>
