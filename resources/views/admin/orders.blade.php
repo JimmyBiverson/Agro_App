@@ -1,0 +1,73 @@
+@extends('layouts.app')
+@section('title', 'All Orders')
+@section('page-title', 'All Orders')
+
+@section('content')
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+    <div class="card-stat text-center">
+        <p class="text-2xl font-bold" style="color:var(--text-primary)">{{ $summary['total'] }}</p>
+        <p class="text-xs" style="color:var(--text-muted)">Total Orders</p>
+    </div>
+    <div class="card-stat text-center">
+        <p class="text-2xl font-bold text-amber-500">{{ $summary['pending'] }}</p>
+        <p class="text-xs" style="color:var(--text-muted)">Pending</p>
+    </div>
+    <div class="card-stat text-center">
+        <p class="text-2xl font-bold text-emerald-500">{{ $summary['approved'] }}</p>
+        <p class="text-xs" style="color:var(--text-muted)">Approved</p>
+    </div>
+    <div class="card-stat text-center">
+        <p class="text-2xl font-bold text-red-500">{{ $summary['declined'] }}</p>
+        <p class="text-xs" style="color:var(--text-muted)">Declined</p>
+    </div>
+</div>
+
+<div class="card-full">
+    <div class="card-header">
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Order List</h3>
+    </div>
+    <div class="card-body p-0">
+        <div class="overflow-x-auto">
+            <table class="w-full table-dark">
+                <thead>
+                    <tr class="border-b" style="border-color:var(--border-color)">
+                        <th class="px-4 py-3 text-left">Order #</th>
+                        <th class="px-4 py-3 text-left">Franchise</th>
+                        <th class="px-4 py-3 text-left">Items</th>
+                        <th class="px-4 py-3 text-right">Amount</th>
+                        <th class="px-4 py-3 text-center">Status</th>
+                        <th class="px-4 py-3 text-left">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($orders as $order)
+                    <tr class="border-b" style="border-color:var(--border-color)">
+                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $order->order_number }}</td>
+                        <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $order->franchise?->name ?? '-' }}</td>
+                        <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $order->items->count() }} items</td>
+                        <td class="px-4 py-3 text-sm font-semibold text-right" style="color:var(--text-primary)">UGX {{ number_format($order->total_amount) }}</td>
+                        <td class="px-4 py-3 text-center">
+                            @if($order->status === 'pending')
+                            <span class="badge badge-warning">Pending</span>
+                            @elseif($order->status === 'approved')
+                            <span class="badge badge-success">Approved</span>
+                            @else
+                            <span class="badge badge-danger">Declined</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-xs" style="color:var(--text-muted)">{{ $order->created_at->format('M d, Y') }}</td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-sm" style="color:var(--text-muted)">No orders found</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="px-4 py-3" style="border-top:1px solid var(--border-color)">
+        {{ $orders->links() }}
+    </div>
+</div>
+@endsection

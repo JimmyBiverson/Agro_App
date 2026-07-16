@@ -53,8 +53,14 @@ class ChatController extends Controller
         return response()->json(['message' => 'Conversation started.', 'data' => $conversation], 201);
     }
 
-    public function show(Conversation $conversation): JsonResponse
+    public function show(Request $request, Conversation $conversation): JsonResponse
     {
+        $user = $request->user();
+        if ($user->role?->name === 'Franchise Partner') {
+            if ($conversation->franchise_id !== $user->franchise_id && $conversation->created_by !== $user->id) {
+                return response()->json(['message' => 'Unauthorized.'], 403);
+            }
+        }
         $conversation->load(['messages.sender', 'creator', 'franchise']);
         return response()->json(['data' => $conversation]);
     }
@@ -63,8 +69,15 @@ class ChatController extends Controller
     {
         $request->validate(['message' => 'required|string']);
 
+        $user = $request->user();
+        if ($user->role?->name === 'Franchise Partner') {
+            if ($conversation->franchise_id !== $user->franchise_id && $conversation->created_by !== $user->id) {
+                return response()->json(['message' => 'Unauthorized.'], 403);
+            }
+        }
+
         $message = $conversation->messages()->create([
-            'sender_id' => $request->user()->id,
+            'sender_id' => $user->id,
             'message' => $request->message,
         ]);
 

@@ -35,7 +35,8 @@ class StaffDashboardController extends Controller
                     ->sum('total_amount'),
                 'low_stock_products' => WarehouseInventory::whereColumn('quantity', '<=', 'reorder_level')
                     ->count(),
-                'total_warehouse_value' => WarehouseInventory::sum(DB::raw('quantity * reorder_level')),
+                'total_warehouse_value' => WarehouseInventory::join('products', 'products.id', '=', 'warehouse_inventories.product_id')
+                    ->sum(DB::raw('warehouse_inventories.quantity * products.standard_price')),
                 'active_franchises' => Franchise::where('is_active', true)->count(),
             ],
 

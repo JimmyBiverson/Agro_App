@@ -39,7 +39,8 @@ class AdminController extends Controller
                 'total_sales_ytd' => Sale::whereYear('sale_date', $now->year)->sum('final_amount'),
                 'total_outstanding' => Franchise::where('account_balance', '>', 0)->sum('account_balance'),
                 'low_stock_products' => WarehouseInventory::whereColumn('quantity', '<=', 'reorder_level')->count(),
-                'total_inventory_value' => WarehouseInventory::sum(DB::raw('quantity * reorder_level')),
+                'total_inventory_value' => WarehouseInventory::join('products', 'products.id', '=', 'warehouse_inventories.product_id')
+                    ->sum(DB::raw('warehouse_inventories.quantity * products.standard_price')),
             ],
 
             'sales_by_franchise' => Sale::select('franchise_id', DB::raw('SUM(final_amount) as total_sales'), DB::raw('COUNT(*) as sale_count'))

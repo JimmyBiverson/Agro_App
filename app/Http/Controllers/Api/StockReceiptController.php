@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\StockReceipt;
+use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -91,6 +92,8 @@ class StockReceiptController extends Controller
         }
 
         $stockReceipt->order->update(['status' => 'delivered']);
+
+        ActivityLogger::orderDelivered($stockReceipt->order, $user->id);
 
         return response()->json([
             'message' => 'Stock receipt confirmed. Inventory updated.',
