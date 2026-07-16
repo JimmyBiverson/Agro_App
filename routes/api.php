@@ -1,0 +1,157 @@
+<?php
+
+use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AuditController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\FranchiseDashboardController;
+use App\Http\Controllers\Api\FranchiseInventoryController;
+use App\Http\Controllers\Api\FranchiseOrderController;
+use App\Http\Controllers\Api\FranchiseSalesController;
+use App\Http\Controllers\Api\FinanceController;
+use App\Http\Controllers\Api\FinanceDashboardController;
+use App\Http\Controllers\Api\MasterDataController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\StaffDashboardController;
+use App\Http\Controllers\Api\StaffInventoryController;
+use App\Http\Controllers\Api\StaffOrderController;
+use App\Http\Controllers\Api\StockReceiptController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+| Farmmantra Agro Chemicals Limited — RESTful API
+| Designed for mobile (Flutter) + web consumption.
+*/
+
+// ─── Public ──────────────────────────────────────────────────────
+Route::post('/login', [AuthController::class, 'login']);
+
+// ─── Authenticated ───────────────────────────────────────────────
+Route::middleware('auth:sanctum')->group(function () {
+
+    // ── Profile ──────────────────────────────────────────────
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
+
+    // ── Master Data (all roles) ──────────────────────────────
+    Route::get('/categories', [MasterDataController::class, 'categories']);
+    Route::get('/products', [MasterDataController::class, 'products']);
+    Route::get('/products/{product}', [MasterDataController::class, 'product']);
+    Route::get('/products/{product}/price-slabs', [MasterDataController::class, 'priceSlabs']);
+
+    // ── Chat (all authenticated) ─────────────────────────────
+    Route::get('/conversations', [ChatController::class, 'index']);
+    Route::post('/conversations', [ChatController::class, 'store']);
+    Route::get('/conversations/{conversation}', [ChatController::class, 'show']);
+    Route::post('/conversations/{conversation}/messages', [ChatController::class, 'send']);
+
+    // ── Reports (admin + finance) ────────────────────────────
+    Route::middleware('api.role:System Administrator,Finance Department')->group(function () {
+        Route::get('/reports/sales', [ReportController::class, 'salesReport']);
+        Route::get('/reports/payments', [ReportController::class, 'paymentReport']);
+        Route::get('/reports/orders', [ReportController::class, 'orderReport']);
+        Route::get('/reports/inventory', [ReportController::class, 'inventoryReport']);
+        Route::get('/reports/franchise-comparison', [ReportController::class, 'franchiseComparison']);
+    });
+
+    // ── Audit Logs (admin only) ──────────────────────────────
+    Route::middleware('api.role:System Administrator')->prefix('admin')->group(function () {
+        Route::get('/audit-logs', [AuditController::class, 'activityLogs']);
+        Route::get('/audit-logs/summary', [AuditController::class, 'activitySummary']);
+        Route::get('/users/{user}/activity', [AuditController::class, 'userActivity']);
+    });
+
+    // ══════════════════════════════════════════════════════════
+    // FRANCHISE PARTNER
+    // ══════════════════════════════════════════════════════════
+    Route::middleware(['api.role:Franchise Partner', 'franchise.active'])->prefix('franchise')->group(function () {
+
+        Route::get('/dashboard', FranchiseDashboardController::class);
+
+        Route::get('/orders', [FranchiseOrderController::class, 'index']);
+        Route::post('/orders', [FranchiseOrderController::class, 'store']);
+        Route::get('/orders/{order}', [FranchiseOrderController::class, 'show']);
+
+        Route::get('/stock-receipts', [StockReceiptController::class, 'index']);
+        Route::get('/stock-receipts/{stockReceipt}', [StockReceiptController::class, 'show']);
+        Route::post('/stock-receipts/{stockReceipt}/confirm', [StockReceiptController::class, 'confirm']);
+
+        Route::get('/sales', [FranchiseSalesController::class, 'index']);
+        Route::post('/sales', [FranchiseSalesController::class, 'store']);
+        Route::get('/sales/{sale}', [FranchiseSalesController::class, 'show']);
+
+        Route::get('/customers', [CustomerController::class, 'index']);
+        Route::post('/customers', [CustomerController::class, 'store']);
+        Route::get('/customers/{customer}', [CustomerController::class, 'show']);
+
+        Route::get('/inventory', [FranchiseInventoryController::class, 'index']);
+        Route::get('/inventory/low-stock', [FranchiseInventoryController::class, 'lowStock']);
+
+        Route::get('/payments', [PaymentController::class, 'index']);
+        Route::post('/payments', [PaymentController::class, 'store']);
+        Route::get('/payments/{paymentSubmission}', [PaymentController::class, 'show']);
+    });
+
+    // ══════════════════════════════════════════════════════════
+    // FARMMANTRA STAFF
+    // ══════════════════════════════════════════════════════════
+    Route::middleware('api.role:Farmmantra Staff')->prefix('staff')->group(function () {
+
+        Route::get('/dashboard', StaffDashboardController::class);
+
+        Route::get('/orders', [StaffOrderController::class, 'index']);
+        Route::get('/orders/{order}', [StaffOrderController::class, 'show']);
+        Route::post('/orders/{order}/approve', [StaffOrderController::class, 'approve']);
+        Route::post('/orders/{order}/decline', [StaffOrderController::class, 'decline']);
+        Route::post('/orders/{order}/adjust', [StaffOrderController::class, 'adjust']);
+
+        Route::get('/warehouse-stock', [StaffInventoryController::class, 'warehouseStock']);
+        Route::get('/franchise-stock', [StaffInventoryController::class, 'franchiseStock']);
+        Route::post('/warehouse-stock', [StaffInventoryController::class, 'updateWarehouseStock']);
+    });
+
+    // ══════════════════════════════════════════════════════════
+    // FINANCE DEPARTMENT
+    // ══════════════════════════════════════════════════════════
+    Route::middleware('api.role:Finance Department')->prefix('finance')->group(function () {
+
+        Route::get('/dashboard', FinanceDashboardController::class);
+
+        Route::get('/payments/pending', [FinanceController::class, 'pendingPayments']);
+        Route::get('/payments', [FinanceController::class, 'allPayments']);
+        Route::get('/payments/{paymentSubmission}', [FinanceController::class, 'showPayment']);
+        Route::post('/payments/{paymentSubmission}/verify', [FinanceController::class, 'verify']);
+        Route::post('/payments/{paymentSubmission}/accept', [FinanceController::class, 'accept']);
+        Route::post('/payments/{paymentSubmission}/reject', [FinanceController::class, 'reject']);
+    });
+
+    // ══════════════════════════════════════════════════════════
+    // SYSTEM ADMINISTRATOR
+    // ══════════════════════════════════════════════════════════
+    Route::middleware('api.role:System Administrator')->prefix('admin')->group(function () {
+
+        Route::get('/dashboard', [AdminController::class, 'dashboard']);
+
+        Route::get('/franchises', [AdminController::class, 'franchises']);
+        Route::post('/franchises', [AdminController::class, 'storeFranchise']);
+        Route::get('/franchises/{franchise}', [AdminController::class, 'showFranchise']);
+        Route::put('/franchises/{franchise}', [AdminController::class, 'updateFranchise']);
+
+        Route::get('/users', [AdminController::class, 'users']);
+        Route::post('/users', [AdminController::class, 'storeUser']);
+
+        Route::get('/products', [AdminController::class, 'products']);
+        Route::post('/products', [AdminController::class, 'storeProduct']);
+        Route::put('/products/{product}', [AdminController::class, 'updateProduct']);
+        Route::post('/products/{product}/price-slabs', [AdminController::class, 'storePriceSlab']);
+
+        Route::post('/sales-targets', [AdminController::class, 'storeSalesTarget']);
+    });
+});
