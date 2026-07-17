@@ -61,10 +61,10 @@
             --accent-light: rgba(99,102,241,0.15);
         }
         * { font-family: 'Inter', sans-serif; }
-        body { background: var(--bg-body); color: var(--text-primary); transition: background 0.3s, color 0.3s; }
+        html, body { height: 100%; overflow: hidden; background: var(--bg-body); color: var(--text-primary); transition: background 0.3s, color 0.3s; }
 
         .sidebar {
-            background: var(--bg-sidebar); width: 260px; min-height: 100vh;
+            background: var(--bg-sidebar); width: 260px; height: 100vh;
             position: fixed; top: 0; left: 0; z-index: 40;
             transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); overflow-y: auto;
             border-right: 1px solid rgba(255,255,255,0.05);
@@ -72,7 +72,10 @@
         .sidebar::-webkit-scrollbar { width: 3px; }
         .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
 
-        .main-content { margin-left: 260px; min-height: 100vh; transition: margin 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .main-content { margin-left: 260px; height: 100vh; overflow-y: auto; transition: margin 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .main-content::-webkit-scrollbar { width: 6px; }
+        .main-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 10px; }
+        html.dark .main-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
 
         .topbar {
             background: var(--bg-topbar); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
