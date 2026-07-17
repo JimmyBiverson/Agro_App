@@ -204,14 +204,19 @@
 
     {{-- Bottom User Info --}}
     <div class="mt-auto pt-4 border-t" style="border-color:rgba(255,255,255,0.08)">
-        <div class="flex items-center gap-3 px-2 py-3 rounded-lg" style="background:rgba(255,255,255,0.04)">
+        <a href="{{ route('web.profile') }}" class="flex items-center gap-3 px-2 py-3 rounded-lg transition" style="background:rgba(255,255,255,0.04); text-decoration:none" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+            @if($user->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar))
+            <img src="{{ asset('storage/'.$user->avatar) }}" alt="{{ $user->name }}" class="h-8 w-8 rounded-full object-cover flex-shrink-0">
+            @else
             <div class="h-8 w-8 rounded-full gradient-indigo flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                 {{ substr($user->name, 0, 1) }}
             </div>
+            @endif
             <div class="flex-1 min-w-0">
                 <p class="text-white text-sm font-medium truncate">{{ $user->name }}</p>
                 <p class="text-gray-400 text-xs truncate">{{ $user->email }}</p>
             </div>
-        </div>
+            <i class="fas fa-chevron-right text-[10px]" style="color:rgba(255,255,255,0.3)"></i>
+        </a>
     </div>
 </nav>
