@@ -11,8 +11,8 @@
         <div class="card-body p-6 sm:p-8 relative">
             <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 {{-- Avatar --}}
-                <div class="relative group">
-                    <form action="{{ route('web.profile.avatar') }}" method="POST" enctype="multipart/form-data" id="avatarForm">
+                <div class="relative group" x-data="{ uploading: false }">
+                    <form action="{{ route('web.profile.avatar') }}" method="POST" enctype="multipart/form-data" id="avatarForm" @submit="uploading = true">
                         @csrf
                         <label class="block cursor-pointer">
                             <div class="h-24 w-24 sm:h-28 sm:w-28 rounded-2xl overflow-hidden border-4 transition-all group-hover:shadow-lg" style="border-color:var(--border-color); box-shadow:var(--shadow)">
@@ -26,14 +26,15 @@
                             </div>
                             <div class="absolute inset-0 rounded-2xl flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <div class="text-center">
-                                    <i class="fas fa-camera text-white text-lg"></i>
-                                    <p class="text-white text-[10px] font-medium mt-1">Change Photo</p>
+                                    <i x-show="!uploading" class="fas fa-camera text-white text-lg"></i>
+                                    <i x-show="uploading" class="fas fa-spinner fa-spin text-white text-lg"></i>
+                                    <p class="text-white text-[10px] font-medium mt-1" x-text="uploading ? 'Uploading...' : 'Change Photo'"></p>
                                 </div>
                             </div>
-                            <input type="file" name="avatar" accept="image/*" class="hidden" onchange="document.getElementById('avatarForm').submit()">
+                            <input type="file" name="avatar" accept="image/*" class="hidden" onchange="if(this.files[0].size > 2097152){alert('Image must be under 2MB'); this.value=''; return;} document.getElementById('avatarForm').submit()">
                         </label>
-                        <input type="hidden" name="_token" value="{{ csrf_token() }}">
                     </form>
+                    <p class="text-[10px] text-center mt-2" style="color:var(--text-muted)">Click to upload · JPEG/PNG/WebP · Max 2MB</p>
                 </div>
 
                 {{-- User Info --}}
