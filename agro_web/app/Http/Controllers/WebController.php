@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Franchise;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PaymentSubmission;
 use App\Models\Product;
 use App\Models\Sale;
@@ -193,9 +194,150 @@ class WebController extends Controller
         return view('admin.payments', compact('payments', 'summary'));
     }
 
-    public function adminReports()
+    public function adminReports(Request $request)
     {
-        return view('admin.reports');
+        $type = $request->get('type', '');
+        $from = $request->get('from', now()->startOfMonth()->format('Y-m-d'));
+        $to = $request->get('to', now()->format('Y-m-d'));
+        $franchiseId = $request->get('franchise_id', '');
+        $franchises = Franchise::where('is_active', true)->orderBy('name')->get();
+
+        $reportData = null;
+        $summary = [];
+        $reportTitle = '';
+
+        if ($type) {
+            $fromDate = \Carbon\Carbon::parse($from)->startOfDay();
+            $toDate = \Carbon\Carbon::parse($to)->endOfDay();
+
+            switch ($type) {
+                case 'sales':
+                    $reportTitle = 'Sales Report';
+                    $query = Sale::with(['franchise', 'customer', 'creator', 'items.product'])
+                        ->whereBetween('sale_date', [$fromDate, $toDate]);
+                    if ($franchiseId) $query->where('franchise_id', $franchiseId);
+                    $reportData = $query->latest('sale_date')->get();
+
+                    $summary = [
+                        ['label' => 'Total Sales', 'value' => $reportData->sum('final_amount'), 'icon' => 'fa-money-bill-wave', 'color' => 'gradient-indigo', 'format' => 'currency'],
+                        ['label' => 'Transactions', 'value' => $reportData->count(), 'icon' => 'fa-receipt', 'color' => 'gradient-green', 'format' => 'number'],
+                        ['label' => 'Avg. Per Sale', 'value' => $reportData->count() ? $reportData->avg('final_amount') : 0, 'icon' => 'fa-chart-line', 'color' => 'gradient-amber', 'format' => 'currency'],
+                        ['label' => 'Total Discount', 'value' => $reportData->sum('discount'), 'icon' => 'fa-percent', 'color' => 'gradient-cyan', 'format' => 'currency'],
+                        ['label' => 'Paid', 'value' => $reportData->where('payment_status', 'paid')->count(), 'icon' => 'fa-check-circle', 'color' => 'gradient-green', 'format' => 'number'],
+                        ['label' => 'Unpaid', 'value' => $reportData->where('payment_status', '!=', 'paid')->count(), 'icon' => 'fa-exclamation-circle', 'color' => 'gradient-rose', 'format' => 'number'],
+                    ];
+                    break;
+
+                case 'orders':
+                    $reportTitle = 'Order Report';
+                    $query = Order::with(['franchise', 'orderedByUser', 'items.product'])
+                        ->whereBetween('created_at', [$fromDate, $toDate]);
+                    if ($franchiseId) $query->where('franchise_id', $franchiseId);
+                    $reportData = $query->latest()->get();
+
+                    $summary = [
+                        ['label' => 'Total Orders', 'value' => $reportData->count(), 'icon' => 'fa-clipboard-list', 'color' => 'gradient-indigo', 'format' => 'number'],
+                        ['label' => 'Total Value', 'value' => $reportData->sum('total_amount'), 'icon' => 'fa-money-bill-wave', 'color' => 'gradient-green', 'format' => 'currency'],
+                        ['label' => 'Pending', 'value' => $reportData->where('status', 'pending')->count(), 'icon' => 'fa-clock', 'color' => 'gradient-amber', 'format' => 'number'],
+                        ['label' => 'Approved', 'value' => $reportData->where('status', 'approved')->count(), 'icon' => 'fa-check-circle', 'color' => 'gradient-green', 'format' => 'number'],
+                        ['label' => 'Declined', 'value' => $reportData->where('status', 'declined')->count(), 'icon' => 'fa-times-circle', 'color' => 'gradient-rose', 'format' => 'number'],
+                        ['label' => 'Avg. Order Value', 'value' => $reportData->count() ? $reportData->avg('total_amount') : 0, 'icon' => 'fa-chart-bar', 'color' => 'gradient-cyan', 'format' => 'currency'],
+                    ];
+                    break;
+
+                case 'payments':
+                    $reportTitle = 'Payment Report';
+                    $query = PaymentSubmission::with('franchise')
+                        ->whereBetween('created_at', [$fromDate, $toDate]);
+                    if ($franchiseId) $query->where('franchise_id', $franchiseId);
+                    $reportData = $query->latest()->get();
+
+                    $summary = [
+                        ['label' => 'Total Submissions', 'value' => $reportData->count(), 'icon' => 'fa-credit-card', 'color' => 'gradient-indigo', 'format' => 'number'],
+                        ['label' => 'Total Amount', 'value' => $reportData->sum('amount'), 'icon' => 'fa-money-bill-wave', 'color' => 'gradient-green', 'format' => 'currency'],
+                        ['label' => 'Accepted', 'value' => $reportData->where('status', 'accepted')->count(), 'icon' => 'fa-check-circle', 'color' => 'gradient-green', 'format' => 'number'],
+                        ['label' => 'Pending', 'value' => $reportData->where('status', 'pending')->count(), 'icon' => 'fa-clock', 'color' => 'gradient-amber', 'format' => 'number'],
+                        ['label' => 'Rejected', 'value' => $reportData->where('status', 'rejected')->count(), 'icon' => 'fa-times-circle', 'color' => 'gradient-rose', 'format' => 'number'],
+                        ['label' => 'Accepted Amount', 'value' => $reportData->where('status', 'accepted')->sum('amount'), 'icon' => 'fa-hand-holding-usd', 'color' => 'gradient-cyan', 'format' => 'currency'],
+                    ];
+                    break;
+
+                case 'inventory':
+                    $reportTitle = 'Inventory Report';
+                    $products = Product::with(['warehouseInventory', 'franchiseInventories.franchise', 'category'])
+                        ->where('is_active', true)->orderBy('name')->get();
+
+                    $summary = [
+                        ['label' => 'Total Products', 'value' => $products->count(), 'icon' => 'fa-boxes-stacked', 'color' => 'gradient-indigo', 'format' => 'number'],
+                        ['label' => 'Warehouse Stock', 'value' => $products->sum(fn($p) => $p->warehouseInventory?->quantity ?? 0), 'icon' => 'fa-warehouse', 'color' => 'gradient-green', 'format' => 'number'],
+                        ['label' => 'Low Stock Items', 'value' => $products->filter(fn($p) => ($p->warehouseInventory?->quantity ?? 0) <= ($p->warehouseInventory?->reorder_level ?? 0) && ($p->warehouseInventory?->quantity ?? 0) > 0)->count(), 'icon' => 'fa-exclamation-triangle', 'color' => 'gradient-amber', 'format' => 'number'],
+                        ['label' => 'Out of Stock', 'value' => $products->filter(fn($p) => ($p->warehouseInventory?->quantity ?? 0) == 0)->count(), 'icon' => 'fa-times-circle', 'color' => 'gradient-rose', 'format' => 'number'],
+                        ['label' => 'Total Stock Value', 'value' => $products->sum(fn($p) => ($p->warehouseInventory?->quantity ?? 0) * $p->standard_price), 'icon' => 'fa-coins', 'color' => 'gradient-cyan', 'format' => 'currency'],
+                        ['label' => 'Franchise Stocks', 'value' => $products->sum(fn($p) => $p->franchiseInventories->sum('quantity')), 'icon' => 'fa-store', 'color' => 'gradient-purple', 'format' => 'number'],
+                    ];
+                    $reportData = $products;
+                    break;
+
+                case 'franchise':
+                    $reportTitle = 'Franchise Performance';
+                    $franchiseData = Franchise::withCount(['orders as total_orders' => function($q) use ($fromDate, $toDate) {
+                        $q->whereBetween('created_at', [$fromDate, $toDate]);
+                    }])
+                    ->withCount(['sales as total_sales' => function($q) use ($fromDate, $toDate) {
+                        $q->whereBetween('sale_date', [$fromDate, $toDate]);
+                    }])
+                    ->withSum(['sales as sales_revenue' => function($q) use ($fromDate, $toDate) {
+                        $q->whereBetween('sale_date', [$fromDate, $toDate]);
+                    }], 'final_amount')
+                    ->withSum(['orders as orders_value' => function($q) use ($fromDate, $toDate) {
+                        $q->whereBetween('created_at', [$fromDate, $toDate]);
+                    }], 'total_amount')
+                    ->withCount(['paymentSubmissions as payments_count' => function($q) use ($fromDate, $toDate) {
+                        $q->whereBetween('created_at', [$fromDate, $toDate]);
+                    }])
+                    ->where('is_active', true)->orderBy('sales_revenue', 'desc')->get();
+
+                    $reportData = $franchiseData;
+                    $summary = [
+                        ['label' => 'Active Franchises', 'value' => $franchiseData->count(), 'icon' => 'fa-store', 'color' => 'gradient-indigo', 'format' => 'number'],
+                        ['label' => 'Total Orders', 'value' => $franchiseData->sum('total_orders'), 'icon' => 'fa-clipboard-list', 'color' => 'gradient-green', 'format' => 'number'],
+                        ['label' => 'Total Sales Revenue', 'value' => $franchiseData->sum('sales_revenue'), 'icon' => 'fa-money-bill-wave', 'color' => 'gradient-amber', 'format' => 'currency'],
+                        ['label' => 'Total Orders Value', 'value' => $franchiseData->sum('orders_value'), 'icon' => 'fa-shopping-cart', 'color' => 'gradient-cyan', 'format' => 'currency'],
+                        ['label' => 'Total Payments', 'value' => $franchiseData->sum('payments_count'), 'icon' => 'fa-credit-card', 'color' => 'gradient-purple', 'format' => 'number'],
+                        ['label' => 'Avg Sales/Franchise', 'value' => $franchiseData->count() ? $franchiseData->avg('sales_revenue') : 0, 'icon' => 'fa-chart-pie', 'color' => 'gradient-rose', 'format' => 'currency'],
+                    ];
+                    break;
+
+                case 'profit-loss':
+                    $reportTitle = 'Profit & Loss Report';
+                    $salesQuery = Sale::whereBetween('sale_date', [$fromDate, $toDate]);
+                    if ($franchiseId) $salesQuery->where('franchise_id', $franchiseId);
+                    $totalSales = $salesQuery->sum('final_amount');
+                    $totalDiscounts = (clone $salesQuery)->sum('discount');
+                    $netRevenue = $totalSales - $totalDiscounts;
+
+                    $costQuery = OrderItem::whereHas('order', function($q) use ($fromDate, $toDate, $franchiseId) {
+                        $q->whereBetween('created_at', [$fromDate, $toDate]);
+                        if ($franchiseId) $q->where('franchise_id', $franchiseId);
+                    });
+                    $totalCOGS = $costQuery->sum(\DB::raw('quantity * unit_price'));
+
+                    $netProfit = $netRevenue - $totalCOGS;
+                    $margin = $netRevenue > 0 ? ($netProfit / $netRevenue * 100) : 0;
+
+                    $summary = [
+                        ['label' => 'Gross Revenue', 'value' => $totalSales, 'icon' => 'fa-money-bill-wave', 'color' => 'gradient-indigo', 'format' => 'currency'],
+                        ['label' => 'Discounts', 'value' => $totalDiscounts, 'icon' => 'fa-percent', 'color' => 'gradient-amber', 'format' => 'currency'],
+                        ['label' => 'Net Revenue', 'value' => $netRevenue, 'icon' => 'fa-chart-line', 'color' => 'gradient-green', 'format' => 'currency'],
+                        ['label' => 'Cost of Goods', 'value' => $totalCOGS, 'icon' => 'fa-truck', 'color' => 'gradient-rose', 'format' => 'currency'],
+                        ['label' => 'Net Profit', 'value' => $netProfit, 'icon' => 'fa-piggy-bank', 'color' => $netProfit >= 0 ? 'gradient-green' : 'gradient-rose', 'format' => 'currency'],
+                        ['label' => 'Profit Margin', 'value' => round($margin, 1), 'icon' => 'fa-percentage', 'color' => 'gradient-cyan', 'format' => 'percent'],
+                    ];
+                    break;
+            }
+        }
+
+        return view('admin.reports', compact('type', 'from', 'to', 'franchiseId', 'franchises', 'reportData', 'summary', 'reportTitle'));
     }
 
     public function adminAudit()
