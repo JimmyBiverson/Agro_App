@@ -159,6 +159,12 @@ class WebController extends Controller
         return view('admin.products', compact('products', 'categories'));
     }
 
+    public function adminCategories()
+    {
+        $categories = \App\Models\Category::withCount('products')->orderBy('sort_order')->get();
+        return view('admin.categories', compact('categories'));
+    }
+
     public function adminOrders()
     {
         $orders = Order::with(['franchise:id,name,code', 'items.product:id,name', 'orderedByUser:id,name'])
@@ -198,9 +204,38 @@ class WebController extends Controller
         return view('admin.audit', compact('logs'));
     }
 
+    public function adminNews()
+    {
+        $news = \App\Models\News::latest()->paginate(20);
+        return view('admin.news', compact('news'));
+    }
+
+    public function adminFaqs()
+    {
+        $faqs = \App\Models\Faq::orderBy('sort_order')->get();
+        return view('admin.faqs', compact('faqs'));
+    }
+
+    public function adminSlides()
+    {
+        $slides = \App\Models\Slide::orderBy('sort_order')->get();
+        return view('admin.slides', compact('slides'));
+    }
+
+    public function adminPages()
+    {
+        $pages = \App\Models\Page::latest()->paginate(20);
+        return view('admin.pages', compact('pages'));
+    }
+
     public function adminSettings()
     {
         return view('admin.settings');
+    }
+
+    public function adminSettingsSite()
+    {
+        return view('admin.settings-site');
     }
 
     public function adminSettingsUsers()
@@ -213,6 +248,11 @@ class WebController extends Controller
     {
         $roles = \App\Models\Role::withCount('users')->get();
         return view('admin.settings-roles', compact('roles'));
+    }
+
+    public function adminSettingsNotifications()
+    {
+        return view('admin.settings-notifications');
     }
 
     public function adminSettingsSystem()

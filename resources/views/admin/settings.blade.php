@@ -2,79 +2,82 @@
 @section('title', 'System Settings')
 @section('page-title', 'System Settings')
 
+@php
+    $settingsNav = [
+        ['route' => 'web.admin.settings.site', 'label' => 'Site Identity', 'icon' => 'fa-palette'],
+        ['route' => 'web.admin.settings.general', 'label' => 'General', 'icon' => 'fa-cog'],
+        ['route' => 'web.admin.settings.users', 'label' => 'User Management', 'icon' => 'fa-user-gear'],
+        ['route' => 'web.admin.settings.roles', 'label' => 'Roles & Permissions', 'icon' => 'fa-shield-halved'],
+        ['route' => 'web.admin.settings.notifications', 'label' => 'Notifications', 'icon' => 'fa-bell'],
+        ['route' => 'web.admin.settings.system', 'label' => 'System Info', 'icon' => 'fa-server'],
+    ];
+@endphp
+
 @section('content')
-<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-    {{-- Settings Sidebar --}}
-    <div class="lg:col-span-1">
-        <div class="card-full">
-            <div class="card-body p-2">
-                <nav class="space-y-1">
-                    <a href="{{ route('web.admin.settings.general') }}" class="sidebar-link {{ request()->routeIs('web.admin.settings.general') ? 'active' : '' }}" style="margin:0">
-                        <i class="fas fa-cog w-5 text-center text-sm"></i> General
-                    </a>
-                    <a href="{{ route('web.admin.settings.users') }}" class="sidebar-link {{ request()->routeIs('web.admin.settings.users') ? 'active' : '' }}" style="margin:0">
-                        <i class="fas fa-users w-5 text-center text-sm"></i> User Management
-                    </a>
-                    <a href="{{ route('web.admin.settings.roles') }}" class="sidebar-link {{ request()->routeIs('web.admin.settings.roles') ? 'active' : '' }}" style="margin:0">
-                        <i class="fas fa-shield-halved w-5 text-center text-sm"></i> Roles & Permissions
-                    </a>
-                    <a href="{{ route('web.admin.settings.system') }}" class="sidebar-link {{ request()->routeIs('web.admin.settings.system') ? 'active' : '' }}" style="margin:0">
-                        <i class="fas fa-server w-5 text-center text-sm"></i> System Info
-                    </a>
-                </nav>
-            </div>
+{{-- Settings Tab Bar --}}
+<div class="card-full mb-6">
+    <div class="card-body py-4 px-5">
+        <div class="flex gap-2 overflow-x-auto" style="scrollbar-width:none">
+            @foreach($settingsNav as $nav)
+            <a href="{{ route($nav['route']) }}"
+               class="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold whitespace-nowrap transition-all {{ request()->routeIs($nav['route']) ? 'text-white shadow-lg' : '' }}"
+               style="{{ request()->routeIs($nav['route'])
+                   ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 4px 15px rgba(99,102,241,0.4)'
+                   : 'color:var(--text-primary); background:var(--bg-card); border:1px solid var(--border-color)' }}">
+                <i class="fas {{ $nav['icon'] }} {{ request()->routeIs($nav['route']) ? '' : 'opacity-60' }}"></i>
+                {{ $nav['label'] }}
+            </a>
+            @endforeach
         </div>
     </div>
+</div>
 
-    {{-- Settings Content --}}
-    <div class="lg:col-span-3">
-        <div class="card-full">
-            <div class="card-header">
+{{-- Settings Content --}}
+<div class="card-full">
+    <div class="card-header">
+        <div>
+            <h3 class="text-sm font-semibold" style="color:var(--text-primary)">General Settings</h3>
+            <p class="text-xs" style="color:var(--text-muted)">Configure your Farmmantra system</p>
+        </div>
+    </div>
+    <div class="card-body">
+        <form class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <h3 class="text-sm font-semibold" style="color:var(--text-primary)">General Settings</h3>
-                    <p class="text-xs" style="color:var(--text-muted)">Configure your Farmmantra system</p>
+                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Company Name</label>
+                    <input type="text" value="Farmmantra Agro Chemicals Limited" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">System Email</label>
+                    <input type="email" value="info@farmmantra.co.ug" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Phone</label>
+                    <input type="text" value="+256 700 000000" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Currency</label>
+                    <input type="text" value="UGX (Ugandan Shilling)" disabled class="w-full rounded-lg border px-3 py-2.5 text-sm opacity-60" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Timezone</label>
+                    <input type="text" value="Africa/Kampala (EAT)" disabled class="w-full rounded-lg border px-3 py-2.5 text-sm opacity-60" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Max Franchises</label>
+                    <input type="number" value="50" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
                 </div>
             </div>
-            <div class="card-body">
-                <form class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Company Name</label>
-                            <input type="text" value="Farmmantra Agro Chemicals Limited" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">System Email</label>
-                            <input type="email" value="info@farmmantra.co.ug" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Phone</label>
-                            <input type="text" value="+256 700 000000" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Currency</label>
-                            <input type="text" value="UGX (Ugandan Shilling)" disabled class="w-full rounded-lg border px-3 py-2.5 text-sm opacity-60" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Timezone</label>
-                            <input type="text" value="Africa/Kampala (EAT)" disabled class="w-full rounded-lg border px-3 py-2.5 text-sm opacity-60" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Max Franchises</label>
-                            <input type="number" value="50" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Company Address</label>
-                        <textarea rows="2" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">Kampala, Uganda</textarea>
-                    </div>
-                    <div class="flex justify-end">
-                        <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
-                            <i class="fas fa-save mr-1"></i> Save Changes
-                        </button>
-                    </div>
-                </form>
+            <div>
+                <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Company Address</label>
+                <textarea rows="2" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">Kampala, Uganda</textarea>
             </div>
-        </div>
+            <div class="flex justify-end">
+                <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
+                    <i class="fas fa-save mr-1"></i> Save Changes
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 @endsection
