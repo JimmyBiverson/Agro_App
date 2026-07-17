@@ -4,7 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Dashboard') - Farmmantra</title>
+    <title>@yield('title', 'Dashboard') - {{ $site['site_name'] ?? 'Farmmantra' }}</title>
+    {{-- Dynamic Favicon --}}
+    @if(!empty($site['site_favicon']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($site['site_favicon']))
+    <link rel="icon" type="image/png" href="{{ asset('storage/'.$site['site_favicon']) }}">
+    @else
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    @endif
+    {{-- Dynamic OG Meta Tags --}}
+    <meta property="og:title" content="@yield('title', 'Dashboard') - {{ $site['site_name'] ?? 'Farmmantra' }}">
+    <meta property="og:site_name" content="{{ $site['site_name'] ?? 'Farmmantra' }}">
+    <meta property="og:description" content="{{ $site['site_tagline'] ?? 'Agro Chemicals Limited' }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    @if(!empty($site['site_logo']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($site['site_logo']))
+    <meta property="og:image" content="{{ asset('storage/'.$site['site_logo']) }}">
+    @elseif(!empty($site['og_image']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($site['og_image']))
+    <meta property="og:image" content="{{ asset('storage/'.$site['og_image']) }}">
+    @endif
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('title', 'Dashboard') - {{ $site['site_name'] ?? 'Farmmantra' }}">
+    <meta name="twitter:description" content="{{ $site['site_tagline'] ?? 'Agro Chemicals Limited' }}">
+    @if(!empty($site['og_image']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($site['og_image']))
+    <meta name="twitter:image" content="{{ asset('storage/'.$site['og_image']) }}">
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">

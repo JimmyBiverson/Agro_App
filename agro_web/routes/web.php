@@ -34,6 +34,7 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     Route::get('/admin/pages', [WebController::class, 'adminPages'])->name('web.admin.pages');
     Route::get('/admin/settings', [WebController::class, 'adminSettings'])->name('web.admin.settings.general');
     Route::get('/admin/settings/site', [WebController::class, 'adminSettingsSite'])->name('web.admin.settings.site');
+    Route::post('/admin/settings/site', [WebController::class, 'adminSettingsSiteUpdate'])->name('web.admin.settings.site.update');
     Route::get('/admin/settings/users', [WebController::class, 'adminSettingsUsers'])->name('web.admin.settings.users');
     Route::get('/admin/settings/roles', [WebController::class, 'adminSettingsRoles'])->name('web.admin.settings.roles');
     Route::get('/admin/settings/notifications', [WebController::class, 'adminSettingsNotifications'])->name('web.admin.settings.notifications');

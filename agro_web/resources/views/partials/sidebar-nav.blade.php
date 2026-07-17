@@ -8,12 +8,18 @@
 @endphp
 
 <div class="flex h-16 items-center gap-3 px-5 border-b" style="border-color:rgba(255,255,255,0.08)">
-    <div class="h-9 w-9 rounded-lg gradient-indigo flex items-center justify-center flex-shrink-0">
-        <span class="text-white font-bold text-sm">FM</span>
+    <div class="h-9 w-9 rounded-lg overflow-hidden flex-shrink-0">
+        @if(!empty($site['site_logo']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($site['site_logo']))
+        <img src="{{ asset('storage/'.$site['site_logo']) }}" alt="{{ $site['site_name'] ?? 'FM' }}" class="h-full w-full object-contain" style="background:rgba(255,255,255,0.05)">
+        @else
+        <div class="h-full w-full gradient-indigo flex items-center justify-center">
+            <span class="text-white font-bold text-sm">FM</span>
+        </div>
+        @endif
     </div>
     <div>
-        <span class="text-white font-bold text-base leading-tight block">Farmmantra</span>
-        <span class="text-gray-400 text-[10px] font-medium tracking-wider uppercase">Agro Chemicals</span>
+        <span class="text-white font-bold text-base leading-tight block">{{ $site['site_name'] ?? 'Farmmantra' }}</span>
+        <span class="text-gray-400 text-[10px] font-medium tracking-wider uppercase">{{ $site['site_tagline'] ?? 'Agro Chemicals' }}</span>
     </div>
 </div>
 
