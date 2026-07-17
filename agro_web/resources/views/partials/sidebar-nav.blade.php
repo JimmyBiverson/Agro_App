@@ -17,7 +17,7 @@
     </div>
 </div>
 
-<nav class="flex flex-1 flex-col py-3 px-3">
+<nav class="flex flex-1 flex-col py-3 px-3 overflow-y-auto" style="scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent">
     <ul class="space-y-0.5">
 
         <li>
@@ -28,6 +28,8 @@
 
         {{-- ═══ ADMIN ═══ --}}
         @if($role === 'System Administrator')
+
+        {{-- Management --}}
         <li><div class="sidebar-section">Management</div></li>
         <li>
             <a href="{{ route('web.admin.franchises') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.franchise') ? 'active' : '' }}">
@@ -39,11 +41,22 @@
                 <i class="fas fa-users w-5 text-center text-sm"></i> Users
             </a>
         </li>
+
+        {{-- Products & Inventory --}}
+        <li><div class="sidebar-section">Products & Inventory</div></li>
         <li>
             <a href="{{ route('web.admin.products') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.product') ? 'active' : '' }}">
                 <i class="fas fa-boxes-stacked w-5 text-center text-sm"></i> Products
             </a>
         </li>
+        <li>
+            <a href="{{ route('web.admin.categories') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.categor') ? 'active' : '' }}">
+                <i class="fas fa-tags w-5 text-center text-sm"></i> Categories
+            </a>
+        </li>
+
+        {{-- Orders & Payments --}}
+        <li><div class="sidebar-section">Orders & Payments</div></li>
         <li>
             <a href="{{ route('web.admin.orders') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.order') ? 'active' : '' }}">
                 <i class="fas fa-clipboard-list w-5 text-center text-sm"></i> All Orders
@@ -52,8 +65,6 @@
                 @endif
             </a>
         </li>
-
-        <li><div class="sidebar-section">Finance</div></li>
         <li>
             <a href="{{ route('web.admin.payments') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.payment') ? 'active' : '' }}">
                 <i class="fas fa-money-bill-wave w-5 text-center text-sm"></i> Payments
@@ -63,7 +74,8 @@
             </a>
         </li>
 
-        <li><div class="sidebar-section">Analytics</div></li>
+        {{-- Finance --}}
+        <li><div class="sidebar-section">Finance & Reports</div></li>
         <li>
             <a href="{{ route('web.admin.reports') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.report') ? 'active' : '' }}">
                 <i class="fas fa-chart-bar w-5 text-center text-sm"></i> Reports
@@ -75,9 +87,32 @@
             </a>
         </li>
 
-        <li><div class="sidebar-section">Configuration</div></li>
+        {{-- Content --}}
+        <li><div class="sidebar-section">Content</div></li>
         <li>
-            <a href="{{ route('web.admin.settings.general') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.settings') ? 'active' : '' }}">
+            <a href="{{ route('web.admin.news') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.news') ? 'active' : '' }}">
+                <i class="fas fa-newspaper w-5 text-center text-sm"></i> News & Events
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.admin.faqs') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.faq') ? 'active' : '' }}">
+                <i class="fas fa-circle-question w-5 text-center text-sm"></i> FAQs
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.admin.slides') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.slide') ? 'active' : '' }}">
+                <i class="fas fa-images w-5 text-center text-sm"></i> Slides / Banners
+            </a>
+        </li>
+        <li>
+            <a href="{{ route('web.admin.pages') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.page') ? 'active' : '' }}">
+                <i class="fas fa-file-lines w-5 text-center text-sm"></i> Pages
+            </a>
+        </li>
+
+        <li><div class="sidebar-section">System</div></li>
+        <li>
+            <a href="{{ route('web.admin.settings.general') }}" class="sidebar-link {{ request()->routeIs('web.admin.settings.*') ? 'active' : '' }}">
                 <i class="fas fa-cog w-5 text-center text-sm"></i> Settings
             </a>
         </li>

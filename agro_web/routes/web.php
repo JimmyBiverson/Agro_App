@@ -17,13 +17,20 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     Route::get('/admin/franchises', [WebController::class, 'adminFranchises'])->name('web.admin.franchises');
     Route::get('/admin/users', [WebController::class, 'adminUsers'])->name('web.admin.users');
     Route::get('/admin/products', [WebController::class, 'adminProducts'])->name('web.admin.products');
+    Route::get('/admin/categories', [WebController::class, 'adminCategories'])->name('web.admin.categories');
     Route::get('/admin/orders', [WebController::class, 'adminOrders'])->name('web.admin.orders');
     Route::get('/admin/payments', [WebController::class, 'adminPayments'])->name('web.admin.payments');
     Route::get('/admin/reports', [WebController::class, 'adminReports'])->name('web.admin.reports');
     Route::get('/admin/audit', [WebController::class, 'adminAudit'])->name('web.admin.audit');
+    Route::get('/admin/news', [WebController::class, 'adminNews'])->name('web.admin.news');
+    Route::get('/admin/faqs', [WebController::class, 'adminFaqs'])->name('web.admin.faqs');
+    Route::get('/admin/slides', [WebController::class, 'adminSlides'])->name('web.admin.slides');
+    Route::get('/admin/pages', [WebController::class, 'adminPages'])->name('web.admin.pages');
     Route::get('/admin/settings', [WebController::class, 'adminSettings'])->name('web.admin.settings.general');
+    Route::get('/admin/settings/site', [WebController::class, 'adminSettingsSite'])->name('web.admin.settings.site');
     Route::get('/admin/settings/users', [WebController::class, 'adminSettingsUsers'])->name('web.admin.settings.users');
     Route::get('/admin/settings/roles', [WebController::class, 'adminSettingsRoles'])->name('web.admin.settings.roles');
+    Route::get('/admin/settings/notifications', [WebController::class, 'adminSettingsNotifications'])->name('web.admin.settings.notifications');
     Route::get('/admin/settings/system', [WebController::class, 'adminSettingsSystem'])->name('web.admin.settings.system');
 
     // Staff
