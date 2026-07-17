@@ -401,6 +401,13 @@ class WebController extends Controller
             }
         }
 
+        $themeFields = ['theme_accent', 'theme_success', 'theme_warning', 'theme_danger', 'theme_info'];
+        foreach ($themeFields as $field) {
+            if ($request->has($field)) {
+                \App\Models\Setting::set($field, $request->input($field, ''), 'theme');
+            }
+        }
+
         if ($request->hasFile('site_favicon')) {
             if ($old = \App\Models\Setting::get('site_favicon')) {
                 Storage::disk('public')->delete($old);
@@ -444,6 +451,25 @@ class WebController extends Controller
     public function adminSettingsNotifications()
     {
         return view('admin.settings-notifications');
+    }
+
+    public function adminSettingsNotificationsUpdate(Request $request)
+    {
+        $toggles = [
+            'notif_email_new_order', 'notif_email_order_status', 'notif_email_payment_submitted',
+            'notif_email_payment_verified', 'notif_email_low_stock', 'notif_email_new_user',
+            'notif_email_franchise_deactivated',
+            'notif_inapp_badge_counts', 'notif_inapp_toasts', 'notif_inapp_auto_refresh',
+        ];
+        foreach ($toggles as $key) {
+            \App\Models\Setting::set($key, $request->boolean($key) ? '1' : '0', 'notifications');
+        }
+        $emailFields = ['notif_admin_email', 'notif_finance_email'];
+        foreach ($emailFields as $field) {
+            \App\Models\Setting::set($field, $request->input($field, ''), 'notifications');
+        }
+        cache()->forget('site_settings');
+        return redirect()->route('web.admin.settings.notifications')->with('success', 'Notification settings saved!');
     }
 
     public function adminSettingsSystem()
