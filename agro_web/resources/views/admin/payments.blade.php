@@ -43,7 +43,7 @@
                 <tbody>
                     @forelse($payments as $payment)
                     <tr class="border-b" style="border-color:var(--border-color)">
-                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $payment->reference_number }}</td>
+                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $payment->payment_number }}</td>
                         <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $payment->franchise?->name ?? '-' }}</td>
                         <td class="px-4 py-3 text-sm font-semibold text-right" style="color:var(--text-primary)">UGX {{ number_format($payment->amount) }}</td>
                         <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}</td>

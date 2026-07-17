@@ -101,7 +101,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     @if(!empty($d['sales_by_category']) && count($d['sales_by_category']) > 0)
-    const isDark = document.documentElement.classList.contains('dark');
+    const isDark = localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const textColor = isDark ? '#64748b' : '#94a3b8';
     new Chart(document.getElementById('categoryChart'), {
         type: 'doughnut',

@@ -192,7 +192,10 @@
                 </button>
                 <button class="p-2.5 rounded-xl relative transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
                     <i class="fas fa-bell" style="color:var(--text-muted)"></i>
-                    @if(($pending_count ?? 0) > 0)
+                    @php
+                        $bell_pending = \App\Models\Order::where('status', 'pending')->count() + \App\Models\PaymentSubmission::where('status', 'pending')->count();
+                    @endphp
+                    @if($bell_pending > 0)
                     <span class="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
                     @endif
                 </button>
@@ -211,10 +214,10 @@
                     <div x-show="open" @click.outside="open = false" x-cloak x-transition
                          class="absolute right-0 top-full mt-2 w-52 rounded-2xl border py-2 z-50"
                          style="background:var(--bg-card-solid); border-color:var(--border-color); box-shadow:var(--shadow-lg); backdrop-filter:var(--glass-blur)">
-                        <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-sm transition" style="color:var(--text-primary)" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                        <a href="{{ route('web.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm transition" style="color:var(--text-primary)" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
                             <i class="fas fa-user text-xs w-4 text-center" style="color:var(--text-muted)"></i> <span class="hidden sm:inline">My Profile</span>
                         </a>
-                        <a href="#" class="flex items-center gap-3 px-4 py-2.5 text-sm transition" style="color:var(--text-primary)" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                        <a href="{{ route('web.admin.settings.general') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm transition" style="color:var(--text-primary)" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
                             <i class="fas fa-cog text-xs w-4 text-center" style="color:var(--text-muted)"></i> <span class="hidden sm:inline">Settings</span>
                         </a>
                         <hr class="my-1.5" style="border-color:var(--border-color)">

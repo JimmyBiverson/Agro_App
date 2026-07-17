@@ -23,7 +23,7 @@
                 <tbody>
                     @forelse($orders as $o)
                     <tr class="border-b" style="border-color:var(--border-color)">
-                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--indigo)">{{ $o->order_number }}</td>
+                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--accent)">{{ $o->order_number }}</td>
                         <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $o->items->pluck('product.name')->implode(', ') }}</td>
                         <td class="px-4 py-3 text-sm font-semibold text-right" style="color:var(--text-primary)">UGX {{ number_format($o->total_amount) }}</td>
                         <td class="px-4 py-3 text-center">
