@@ -190,15 +190,147 @@
                     <i x-show="!dark" class="fas fa-moon" style="color:var(--text-muted)"></i>
                     <i x-show="dark" class="fas fa-sun text-yellow-400"></i>
                 </button>
-                <button class="p-2.5 rounded-xl relative transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
-                    <i class="fas fa-bell" style="color:var(--text-muted)"></i>
-                    @php
-                        $bell_pending = \App\Models\Order::where('status', 'pending')->count() + \App\Models\PaymentSubmission::where('status', 'pending')->count();
-                    @endphp
-                    @if($bell_pending > 0)
-                    <span class="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
-                    @endif
-                </button>
+                {{-- Notification Bell --}}
+                @php
+                    $role = auth()->user()->role?->name;
+                    $nOrders = \App\Models\Order::where('status', 'pending')->count();
+                    $nPayments = \App\Models\PaymentSubmission::where('status', 'pending')->count();
+                    $nLowStock = \App\Models\WarehouseInventory::whereColumn('quantity', '<=', 'reorder_level')->count();
+                    $nPendingTotal = \App\Models\PaymentSubmission::where('status', 'pending')->sum('amount');
+                    $fid = auth()->user()->franchise_id;
+                    $nMyOrders = $fid ? \App\Models\Order::where('franchise_id', $fid)->where('status', 'pending')->count() : 0;
+                    $nMyPayments = $fid ? \App\Models\PaymentSubmission::where('franchise_id', $fid)->where('status', 'pending')->count() : 0;
+                    $nMyLowStock = $fid ? \App\Models\FranchiseInventory::where('franchise_id', $fid)->whereColumn('quantity', '<=', 'reorder_level')->count() : 0;
+                    $bellCount = 0;
+                    if ($role === 'System Administrator') { $bellCount = ($nOrders > 0 ? 1 : 0) + ($nPayments > 0 ? 1 : 0) + ($nLowStock > 0 ? 1 : 0); }
+                    elseif ($role === 'Farmmantra Staff') { $bellCount = ($nOrders > 0 ? 1 : 0) + ($nLowStock > 0 ? 1 : 0); }
+                    elseif ($role === 'Finance Department') { $bellCount = $nPayments > 0 ? 1 : 0; }
+                    elseif ($role === 'Franchise Partner') { $bellCount = ($nMyOrders > 0 ? 1 : 0) + ($nMyPayments > 0 ? 1 : 0) + ($nMyLowStock > 0 ? 1 : 0); }
+                @endphp
+                <div class="relative" x-data="{ notifOpen: false }">
+                    <button @click="notifOpen = !notifOpen" class="p-2.5 rounded-xl relative transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                        <i class="fas fa-bell" style="color:var(--text-muted)"></i>
+                        @if($bellCount > 0)
+                        <span class="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full animate-pulse"></span>
+                        @endif
+                    </button>
+                    <div x-show="notifOpen" @click.outside="notifOpen = false" x-cloak x-transition
+                         class="absolute right-0 top-full mt-2 w-80 rounded-2xl border py-2 z-50"
+                         style="background:var(--bg-card-solid); border-color:var(--border-color); box-shadow:var(--shadow-lg); backdrop-filter:var(--glass-blur)">
+                        <div class="px-4 py-2.5 border-b flex items-center justify-between" style="border-color:var(--border-color)">
+                            <span class="text-xs font-bold uppercase tracking-wider" style="color:var(--text-muted)">Notifications</span>
+                            @if($bellCount > 0)
+                            <span class="badge badge-danger text-[10px]">{{ $bellCount }}</span>
+                            @endif
+                        </div>
+
+                        {{-- Admin Notifications --}}
+                        @if($role === 'System Administrator')
+                            @if($nOrders > 0)
+                            <a href="{{ route('web.admin.orders') }}" @click="notifOpen = false" class="flex items-start gap-3 px-4 py-3 transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                                <div class="h-8 w-8 rounded-lg gradient-amber flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-clipboard-list text-white text-xs"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium leading-snug" style="color:var(--text-primary)">{{ $nOrders }} pending order{{ $nOrders > 1 ? 's' : '' }} to review</p>
+                                    <p class="text-[10px] mt-0.5 font-semibold" style="color:var(--accent)">View Details →</p>
+                                </div>
+                            </a>
+                            @endif
+                            @if($nPayments > 0)
+                            <a href="{{ route('web.admin.payments') }}" @click="notifOpen = false" class="flex items-start gap-3 px-4 py-3 transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                                <div class="h-8 w-8 rounded-lg gradient-purple flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-money-bill-wave text-white text-xs"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium leading-snug" style="color:var(--text-primary)">{{ $nPayments }} pending payment{{ $nPayments > 1 ? 's' : '' }} to verify</p>
+                                    <p class="text-[10px] mt-0.5 font-semibold" style="color:var(--accent)">View Details →</p>
+                                </div>
+                            </a>
+                            @endif
+                            @if($nLowStock > 0)
+                            <a href="{{ route('web.admin.products') }}" @click="notifOpen = false" class="flex items-start gap-3 px-4 py-3 transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                                <div class="h-8 w-8 rounded-lg gradient-rose flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-exclamation-triangle text-white text-xs"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium leading-snug" style="color:var(--text-primary)">{{ $nLowStock }} product{{ $nLowStock > 1 ? 's' : '' }} low in warehouse</p>
+                                    <p class="text-[10px] mt-0.5 font-semibold" style="color:var(--accent)">View Details →</p>
+                                </div>
+                            </a>
+                            @endif
+                        @endif
+
+                        {{-- Staff Notifications --}}
+                        @if($role === 'Farmmantra Staff')
+                            @if($nOrders > 0)
+                            <a href="{{ route('web.staff.orders') }}" @click="notifOpen = false" class="flex items-start gap-3 px-4 py-3 transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                                <div class="h-8 w-8 rounded-lg gradient-amber flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-clipboard-list text-white text-xs"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium leading-snug" style="color:var(--text-primary)">{{ $nOrders }} pending order{{ $nOrders > 1 ? 's' : '' }} to approve</p>
+                                    <p class="text-[10px] mt-0.5 font-semibold" style="color:var(--accent)">View Details →</p>
+                                </div>
+                            </a>
+                            @endif
+                            @if($nLowStock > 0)
+                            <a href="{{ route('web.staff.inventory') }}" @click="notifOpen = false" class="flex items-start gap-3 px-4 py-3 transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                                <div class="h-8 w-8 rounded-lg gradient-rose flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-exclamation-triangle text-white text-xs"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium leading-snug" style="color:var(--text-primary)">{{ $nLowStock }} product{{ $nLowStock > 1 ? 's' : '' }} low in warehouse</p>
+                                    <p class="text-[10px] mt-0.5 font-semibold" style="color:var(--accent)">View Details →</p>
+                                </div>
+                            </a>
+                            @endif
+                        @endif
+
+                        {{-- Finance Notifications --}}
+                        @if($role === 'Finance Department')
+                            @if($nPayments > 0)
+                            <a href="{{ route('web.finance.payments') }}" @click="notifOpen = false" class="flex items-start gap-3 px-4 py-3 transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                                <div class="h-8 w-8 rounded-lg gradient-amber flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-money-bill-wave text-white text-xs"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium leading-snug" style="color:var(--text-primary)">{{ $nPayments }} payment{{ $nPayments > 1 ? 's' : '' }} to verify</p>
+                                    <p class="text-[10px] mt-0.5" style="color:var(--text-muted)">Total: UGX {{ number_format($nPendingTotal) }}</p>
+                                    <p class="text-[10px] mt-0.5 font-semibold" style="color:var(--accent)">View Details →</p>
+                                </div>
+                            </a>
+                            @endif
+                        @endif
+
+                        {{-- Franchise Notifications --}}
+                        @if($role === 'Franchise Partner')
+                            @if($nMyOrders > 0)
+                            <a href="{{ route('web.franchise.orders') }}" @click="notifOpen = false" class="flex items-start gap-3 px-4 py-3 transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                                <div class="h-8 w-8 rounded-lg gradient-amber flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-clock text-white text-xs"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium leading-snug" style="color:var(--text-primary)">Your order{{ $nMyOrders > 1 ? 's' : '' }} awaiting approval</p>
+                                    <p class="text-[10px] mt-0.5 font-semibold" style="color:var(--accent)">View Details →</p>
+                                </div>
+                            </a>
+                            @endif
+                            @if($nMyPayments > 0)
+                            <a href="{{ route('web.franchise.payments') }}" @click="notifOpen = false" class="flex items-start gap-3 px-4 py-3 transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                                <div class="h-8 w-8 rounded-lg gradient-purple flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-money-bill-wave text-white text-xs"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium leading-snug" style="color:var(--text-primary)">Your payment{{ $nMyPayments > 1 ? 's' : '' }} under review</p>
+                                    <p class="text-[10px] mt-0.5 font-semibold" style="color:var(--accent)">View Details →</p>
+                                </div>
+                            </a>
+                            @endif
+                            @if($nMyLowStock > 0)
+                            <a href="{{ route('web.franchise.inventory') }}" @click="notifOpen = false" class="flex items-start gap-3 px-4 py-3 transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                                <div class="h-8 w-8 rounded-lg gradient-rose flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fas fa-exclamation-triangle text-white text-xs"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium leading-snug" style="color:var(--text-primary)">{{ $nMyLowStock }} item{{ $nMyLowStock > 1 ? 's' : '' }} low in your stock</p>
+                                    <p class="text-[10px] mt-0.5 font-semibold" style="color:var(--accent)">View Details →</p>
+                                </div>
+                            </a>
+                            @endif
+                        @endif
+
+                        {{-- Empty State --}}
+                        @if($bellCount === 0)
+                        <div class="px-4 py-6 text-center">
+                            <i class="fas fa-check-circle text-xl mb-2" style="color:var(--success)"></i>
+                            <p class="text-xs font-medium" style="color:var(--text-muted)">All caught up!</p>
+                        </div>
+                        @endif
+                    </div>
+                </div>
                 <div class="w-px h-8 mx-1" style="background:var(--border-color)"></div>
                 <div class="flex items-center gap-3" x-data="{ open: false }">
                     <div class="h-9 w-9 rounded-xl gradient-indigo flex items-center justify-center text-white text-sm font-bold shadow-md shadow-indigo-500/20">
