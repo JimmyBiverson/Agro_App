@@ -136,7 +136,7 @@
                     <th class="px-4 py-3 text-left">Franchise</th><th class="px-4 py-3 text-center">Orders</th><th class="px-4 py-3 text-right">Order Value</th><th class="px-4 py-3 text-center">Sales</th><th class="px-4 py-3 text-right">Sales Value</th>
                 </tr></thead>
                 <tbody>
-                    @foreach($d['franchise_performance'] ?? [] as $fp)
+                    @forelse($d['franchise_performance'] ?? [] as $fp)
                     <tr class="border-b" style="border-color:var(--border-color)">
                         <td class="px-4 py-3 text-sm font-semibold" style="color:var(--text-primary)">{{ $fp->name }}</td>
                         <td class="px-4 py-3 text-sm text-center" style="color:var(--text-secondary)">{{ $fp->total_orders }}</td>
@@ -144,7 +144,9 @@
                         <td class="px-4 py-3 text-sm text-center" style="color:var(--text-secondary)">{{ $fp->total_sales_count }}</td>
                         <td class="px-4 py-3 text-sm font-bold text-right text-emerald-500">UGX {{ number_format($fp->total_sales_value ?? 0) }}</td>
                     </tr>
-                    @endforeach
+                    @empty
+                    <tr><td colspan="5" class="px-4 py-8 text-center text-sm" style="color:var(--text-muted)">No franchise data yet</td></tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -217,7 +219,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const isDark = document.documentElement.classList.contains('dark');
+    const isDark = localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const gridColor = isDark ? 'rgba(148,163,184,0.08)' : 'rgba(0,0,0,0.05)';
     const textColor = isDark ? '#64748b' : '#94a3b8';
     const chartDefaults = { responsive: true, maintainAspectRatio: false };

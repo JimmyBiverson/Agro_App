@@ -25,7 +25,7 @@
                 <tbody>
                     @forelse($stock as $s)
                     <tr class="border-b" style="border-color:var(--border-color)">
-                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--indigo)">{{ $s->product?->sku }}</td>
+                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--accent)">{{ $s->product?->sku }}</td>
                         <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $s->product?->name }}</td>
                         <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $s->product?->unit_of_measure }}</td>
                         <td class="px-4 py-3 text-sm text-right font-medium" style="color:var(--text-primary)">{{ number_format($s->quantity) }}</td>

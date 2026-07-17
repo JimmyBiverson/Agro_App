@@ -51,6 +51,8 @@
                             <span class="badge badge-warning">Pending</span>
                             @elseif($order->status === 'approved')
                             <span class="badge badge-success">Approved</span>
+                            @elseif($order->status === 'delivered')
+                            <span class="badge badge-info">Delivered</span>
                             @else
                             <span class="badge badge-danger">Declined</span>
                             @endif

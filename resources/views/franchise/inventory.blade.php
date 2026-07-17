@@ -23,7 +23,7 @@
                 <tbody>
                     @forelse($inventory as $i)
                     <tr class="border-b" style="border-color:var(--border-color)">
-                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--indigo)">{{ $i->product?->sku }}</td>
+                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--accent)">{{ $i->product?->sku }}</td>
                         <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $i->product?->name }}</td>
                         <td class="px-4 py-3 text-sm text-right font-medium" style="color:var(--text-primary)">{{ number_format($i->quantity) }}</td>
                         <td class="px-4 py-3 text-sm text-right" style="color:var(--text-muted)">{{ number_format($i->reorder_level) }}</td>

@@ -96,7 +96,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     @if(!empty($d['orders_by_status']) && count($d['orders_by_status']) > 0)
-    const isDark = document.documentElement.classList.contains('dark');
+    const isDark = localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const textColor = isDark ? '#64748b' : '#94a3b8';
     new Chart(document.getElementById('staffOrderStatusChart'), {
         type: 'doughnut',

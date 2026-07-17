@@ -23,7 +23,7 @@
                 <tbody>
                     @forelse($franchises as $f)
                     <tr class="border-b" style="border-color:var(--border-color)">
-                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--indigo)">{{ $f->code }}</td>
+                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--accent)">{{ $f->code }}</td>
                         <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $f->name }}</td>
                         <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $f->region }}</td>
                         <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $f->contact_person }}</td>

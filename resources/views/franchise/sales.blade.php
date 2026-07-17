@@ -23,7 +23,7 @@
                 <tbody>
                     @forelse($sales as $s)
                     <tr class="border-b" style="border-color:var(--border-color)">
-                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--indigo)">{{ $s->sale_number }}</td>
+                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--accent)">{{ $s->sale_number }}</td>
                         <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $s->customer?->name ?? 'Walk-in' }}</td>
                         <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $s->items->pluck('product.name')->implode(', ') }}</td>
                         <td class="px-4 py-3 text-sm font-semibold text-right" style="color:var(--text-primary)">UGX {{ number_format($s->final_amount) }}</td>
