@@ -2,8 +2,9 @@
     $user = auth()->user();
     $role = $user->role?->name ?? '';
     $current = request()->route()->getName();
-    $pending_orders = \App\Models\Order::where('status', 'pending')->count();
-    $pending_payments = \App\Models\PaymentSubmission::where('status', 'pending')->count();
+    $showBadges = ($notif['notif_inapp_badge_counts'] ?? '1') === '1';
+    $pending_orders = $showBadges ? \App\Models\Order::where('status', 'pending')->count() : 0;
+    $pending_payments = $showBadges ? \App\Models\PaymentSubmission::where('status', 'pending')->count() : 0;
     $pending_count = $role === 'System Administrator' ? $pending_orders + $pending_payments : ($role === 'Farmmantra Staff' ? $pending_orders : ($role === 'Finance Department' ? $pending_payments : 0));
 @endphp
 

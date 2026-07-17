@@ -21,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
                 return \App\Models\Setting::whereIn('key', $keys)->pluck('value', 'key')->toArray();
             });
             $view->with('site', $site);
+
+            $notif = cache()->remember('notif_settings', 3600, function () {
+                return \App\Models\Setting::where('group_name', 'notifications')->pluck('value', 'key')->toArray();
+            });
+            $view->with('notif', $notif);
         });
     }
 }
