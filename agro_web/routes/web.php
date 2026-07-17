@@ -13,6 +13,12 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     Route::post('/logout', [WebController::class, 'logout'])->name('web.logout');
     Route::get('/dashboard', [WebController::class, 'dashboard'])->name('web.dashboard');
 
+    // Profile
+    Route::get('/profile', [WebController::class, 'profile'])->name('web.profile');
+    Route::post('/profile', [WebController::class, 'profileUpdate'])->name('web.profile.update');
+    Route::post('/profile/password', [WebController::class, 'profilePassword'])->name('web.profile.password');
+    Route::post('/profile/avatar', [WebController::class, 'profileAvatar'])->name('web.profile.avatar');
+
     // Admin
     Route::get('/admin/franchises', [WebController::class, 'adminFranchises'])->name('web.admin.franchises');
     Route::get('/admin/users', [WebController::class, 'adminUsers'])->name('web.admin.users');
