@@ -227,9 +227,10 @@
                 {{-- Notification Bell --}}
                 @php
                     $role = auth()->user()->role?->name;
-                    $nOrders = \App\Models\Order::where('status', 'pending')->count();
-                    $nPayments = \App\Models\PaymentSubmission::where('status', 'pending')->count();
-                    $nLowStock = \App\Models\WarehouseInventory::whereColumn('quantity', '<=', 'reorder_level')->count();
+                    $showBadges = ($notif['notif_inapp_badge_counts'] ?? '1') === '1';
+                    $nOrders = $showBadges ? \App\Models\Order::where('status', 'pending')->count() : 0;
+                    $nPayments = $showBadges ? \App\Models\PaymentSubmission::where('status', 'pending')->count() : 0;
+                    $nLowStock = $showBadges ? \App\Models\WarehouseInventory::whereColumn('quantity', '<=', 'reorder_level')->count() : 0;
                     $nPendingTotal = \App\Models\PaymentSubmission::where('status', 'pending')->sum('amount');
                     $fid = auth()->user()->franchise_id;
                     $nMyOrders = $fid ? \App\Models\Order::where('franchise_id', $fid)->where('status', 'pending')->count() : 0;
@@ -437,6 +438,34 @@
                 }
             }
         }
+
+        // Auto-refresh dashboard if enabled
+        @if(($notif['notif_inapp_auto_refresh'] ?? '1') === '1')
+        setInterval(function() {
+            if (!document.hidden && window.location.pathname.indexOf('/dashboard') !== -1) {
+                window.location.reload();
+            }
+        }, 60000);
+        @endif
+
+        // Toast notification system
+        function showToast(message, type) {
+            type = type || 'info';
+            var colors = { success: 'var(--success)', warning: 'var(--warning)', danger: 'var(--danger)', info: 'var(--accent)' };
+            var icons = { success: 'fa-check-circle', warning: 'fa-exclamation-triangle', danger: 'fa-circle-xmark', info: 'fa-circle-info' };
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;align-items:center;gap:12px;padding:14px 20px;border-radius:16px;color:white;font-size:14px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,0.3);transform:translateY(20px);opacity:0;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);backdrop-filter:blur(20px);background:rgba(30,41,59,0.95);border:1px solid rgba(255,255,255,0.1);';
+            toast.innerHTML = '<i class="fas ' + (icons[type] || icons.info) + '" style="color:' + (colors[type] || colors.info) + '"></i><span>' + message + '</span>';
+            document.body.appendChild(toast);
+            requestAnimationFrame(function() { toast.style.transform = 'translateY(0)'; toast.style.opacity = '1'; });
+            setTimeout(function() { toast.style.transform = 'translateY(20px)'; toast.style.opacity = '0'; setTimeout(function() { toast.remove(); }, 300); }, 4000);
+        }
+
+        // Show session toast notifications if enabled
+        @if(($notif['notif_inapp_toasts'] ?? '1') === '1')
+            @if(session('success')) showToast('{{ session("success") }}', 'success'); @endif
+            @if(session('error')) showToast('{{ session("error") }}', 'danger'); @endif
+        @endif
     </script>
 </body>
 </html>

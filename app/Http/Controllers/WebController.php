@@ -469,6 +469,7 @@ class WebController extends Controller
             \App\Models\Setting::set($field, $request->input($field, ''), 'notifications');
         }
         cache()->forget('site_settings');
+        cache()->forget('notif_settings');
         return redirect()->route('web.admin.settings.notifications')->with('success', 'Notification settings saved!');
     }
 

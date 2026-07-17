@@ -34,7 +34,18 @@
 
 <form action="{{ route('web.admin.settings.notifications.update') }}" method="POST">
     @csrf
-    <div class="space-y-6">
+    <div class="space-y-6" x-data="{
+        notif_email_new_order: {{ ($s['notif_email_new_order'] ?? '1') === '1' ? 'true' : 'false' }},
+        notif_email_order_status: {{ ($s['notif_email_order_status'] ?? '1') === '1' ? 'true' : 'false' }},
+        notif_email_payment_submitted: {{ ($s['notif_email_payment_submitted'] ?? '1') === '1' ? 'true' : 'false' }},
+        notif_email_payment_verified: {{ ($s['notif_email_payment_verified'] ?? '1') === '1' ? 'true' : 'false' }},
+        notif_email_low_stock: {{ ($s['notif_email_low_stock'] ?? '1') === '1' ? 'true' : 'false' }},
+        notif_email_new_user: {{ ($s['notif_email_new_user'] ?? '1') === '1' ? 'true' : 'false' }},
+        notif_email_franchise_deactivated: {{ ($s['notif_email_franchise_deactivated'] ?? '1') === '1' ? 'true' : 'false' }},
+        notif_inapp_badge_counts: {{ ($s['notif_inapp_badge_counts'] ?? '1') === '1' ? 'true' : 'false' }},
+        notif_inapp_toasts: {{ ($s['notif_inapp_toasts'] ?? '1') === '1' ? 'true' : 'false' }},
+        notif_inapp_auto_refresh: {{ ($s['notif_inapp_auto_refresh'] ?? '1') === '1' ? 'true' : 'false' }}
+    }">
 
         {{-- Email Notifications --}}
         <div class="card-full">
@@ -76,11 +87,21 @@
                                 <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ $t['desc'] }}</p>
                             </div>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-4">
-                            <input type="checkbox" name="{{ $t['key'] }}" value="1" {{ ($s[$t['key']] ?? '1') === '1' ? 'checked' : '' }} class="sr-only peer">
-                            <div class="w-10 h-5 rounded-full peer peer-checked:bg-indigo-600 transition-all duration-300" style="background:var(--border-color)"></div>
-                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition-all duration-300 shadow-sm"></div>
-                        </label>
+                        <div class="flex items-center gap-3 flex-shrink-0 ml-4">
+                            <span class="text-[10px] font-semibold uppercase tracking-wider"
+                                  :style="notif_{{ $t['key'] }} ? 'color:var(--success)' : 'color:var(--text-muted)'"
+                                  x-text="notif_{{ $t['key'] }} ? 'ON' : 'OFF'"></span>
+                            <button type="button" @click="notif_{{ $t['key'] }} = !notif_{{ $t['key'] }}"
+                                    class="relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                    :style="notif_{{ $t['key'] }}
+                                        ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 2px 8px rgba(99,102,241,0.4); focus-ring-color:var(--accent)'
+                                        : 'background:var(--border-color); box-shadow:none'"
+                                role="switch" :aria-checked="notif_{{ $t['key'] }}">
+                                <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300"
+                                      :style="notif_{{ $t['key'] }} ? 'transform:translateX(24px)' : 'transform:translateX(0)'"></span>
+                            </button>
+                            <input type="hidden" name="{{ $t['key'] }}" :value="notif_{{ $t['key'] }} ? '1' : '0'">
+                        </div>
                     </div>
                     @endforeach
                 </div>
@@ -120,11 +141,21 @@
                                 <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ $t['desc'] }}</p>
                             </div>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-4">
-                            <input type="checkbox" name="{{ $t['key'] }}" value="1" {{ ($s[$t['key']] ?? '1') === '1' ? 'checked' : '' }} class="sr-only peer">
-                            <div class="w-10 h-5 rounded-full peer peer-checked:bg-indigo-600 transition-all duration-300" style="background:var(--border-color)"></div>
-                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition-all duration-300 shadow-sm"></div>
-                        </label>
+                        <div class="flex items-center gap-3 flex-shrink-0 ml-4">
+                            <span class="text-[10px] font-semibold uppercase tracking-wider"
+                                  :style="notif_{{ $t['key'] }} ? 'color:var(--success)' : 'color:var(--text-muted)'"
+                                  x-text="notif_{{ $t['key'] }} ? 'ON' : 'OFF'"></span>
+                            <button type="button" @click="notif_{{ $t['key'] }} = !notif_{{ $t['key'] }}"
+                                    class="relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                    :style="notif_{{ $t['key'] }}
+                                        ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 2px 8px rgba(99,102,241,0.4)'
+                                        : 'background:var(--border-color); box-shadow:none'"
+                                role="switch" :aria-checked="notif_{{ $t['key'] }}">
+                                <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300"
+                                      :style="notif_{{ $t['key'] }} ? 'transform:translateX(24px)' : 'transform:translateX(0)'"></span>
+                            </button>
+                            <input type="hidden" name="{{ $t['key'] }}" :value="notif_{{ $t['key'] }} ? '1' : '0'">
+                        </div>
                     </div>
                     @endforeach
                 </div>
