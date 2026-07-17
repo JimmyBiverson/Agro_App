@@ -68,9 +68,9 @@
             background: rgba(255,255,255,0.04);
             backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 28px;
+            border-radius: 32px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
-            width: 100%; max-width: 500px;
+            width: 100%; max-width: 520px;
             animation: cardAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             opacity: 0; transform: translateY(30px) scale(0.95);
         }
@@ -81,7 +81,7 @@
         .glass-input {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px; padding: 18px 18px 18px 50px;
+            border-radius: 16px; padding: 20px 20px 20px 52px;
             color: #f1f5f9; font-size: 1rem; width: 100%;
             transition: all 0.3s ease; outline: none;
         }
@@ -94,7 +94,7 @@
 
         .glass-btn {
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            border: none; border-radius: 16px; padding: 18px 24px;
+            border: none; border-radius: 16px; padding: 20px 24px;
             color: white; font-size: 1.05rem; font-weight: 600; width: 100%;
             cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;
         }
@@ -108,13 +108,13 @@
         }
         .glass-btn:active { transform: translateY(0); }
 
-        .input-group { position: relative; }
+        .input-group { position: relative; margin-bottom: 8px; }
         .input-label {
             display: block; font-size: 0.8rem; font-weight: 600;
-            color: rgba(255,255,255,0.5); margin-bottom: 10px; letter-spacing: 0.03em;
+            color: rgba(255,255,255,0.5); margin-bottom: 12px; letter-spacing: 0.03em;
         }
         .input-icon {
-            position: absolute; left: 18px; top: 58px; transform: translateY(-50%);
+            position: absolute; left: 18px; top: 60px; transform: translateY(-50%);
             color: rgba(255,255,255,0.3); z-index: 5; transition: color 0.3s;
         }
         .input-group:focus-within .input-icon { color: #6366f1; }
@@ -153,7 +153,7 @@
         }
 
         .password-toggle {
-            position: absolute; right: 18px; top: 58px; transform: translateY(-50%);
+            position: absolute; right: 18px; top: 60px; transform: translateY(-50%);
             color: rgba(255,255,255,0.3); cursor: pointer; z-index: 5; transition: color 0.3s;
         }
         .password-toggle:hover { color: rgba(255,255,255,0.6); }
@@ -184,25 +184,25 @@
     <div class="particles" id="particles"></div>
 
     <div class="login-container">
-        <div class="glass-card p-16 sm:p-20 lg:p-24">
+        <div class="glass-card p-10 sm:p-14 lg:p-16">
             {{-- Logo & Brand --}}
-            <div class="text-center mb-14 mx-2">
-                <div class="brand-logo mx-auto mb-10">
+            <div class="text-center mb-10">
+                <div class="brand-logo mx-auto mb-8">
                     <span class="text-white font-black text-3xl tracking-tight">FM</span>
                 </div>
-                <h1 class="text-3xl font-bold text-white mb-4">Farmmantra</h1>
+                <h1 class="text-3xl font-bold text-white mb-3">Farmmantra</h1>
                 <p class="text-base" style="color:rgba(255,255,255,0.45)">Agro Chemicals Limited</p>
             </div>
 
             {{-- Welcome subtitle --}}
-            <div class="text-center mb-10 mx-4">
+            <div class="text-center mb-8">
                 <p class="text-sm" style="color:rgba(255,255,255,0.35)">Sign in to your account</p>
             </div>
 
             {{-- Error --}}
             @if($errors->any())
             <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => { $el.classList.add('error-shake'); setTimeout(() => show = false, 3000) }, 100)"
-                 class="mb-10 mx-2 rounded-xl p-4 flex items-center gap-3"
+                 class="mb-8 rounded-xl p-4 flex items-center gap-3"
                  style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2)">
                 <i class="fas fa-exclamation-circle text-red-400"></i>
                 <p class="text-sm text-red-300">{{ $errors->first() }}</p>
@@ -210,7 +210,7 @@
             @endif
 
             {{-- Form --}}
-            <form method="POST" action="{{ route('web.login.submit') }}" class="space-y-10 mx-2">
+            <form method="POST" action="{{ route('web.login.submit') }}" class="space-y-6">
                 @csrf
                 <div class="input-group">
                     <label class="input-label">Email Address</label>
@@ -227,7 +227,7 @@
                         <i class="fas fa-eye"></i>
                     </span>
                 </div>
-                <div class="pt-3 mx-2">
+                <div class="pt-4">
                     <button type="submit" class="glass-btn">
                         <span class="relative z-10 flex items-center justify-center gap-2">
                             <i class="fas fa-arrow-right-to-bracket"></i>
@@ -238,16 +238,16 @@
             </form>
 
             {{-- Feature pills --}}
-            <div class="flex flex-wrap gap-2 justify-center mt-14 mx-2">
+            <div class="flex flex-wrap gap-2 justify-center mt-10">
                 <span class="feature-pill"><i class="fas fa-shield-halved text-indigo-400"></i> Secure Login</span>
                 <span class="feature-pill"><i class="fas fa-bolt text-amber-400"></i> Real-time</span>
                 <span class="feature-pill"><i class="fas fa-mobile-screen text-cyan-400"></i> Mobile Ready</span>
             </div>
 
             {{-- Footer --}}
-            <div class="text-center mt-14 pt-10 mx-4" style="border-top:1px solid rgba(255,255,255,0.06)">
+            <div class="text-center mt-10 pt-8" style="border-top:1px solid rgba(255,255,255,0.06)">
                 <p class="text-xs" style="color:rgba(255,255,255,0.25)">Franchise Distribution Management System</p>
-                <p class="text-xs mt-3" style="color:rgba(255,255,255,0.15)">&copy; {{ date('Y') }} Farmmantra Agro Chemicals Ltd</p>
+                <p class="text-xs mt-2" style="color:rgba(255,255,255,0.15)">&copy; {{ date('Y') }} Farmmantra Agro Chemicals Ltd</p>
             </div>
         </div>
     </div>
