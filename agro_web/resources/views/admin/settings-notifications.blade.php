@@ -11,6 +11,7 @@
         ['route' => 'web.admin.settings.notifications', 'label' => 'Notifications', 'icon' => 'fa-bell'],
         ['route' => 'web.admin.settings.system', 'label' => 'System Info', 'icon' => 'fa-server'],
     ];
+    $s = \App\Models\Setting::whereIn('group_name', ['notifications'])->pluck('value', 'key')->toArray();
 @endphp
 
 @section('content')
@@ -31,88 +32,153 @@
     </div>
 </div>
 
-<div class="card-full">
-    <div class="card-header">
-        <div>
-            <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Notification Settings</h3>
-            <p class="text-xs" style="color:var(--text-muted)">Configure how and when notifications are sent</p>
+<form action="{{ route('web.admin.settings.notifications.update') }}" method="POST">
+    @csrf
+    <div class="space-y-6">
+
+        {{-- Email Notifications --}}
+        <div class="card-full">
+            <div class="card-header">
+                <div class="flex items-center gap-3">
+                    <div class="h-9 w-9 rounded-xl gradient-indigo flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-envelope text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Email Notifications</h3>
+                        <p class="text-xs" style="color:var(--text-muted)">Choose which events trigger email alerts to the relevant team</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="space-y-2">
+                    @php
+                    $emailToggles = [
+                        ['key' => 'notif_email_new_order', 'icon' => 'fa-clipboard-list', 'color' => 'gradient-amber', 'label' => 'New order placed', 'desc' => 'Notify admin when a franchise partner places a new order', 'role' => 'Admin'],
+                        ['key' => 'notif_email_order_status', 'icon' => 'fa-arrows-rotate', 'color' => 'gradient-purple', 'label' => 'Order approved / declined', 'desc' => 'Notify franchise partner when their order status changes', 'role' => 'Franchise'],
+                        ['key' => 'notif_email_payment_submitted', 'icon' => 'fa-money-bill-wave', 'color' => 'gradient-green', 'label' => 'Payment submitted', 'desc' => 'Notify finance team when proof of payment is uploaded', 'role' => 'Finance'],
+                        ['key' => 'notif_email_payment_verified', 'icon' => 'fa-circle-check', 'color' => 'gradient-green', 'label' => 'Payment verified', 'desc' => 'Notify franchise when payment is accepted or rejected', 'role' => 'Franchise'],
+                        ['key' => 'notif_email_low_stock', 'icon' => 'fa-box-open', 'color' => 'gradient-rose', 'label' => 'Low stock alert', 'desc' => 'Alert staff when warehouse inventory drops below reorder level', 'role' => 'Staff'],
+                        ['key' => 'notif_email_new_user', 'icon' => 'fa-user-plus', 'color' => 'gradient-cyan', 'label' => 'New user registered', 'desc' => 'Notify admin when a new user account is created', 'role' => 'Admin'],
+                        ['key' => 'notif_email_franchise_deactivated', 'icon' => 'fa-store-slash', 'color' => 'gradient-rose', 'label' => 'Franchise deactivated', 'desc' => 'Notify admin when a franchise account is deactivated', 'role' => 'Admin'],
+                    ];
+                    @endphp
+                    @foreach($emailToggles as $t)
+                    <div class="flex items-center justify-between rounded-xl p-4 border transition hover:shadow-sm" style="border-color:var(--border-color); background:var(--bg-card)">
+                        <div class="flex items-center gap-3">
+                            <div class="h-9 w-9 rounded-lg {{ $t['color'] }} flex items-center justify-center flex-shrink-0">
+                                <i class="fas {{ $t['icon'] }} text-white text-xs"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-sm font-medium" style="color:var(--text-primary)">{{ $t['label'] }}</p>
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider" style="background:var(--accent-light); color:var(--accent)">{{ $t['role'] }}</span>
+                                </div>
+                                <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ $t['desc'] }}</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-4">
+                            <input type="checkbox" name="{{ $t['key'] }}" value="1" {{ ($s[$t['key']] ?? '1') === '1' ? 'checked' : '' }} class="sr-only peer">
+                            <div class="w-10 h-5 rounded-full peer peer-checked:bg-indigo-600 transition-all duration-300" style="background:var(--border-color)"></div>
+                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition-all duration-300 shadow-sm"></div>
+                        </label>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
+        {{-- In-App Notifications --}}
+        <div class="card-full">
+            <div class="card-header">
+                <div class="flex items-center gap-3">
+                    <div class="h-9 w-9 rounded-xl gradient-purple flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-bell text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold" style="color:var(--text-primary)">In-App Notifications</h3>
+                        <p class="text-xs" style="color:var(--text-muted)">Control how notifications appear inside the dashboard</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="space-y-2">
+                    @php
+                    $inAppToggles = [
+                        ['key' => 'notif_inapp_badge_counts', 'icon' => 'fa-circle-dot', 'color' => 'gradient-amber', 'label' => 'Show badge counts on sidebar', 'desc' => 'Display pending order and payment counts as red badges in the navigation sidebar'],
+                        ['key' => 'notif_inapp_toasts', 'icon' => 'fa-comment-dots', 'color' => 'gradient-cyan', 'label' => 'Show toast notifications', 'desc' => 'Display brief popup notifications in the corner of the dashboard when events occur'],
+                        ['key' => 'notif_inapp_auto_refresh', 'icon' => 'fa-rotate', 'color' => 'gradient-green', 'label' => 'Auto-refresh dashboard', 'desc' => 'Periodically refresh dashboard data every 60 seconds for real-time updates'],
+                    ];
+                    @endphp
+                    @foreach($inAppToggles as $t)
+                    <div class="flex items-center justify-between rounded-xl p-4 border transition hover:shadow-sm" style="border-color:var(--border-color); background:var(--bg-card)">
+                        <div class="flex items-center gap-3">
+                            <div class="h-9 w-9 rounded-lg {{ $t['color'] }} flex items-center justify-center flex-shrink-0">
+                                <i class="fas {{ $t['icon'] }} text-white text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium" style="color:var(--text-primary)">{{ $t['label'] }}</p>
+                                <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ $t['desc'] }}</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-4">
+                            <input type="checkbox" name="{{ $t['key'] }}" value="1" {{ ($s[$t['key']] ?? '1') === '1' ? 'checked' : '' }} class="sr-only peer">
+                            <div class="w-10 h-5 rounded-full peer peer-checked:bg-indigo-600 transition-all duration-300" style="background:var(--border-color)"></div>
+                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition-all duration-300 shadow-sm"></div>
+                        </label>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
+        {{-- Notification Recipients --}}
+        <div class="card-full">
+            <div class="card-header">
+                <div class="flex items-center gap-3">
+                    <div class="h-9 w-9 rounded-xl gradient-green flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-at text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Notification Recipients</h3>
+                        <p class="text-xs" style="color:var(--text-muted)">Email addresses that receive notification summaries</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)"><i class="fas fa-user-shield mr-1"></i> Admin notification email</label>
+                        <input type="email" name="notif_admin_email" value="{{ $s['notif_admin_email'] ?? 'admin@farmmantra.co.ug' }}"
+                               class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)"><i class="fas fa-calculator mr-1"></i> Finance notification email</label>
+                        <input type="email" name="notif_finance_email" value="{{ $s['notif_finance_email'] ?? 'finance@farmmantra.co.ug' }}"
+                               class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Summary --}}
+        <div class="card-full">
+            <div class="card-body">
+                <div class="flex items-center gap-3 p-4 rounded-xl" style="background:rgba(99,102,241,0.05); border:1px solid rgba(99,102,241,0.15)">
+                    <i class="fas fa-lightbulb text-lg" style="color:var(--accent)"></i>
+                    <div>
+                        <p class="text-xs font-semibold" style="color:var(--text-primary)">Tip</p>
+                        <p class="text-[10px]" style="color:var(--text-muted)">Toggled-off notifications are silenced immediately. Toggle them back on anytime to resume alerts.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Save --}}
+        <div class="flex justify-end">
+            <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all" style="background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 4px 15px rgba(99,102,241,0.4)" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+                <i class="fas fa-save mr-2"></i> Save Settings
+            </button>
         </div>
     </div>
-    <div class="card-body">
-        <form class="space-y-8">
-            {{-- Email Notifications --}}
-            <div>
-                <h4 class="text-xs font-semibold mb-4" style="color:var(--text-secondary)">Email Notifications</h4>
-                <div class="space-y-3">
-                    @foreach([
-                        ['New order placed', 'Notify admin when a franchise partner places a new order'],
-                        ['Order approved / declined', 'Notify franchise when their order status changes'],
-                        ['Payment submitted', 'Notify finance team when proof of payment is uploaded'],
-                        ['Payment verified', 'Notify franchise when payment is accepted or rejected'],
-                        ['Low stock alert', 'Alert staff when warehouse inventory drops below reorder level'],
-                        ['New user registered', 'Notify admin when a new user account is created'],
-                        ['Franchise deactivated', 'Notify admin when a franchise account is deactivated'],
-                    ] as [$label, $desc])
-                    <div class="flex items-center justify-between rounded-xl p-4 border" style="border-color:var(--border-color); background:var(--bg-card)">
-                        <div>
-                            <p class="text-sm font-medium" style="color:var(--text-primary)">{{ $label }}</p>
-                            <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ $desc }}</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                            <input type="checkbox" checked class="sr-only peer">
-                            <div class="w-9 h-5 rounded-full peer peer-checked:bg-indigo-600 transition" style="background:var(--border-color)"></div>
-                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full peer-checked:translate-x-4 transition"></div>
-                        </label>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- In-App Notifications --}}
-            <div class="pt-4 border-t" style="border-color:var(--border-color)">
-                <h4 class="text-xs font-semibold mb-4" style="color:var(--text-secondary)">In-App Notifications</h4>
-                <div class="space-y-3">
-                    @foreach([
-                        ['Show badge counts on sidebar', 'Display pending order and payment counts in the navigation'],
-                        ['Show toast notifications', 'Display brief notification popups in the dashboard'],
-                        ['Auto-refresh dashboard', 'Periodically refresh dashboard data for real-time updates'],
-                    ] as [$label, $desc])
-                    <div class="flex items-center justify-between rounded-xl p-4 border" style="border-color:var(--border-color); background:var(--bg-card)">
-                        <div>
-                            <p class="text-sm font-medium" style="color:var(--text-primary)">{{ $label }}</p>
-                            <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ $desc }}</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                            <input type="checkbox" checked class="sr-only peer">
-                            <div class="w-9 h-5 rounded-full peer peer-checked:bg-indigo-600 transition" style="background:var(--border-color)"></div>
-                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full peer-checked:translate-x-4 transition"></div>
-                        </label>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- Notification Email --}}
-            <div class="pt-4 border-t" style="border-color:var(--border-color)">
-                <h4 class="text-xs font-semibold mb-4" style="color:var(--text-secondary)">Notification Recipients</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Admin notification email</label>
-                        <input type="email" value="admin@farmmantra.co.ug" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Finance notification email</label>
-                        <input type="email" value="finance@farmmantra.co.ug" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex justify-end">
-                <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
-                    <i class="fas fa-save mr-1"></i> Save Settings
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+</form>
 @endsection

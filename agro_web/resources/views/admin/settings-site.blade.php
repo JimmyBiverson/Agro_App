@@ -189,6 +189,156 @@
             </div>
         </div>
 
+        {{-- Theme Colors --}}
+        <div class="card-full" x-data="themeColors()">
+            <div class="card-header">
+                <div>
+                    <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Theme Colors</h3>
+                    <p class="text-xs" style="color:var(--text-muted)">Customize the accent and status colors across the entire site</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {{-- Accent --}}
+                    <div class="rounded-xl p-5 border" style="border-color:var(--border-color); background:var(--bg-card)">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" :style="'background:' + accent">
+                                <i class="fas fa-palette text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold" style="color:var(--text-primary)">Primary / Accent</p>
+                                <p class="text-[10px]" style="color:var(--text-muted)">Buttons, links, sidebar active state</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="accent" name="theme_accent" class="w-10 h-10 rounded-lg cursor-pointer border-0 p-0">
+                            <input type="text" x-model="accent" class="flex-1 rounded-lg border px-3 py-2 text-xs font-mono" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        </div>
+                        <div class="flex gap-1.5 mt-3">
+                            <template x-for="c in presetAccents" :key="c">
+                                <button type="button" @click="accent = c" class="h-6 w-6 rounded-full border-2 transition hover:scale-110" :style="'background:' + c" :class="accent === c ? 'border-white scale-110' : 'border-transparent'"></button>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Success --}}
+                    <div class="rounded-xl p-5 border" style="border-color:var(--border-color); background:var(--bg-card)">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" :style="'background:' + success">
+                                <i class="fas fa-check-circle text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold" style="color:var(--text-primary)">Success</p>
+                                <p class="text-[10px]" style="color:var(--text-muted)">Completed actions, active badges</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="success" name="theme_success" class="w-10 h-10 rounded-lg cursor-pointer border-0 p-0">
+                            <input type="text" x-model="success" class="flex-1 rounded-lg border px-3 py-2 text-xs font-mono" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        </div>
+                        <div class="flex gap-1.5 mt-3">
+                            <template x-for="c in presetSuccess" :key="c">
+                                <button type="button" @click="success = c" class="h-6 w-6 rounded-full border-2 transition hover:scale-110" :style="'background:' + c" :class="success === c ? 'border-white scale-110' : 'border-transparent'"></button>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Warning --}}
+                    <div class="rounded-xl p-5 border" style="border-color:var(--border-color); background:var(--bg-card)">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" :style="'background:' + warning">
+                                <i class="fas fa-exclamation-triangle text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold" style="color:var(--text-primary)">Warning</p>
+                                <p class="text-[10px]" style="color:var(--text-muted)">Pending states, low stock alerts</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="warning" name="theme_warning" class="w-10 h-10 rounded-lg cursor-pointer border-0 p-0">
+                            <input type="text" x-model="warning" class="flex-1 rounded-lg border px-3 py-2 text-xs font-mono" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        </div>
+                        <div class="flex gap-1.5 mt-3">
+                            <template x-for="c in presetWarning" :key="c">
+                                <button type="button" @click="warning = c" class="h-6 w-6 rounded-full border-2 transition hover:scale-110" :style="'background:' + c" :class="warning === c ? 'border-white scale-110' : 'border-transparent'"></button>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Danger --}}
+                    <div class="rounded-xl p-5 border" style="border-color:var(--border-color); background:var(--bg-card)">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" :style="'background:' + danger">
+                                <i class="fas fa-circle-xmark text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold" style="color:var(--text-primary)">Danger</p>
+                                <p class="text-[10px]" style="color:var(--text-muted)">Errors, declined, destructive actions</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="danger" name="theme_danger" class="w-10 h-10 rounded-lg cursor-pointer border-0 p-0">
+                            <input type="text" x-model="danger" class="flex-1 rounded-lg border px-3 py-2 text-xs font-mono" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        </div>
+                        <div class="flex gap-1.5 mt-3">
+                            <template x-for="c in presetDanger" :key="c">
+                                <button type="button" @click="danger = c" class="h-6 w-6 rounded-full border-2 transition hover:scale-110" :style="'background:' + c" :class="danger === c ? 'border-white scale-110' : 'border-transparent'"></button>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Info --}}
+                    <div class="rounded-xl p-5 border" style="border-color:var(--border-color); background:var(--bg-card)">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" :style="'background:' + info">
+                                <i class="fas fa-circle-info text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold" style="color:var(--text-primary)">Info</p>
+                                <p class="text-[10px]" style="color:var(--text-muted)">Informational badges, tooltips</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="color" x-model="info" name="theme_info" class="w-10 h-10 rounded-lg cursor-pointer border-0 p-0">
+                            <input type="text" x-model="info" class="flex-1 rounded-lg border px-3 py-2 text-xs font-mono" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        </div>
+                        <div class="flex gap-1.5 mt-3">
+                            <template x-for="c in presetInfo" :key="c">
+                                <button type="button" @click="info = c" class="h-6 w-6 rounded-full border-2 transition hover:scale-110" :style="'background:' + c" :class="info === c ? 'border-white scale-110' : 'border-transparent'"></button>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Reset --}}
+                    <div class="rounded-xl p-5 border flex flex-col items-center justify-center" style="border-color:var(--border-color); background:var(--bg-card)">
+                        <i class="fas fa-rotate-left text-xl mb-2" style="color:var(--text-muted)"></i>
+                        <p class="text-xs font-semibold mb-3" style="color:var(--text-primary)">Reset to Defaults</p>
+                        <button type="button" @click="accent='#6366f1'; success='#10b981'; warning='#f59e0b'; danger='#ef4444'; info='#06b6d4'"
+                                class="px-4 py-2 rounded-lg text-xs font-semibold border transition hover:bg-red-500/10 hover:text-red-500 hover:border-red-300"
+                                style="border-color:var(--border-color); color:var(--text-secondary)">
+                            <i class="fas fa-rotate-left mr-1"></i> Reset All
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Live Preview --}}
+                <div class="mt-6 rounded-xl p-5 border" style="border-color:var(--border-color); background:var(--bg-input)">
+                    <p class="text-xs font-semibold mb-3" style="color:var(--text-muted)">Live Preview</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" :style="'background:' + accent">Accent Button</span>
+                        <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" :style="'background:' + success">Success</span>
+                        <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" :style="'background:' + warning">Warning</span>
+                        <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" :style="'background:' + danger">Danger</span>
+                        <span class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" :style="'background:' + info">Info</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <span class="px-3 py-1.5 rounded-lg text-xs font-semibold border-2" :style="'border-color:' + accent + '; color:' + accent">Outline</span>
+                        <span class="px-3 py-1.5 rounded-lg text-xs font-semibold" :style="'background:' + accent + '14; color:' + accent">Soft</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Contact --}}
         <div class="card-full">
             <div class="card-header">
@@ -278,6 +428,20 @@
             faviconName: '',
             ogPreview: null,
             ogName: ''
+        }
+    }
+    function themeColors() {
+        return {
+            accent: '{{ $site["theme_accent"] ?? "#6366f1" }}',
+            success: '{{ $site["theme_success"] ?? "#10b981" }}',
+            warning: '{{ $site["theme_warning"] ?? "#f59e0b" }}',
+            danger: '{{ $site["theme_danger"] ?? "#ef4444" }}',
+            info: '{{ $site["theme_info"] ?? "#06b6d4" }}',
+            presetAccents: ['#6366f1','#8b5cf6','#ec4899','#ef4444','#f97316','#eab308','#10b981','#06b6d4','#3b82f6','#0f172a'],
+            presetSuccess: ['#10b981','#059669','#16a34a','#22c55e','#34d399'],
+            presetWarning: ['#f59e0b','#d97706','#f97316','#eab308','#fbbf24'],
+            presetDanger: ['#ef4444','#dc2626','#f43f5e','#e11d48','#fb7185'],
+            presetInfo: ['#06b6d4','#0891b2','#3b82f6','#6366f1','#8b5cf6']
         }
     }
 </script>

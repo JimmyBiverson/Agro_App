@@ -86,6 +86,17 @@
         * { font-family: 'Inter', sans-serif; }
         html, body { height: 100%; overflow: hidden; background: var(--bg-body); color: var(--text-primary); transition: background 0.3s, color 0.3s; }
 
+        /* Dynamic theme overrides from admin settings */
+        @if(!empty($site['theme_accent']))
+        :root { --accent: {{ $site['theme_accent'] }}; --accent-light: {{ $site['theme_accent'] }}14; }
+        html.dark { --accent-light: {{ $site['theme_accent'] }}26; }
+        .gradient-indigo { background: linear-gradient(135deg, {{ $site['theme_accent'] }} 0%, {{ $site['theme_accent'] }}cc 100%) !important; }
+        @endif
+        @if(!empty($site['theme_success'])) :root { --success: {{ $site['theme_success'] }}; } @endif
+        @if(!empty($site['theme_warning'])) :root { --warning: {{ $site['theme_warning'] }}; } @endif
+        @if(!empty($site['theme_danger'])) :root { --danger: {{ $site['theme_danger'] }}; } @endif
+        @if(!empty($site['theme_info'])) :root { --info: {{ $site['theme_info'] }}; } @endif
+
         .sidebar {
             background: var(--bg-sidebar); width: 260px; height: 100vh;
             position: fixed; top: 0; left: 0; z-index: 40;
