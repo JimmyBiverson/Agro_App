@@ -469,4 +469,54 @@ class WebController extends Controller
     {
         return view('franchise.chat');
     }
+
+    // ── Profile ─────────────────────────────────────────────
+    public function profile()
+    {
+        $user = auth()->user()->load(['role', 'franchise', 'branch']);
+        return view('profile', compact('user'));
+    }
+
+    public function profileUpdate(Request $request)
+    {
+        $user = auth()->user();
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'gender' => 'nullable|in:male,female,other',
+            'date_of_birth' => 'nullable|date|before:today',
+        ]);
+        $user->update($validated);
+        return redirect()->route('web.profile')->with('success', 'Profile updated successfully!');
+    }
+
+    public function profilePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+        $user = auth()->user();
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'The current password is incorrect.']);
+        }
+        $user->update(['password' => $request->password]);
+        return redirect()->route('web.profile')->with('success', 'Password changed successfully!');
+    }
+
+    public function profileAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+        $user = auth()->user();
+        if ($user->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
+        }
+        $path = $request->file('avatar')->store('avatars', 'public');
+        $user->update(['avatar' => $path]);
+        return redirect()->route('web.profile')->with('success', 'Profile picture updated!');
+    }
 }

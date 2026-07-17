@@ -333,9 +333,13 @@
                 </div>
                 <div class="w-px h-8 mx-1" style="background:var(--border-color)"></div>
                 <div class="flex items-center gap-3" x-data="{ open: false }">
-                    <div class="h-9 w-9 rounded-xl gradient-indigo flex items-center justify-center text-white text-sm font-bold shadow-md shadow-indigo-500/20">
+                    <a href="{{ route('web.profile') }}" class="h-9 w-9 rounded-xl gradient-indigo flex items-center justify-center text-white text-sm font-bold shadow-md shadow-indigo-500/20 no-underline" style="text-decoration:none">
+                        @if(auth()->user()->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists(auth()->user()->avatar))
+                        <img src="{{ asset('storage/'.auth()->user()->avatar) }}" alt="" class="h-full w-full object-cover rounded-xl">
+                        @else
                         {{ substr(auth()->user()->name, 0, 1) }}
-                    </div>
+                        @endif
+                    </a>
                     <div class="hidden sm:block">
                         <p class="text-sm font-semibold leading-tight" style="color:var(--text-primary)">{{ auth()->user()->name }}</p>
                         <p class="text-xs" style="color:var(--text-muted)">{{ auth()->user()->role?->name }}</p>
@@ -346,12 +350,14 @@
                     <div x-show="open" @click.outside="open = false" x-cloak x-transition
                          class="absolute right-0 top-full mt-2 w-52 rounded-2xl border py-2 z-50"
                          style="background:var(--bg-card-solid); border-color:var(--border-color); box-shadow:var(--shadow-lg); backdrop-filter:var(--glass-blur)">
-                        <a href="{{ route('web.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm transition" style="color:var(--text-primary)" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
+                        <a href="{{ route('web.profile') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm transition" style="color:var(--text-primary)" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
                             <i class="fas fa-user text-xs w-4 text-center" style="color:var(--text-muted)"></i> <span class="hidden sm:inline">My Profile</span>
                         </a>
+                        @if(auth()->user()->isAdmin())
                         <a href="{{ route('web.admin.settings.general') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm transition" style="color:var(--text-primary)" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
                             <i class="fas fa-cog text-xs w-4 text-center" style="color:var(--text-muted)"></i> <span class="hidden sm:inline">Settings</span>
                         </a>
+                        @endif
                         <hr class="my-1.5" style="border-color:var(--border-color)">
                         <form method="POST" action="{{ route('web.logout') }}">
                             @csrf

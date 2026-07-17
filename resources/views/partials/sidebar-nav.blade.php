@@ -192,6 +192,14 @@
         </li>
         @endif
 
+        {{-- ═══ ALL ROLES — Profile ═══ --}}
+        <li><div class="sidebar-section">Account</div></li>
+        <li>
+            <a href="{{ route('web.profile') }}" class="sidebar-link {{ request()->routeIs('web.profile*') ? 'active' : '' }}">
+                <i class="fas fa-user-circle w-5 text-center text-sm"></i> My Profile
+            </a>
+        </li>
+
     </ul>
 
     {{-- Bottom User Info --}}
