@@ -13,6 +13,7 @@ use App\Models\WarehouseInventory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class WebController extends Controller
@@ -378,6 +379,54 @@ class WebController extends Controller
     public function adminSettingsSite()
     {
         return view('admin.settings-site');
+    }
+
+    public function adminSettingsSiteUpdate(Request $request)
+    {
+        $request->validate([
+            'site_name' => 'required|string|max:255',
+            'site_tagline' => 'nullable|string|max:255',
+            'site_phone' => 'nullable|string|max:30',
+            'site_email' => 'nullable|email|max:255',
+            'site_address' => 'nullable|string|max:500',
+            'site_favicon' => 'nullable|image|mimes:ico,png,jpeg,jpg,webp,svg|max:1024',
+            'site_logo' => 'nullable|image|mimes:png,jpeg,jpg,webp,svg|max:2048',
+            'og_image' => 'nullable|image|mimes:png,jpeg,jpg,webp|max:2048',
+        ]);
+
+        $textFields = ['site_name', 'site_tagline', 'site_phone', 'site_email', 'site_address'];
+        foreach ($textFields as $field) {
+            if ($request->has($field)) {
+                \App\Models\Setting::set($field, $request->input($field, ''), 'site');
+            }
+        }
+
+        if ($request->hasFile('site_favicon')) {
+            if ($old = \App\Models\Setting::get('site_favicon')) {
+                Storage::disk('public')->delete($old);
+            }
+            $path = $request->file('site_favicon')->store('site', 'public');
+            \App\Models\Setting::set('site_favicon', $path, 'site');
+        }
+
+        if ($request->hasFile('site_logo')) {
+            if ($old = \App\Models\Setting::get('site_logo')) {
+                Storage::disk('public')->delete($old);
+            }
+            $path = $request->file('site_logo')->store('site', 'public');
+            \App\Models\Setting::set('site_logo', $path, 'site');
+        }
+
+        if ($request->hasFile('og_image')) {
+            if ($old = \App\Models\Setting::get('og_image')) {
+                Storage::disk('public')->delete($old);
+            }
+            $path = $request->file('og_image')->store('site', 'public');
+            \App\Models\Setting::set('og_image', $path, 'site');
+        }
+
+        cache()->forget('site_settings');
+        return redirect()->route('web.admin.settings.site')->with('success', 'Site identity updated successfully!');
     }
 
     public function adminSettingsUsers()

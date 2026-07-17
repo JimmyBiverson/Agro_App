@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Farmmantra</title>
+    <title>Login - {{ $site['site_name'] ?? 'Farmmantra' }}</title>
+    @if(!empty($site['site_favicon']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($site['site_favicon']))
+    <link rel="icon" type="image/png" href="{{ asset('storage/'.$site['site_favicon']) }}">
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -187,11 +190,15 @@
         <div class="glass-card p-8 sm:p-10 lg:p-12">
             {{-- Logo & Brand --}}
             <div class="text-center mb-8">
-                <div class="brand-logo mx-auto mb-6">
+                <div class="brand-logo mx-auto mb-6 overflow-hidden">
+                    @if(!empty($site['site_logo']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($site['site_logo']))
+                    <img src="{{ asset('storage/'.$site['site_logo']) }}" alt="{{ $site['site_name'] ?? 'FM' }}" class="h-full w-full object-contain p-1">
+                    @else
                     <span class="text-white font-black text-2xl tracking-tight">FM</span>
+                    @endif
                 </div>
-                <h1 class="text-2xl font-bold text-white mb-2">Farmmantra</h1>
-                <p class="text-sm" style="color:rgba(255,255,255,0.45)">Agro Chemicals Limited</p>
+                <h1 class="text-2xl font-bold text-white mb-2">{{ $site['site_name'] ?? 'Farmmantra' }}</h1>
+                <p class="text-sm" style="color:rgba(255,255,255,0.45)">{{ $site['site_tagline'] ?? 'Agro Chemicals Limited' }}</p>
             </div>
 
             {{-- Welcome subtitle --}}
@@ -247,7 +254,7 @@
             {{-- Footer --}}
             <div class="text-center mt-8 pt-6" style="border-top:1px solid rgba(255,255,255,0.06)">
                 <p class="text-[10px]" style="color:rgba(255,255,255,0.25)">Franchise Distribution Management System</p>
-                <p class="text-[10px] mt-1.5" style="color:rgba(255,255,255,0.15)">&copy; {{ date('Y') }} Farmmantra Agro Chemicals Ltd</p>
+                <p class="text-[10px] mt-1.5" style="color:rgba(255,255,255,0.15)">&copy; {{ date('Y') }} {{ $site['site_name'] ?? 'Farmmantra' }} {{ $site['site_tagline'] ?? 'Agro Chemicals Ltd' }}</p>
             </div>
         </div>
     </div>
