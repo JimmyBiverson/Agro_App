@@ -249,7 +249,7 @@ class WebController extends Controller
                 case 'payments':
                     $reportTitle = 'Payment Report';
                     $query = PaymentSubmission::with('franchise')
-                        ->whereBetween('created_at', [$fromDate, $toDate]);
+                        ->whereBetween('submitted_at', [$fromDate, $toDate]);
                     if ($franchiseId) $query->where('franchise_id', $franchiseId);
                     $reportData = $query->latest()->get();
 
@@ -259,7 +259,7 @@ class WebController extends Controller
                         ['label' => 'Accepted', 'value' => $reportData->where('status', 'accepted')->count(), 'icon' => 'fa-check-circle', 'color' => 'gradient-green', 'format' => 'number'],
                         ['label' => 'Pending', 'value' => $reportData->where('status', 'pending')->count(), 'icon' => 'fa-clock', 'color' => 'gradient-amber', 'format' => 'number'],
                         ['label' => 'Rejected', 'value' => $reportData->where('status', 'rejected')->count(), 'icon' => 'fa-times-circle', 'color' => 'gradient-rose', 'format' => 'number'],
-                        ['label' => 'Accepted Amount', 'value' => $reportData->where('status', 'accepted')->sum('amount'), 'icon' => 'fa-hand-holding-usd', 'color' => 'gradient-cyan', 'format' => 'currency'],
+                        ['label' => 'Accepted Amount', 'value' => $reportData->where('status', 'accepted')->sum('verified_amount'), 'icon' => 'fa-hand-holding-usd', 'color' => 'gradient-cyan', 'format' => 'currency'],
                     ];
                     break;
 
@@ -392,6 +392,11 @@ class WebController extends Controller
             'site_favicon' => 'nullable|image|mimes:ico,png,jpeg,jpg,webp,svg|max:1024',
             'site_logo' => 'nullable|image|mimes:png,jpeg,jpg,webp,svg|max:2048',
             'og_image' => 'nullable|image|mimes:png,jpeg,jpg,webp|max:2048',
+            'theme_accent' => 'nullable|string|max:7',
+            'theme_success' => 'nullable|string|max:7',
+            'theme_warning' => 'nullable|string|max:7',
+            'theme_danger' => 'nullable|string|max:7',
+            'theme_info' => 'nullable|string|max:7',
         ]);
 
         $textFields = ['site_name', 'site_tagline', 'site_phone', 'site_email', 'site_address'];
@@ -578,7 +583,7 @@ class WebController extends Controller
         if (!Hash::check($request->current_password, $user->password)) {
             return back()->withErrors(['current_password' => 'The current password is incorrect.']);
         }
-        $user->update(['password' => $request->password]);
+        $user->update(['password' => Hash::make($request->password)]);
         return redirect()->route('web.profile')->with('success', 'Password changed successfully!');
     }
 
@@ -641,7 +646,7 @@ class WebController extends Controller
     public function adminDeleteUser(Request $request)
     {
         $request->validate(['id' => 'required|exists:users,id']);
-        if (auth()->id() === $request->id) {
+        if (auth()->id() == $request->id) {
             return back()->with('error', 'You cannot delete your own account.');
         }
         User::destroy($request->id);
@@ -675,6 +680,9 @@ class WebController extends Controller
     public function adminApproveOrder(Request $request, $id)
     {
         $order = Order::findOrFail($id);
+        if ($order->status !== 'pending') {
+            return back()->with('error', 'Only pending orders can be approved.');
+        }
         $order->update(['status' => 'approved', 'approved_by' => auth()->id(), 'approved_at' => now()]);
         return back()->with('success', "Order {$order->order_number} approved!");
     }
@@ -683,8 +691,42 @@ class WebController extends Controller
     {
         $request->validate(['decline_reason' => 'required|string|max:500']);
         $order = Order::findOrFail($id);
+        if ($order->status !== 'pending') {
+            return back()->with('error', 'Only pending orders can be declined.');
+        }
         $order->update(['status' => 'declined', 'approved_by' => auth()->id(), 'approved_at' => now(), 'decline_reason' => $request->decline_reason]);
         return back()->with('success', "Order {$order->order_number} declined.");
+    }
+
+    // ── Admin: Payment Actions ──────────────────────────────────
+    public function adminAcceptPayment(Request $request, $id)
+    {
+        $payment = PaymentSubmission::findOrFail($id);
+        if ($payment->status !== 'pending') {
+            return back()->with('error', 'Only pending payments can be accepted.');
+        }
+        $payment->update([
+            'status' => 'accepted',
+            'accepted_by' => auth()->id(),
+            'accepted_at' => now(),
+            'verified_amount' => $payment->amount,
+        ]);
+        $franchise = $payment->franchise;
+        if ($franchise) {
+            $franchise->update(['account_balance' => $franchise->account_balance + $payment->amount]);
+        }
+        return back()->with('success', "Payment {$payment->payment_number} accepted!");
+    }
+
+    public function adminRejectPayment(Request $request, $id)
+    {
+        $request->validate(['rejection_reason' => 'required|string|max:500']);
+        $payment = PaymentSubmission::findOrFail($id);
+        if ($payment->status !== 'pending') {
+            return back()->with('error', 'Only pending payments can be rejected.');
+        }
+        $payment->update(['status' => 'rejected', 'rejection_reason' => $request->rejection_reason]);
+        return back()->with('success', "Payment {$payment->payment_number} rejected.");
     }
 
     // ── Admin CRUD: News ──────────────────────────────────
@@ -783,6 +825,9 @@ class WebController extends Controller
     public function staffApproveOrder(Request $request, $id)
     {
         $order = Order::findOrFail($id);
+        if ($order->status !== 'pending') {
+            return back()->with('error', 'Only pending orders can be approved.');
+        }
         $order->update(['status' => 'approved', 'approved_by' => auth()->id(), 'approved_at' => now()]);
         return back()->with('success', "Order {$order->order_number} approved!");
     }
@@ -791,6 +836,9 @@ class WebController extends Controller
     {
         $request->validate(['decline_reason' => 'required|string|max:500']);
         $order = Order::findOrFail($id);
+        if ($order->status !== 'pending') {
+            return back()->with('error', 'Only pending orders can be declined.');
+        }
         $order->update(['status' => 'declined', 'approved_by' => auth()->id(), 'approved_at' => now(), 'decline_reason' => $request->decline_reason]);
         return back()->with('success', "Order {$order->order_number} declined.");
     }
@@ -799,10 +847,18 @@ class WebController extends Controller
     public function financeAcceptPayment(Request $request, $id)
     {
         $payment = PaymentSubmission::findOrFail($id);
-        $payment->update(['status' => 'accepted', 'accepted_by' => auth()->id(), 'accepted_at' => now()]);
+        if ($payment->status !== 'pending') {
+            return back()->with('error', 'Only pending payments can be accepted.');
+        }
+        $payment->update([
+            'status' => 'accepted',
+            'accepted_by' => auth()->id(),
+            'accepted_at' => now(),
+            'verified_amount' => $payment->amount,
+        ]);
         $franchise = $payment->franchise;
         if ($franchise) {
-            $franchise->update(['account_balance' => $franchise->account_balance - $payment->amount]);
+            $franchise->update(['account_balance' => $franchise->account_balance + $payment->amount]);
         }
         return back()->with('success', "Payment {$payment->payment_number} accepted!");
     }
@@ -811,6 +867,9 @@ class WebController extends Controller
     {
         $request->validate(['rejection_reason' => 'required|string|max:500']);
         $payment = PaymentSubmission::findOrFail($id);
+        if ($payment->status !== 'pending') {
+            return back()->with('error', 'Only pending payments can be rejected.');
+        }
         $payment->update(['status' => 'rejected', 'rejection_reason' => $request->rejection_reason]);
         return back()->with('success', "Payment {$payment->payment_number} rejected.");
     }

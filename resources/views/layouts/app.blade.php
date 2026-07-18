@@ -563,8 +563,8 @@
 
         // Show session toast notifications if enabled
         @if(($notif['notif_inapp_toasts'] ?? '1') === '1')
-            @if(session('success')) showToast('{{ session("success") }}', 'success'); @endif
-            @if(session('error')) showToast('{{ session("error") }}', 'danger'); @endif
+            @if(session('success')) showToast(@json(session('success')), 'success'); @endif
+            @if(session('error')) showToast(@json(session('error')), 'danger'); @endif
         @endif
     </script>
 </body>

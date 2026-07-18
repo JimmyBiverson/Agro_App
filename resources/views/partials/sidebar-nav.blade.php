@@ -4,7 +4,11 @@
     $current = request()->route()->getName();
     $showBadges = ($notif['notif_inapp_badge_counts'] ?? '1') === '1';
     $pending_orders = $showBadges ? \App\Models\Order::where('status', 'pending')->count() : 0;
-    $pending_payments = $showBadges ? \App\Models\PaymentSubmission::where('status', 'pending')->count() : 0;
+    if ($role === 'Franchise Partner') {
+        $pending_payments = $showBadges ? \App\Models\PaymentSubmission::where('status', 'pending')->where('franchise_id', $user->franchise_id)->count() : 0;
+    } else {
+        $pending_payments = $showBadges ? \App\Models\PaymentSubmission::where('status', 'pending')->count() : 0;
+    }
     $pending_count = $role === 'System Administrator' ? $pending_orders + $pending_payments : ($role === 'Farmmantra Staff' ? $pending_orders : ($role === 'Finance Department' ? $pending_payments : 0));
 @endphp
 
@@ -152,7 +156,7 @@
         @if($role === 'Finance Department')
         <li><div class="sidebar-section">Finance</div></li>
         <li>
-            <a href="{{ route('web.finance.payments') }}" class="sidebar-link {{ str_starts_with($current, 'web.finance') ? 'active' : '' }}">
+            <a href="{{ route('web.finance.payments') }}" class="sidebar-link {{ str_starts_with($current, 'web.finance.payment') ? 'active' : '' }}">
                 <i class="fas fa-money-bill-wave w-5 text-center text-sm"></i> Payments
                 @if($pending_payments > 0)
                 <span class="ml-auto bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ $pending_payments }}</span>
