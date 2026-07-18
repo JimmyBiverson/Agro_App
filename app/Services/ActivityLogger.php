@@ -104,6 +104,6 @@ class ActivityLogger
 
     public static function stockUpdated(string $type, ?Model $subject, array $details): ActivityLog
     {
-        return self::log("stock.{$type}", "Stock {$type}: " . ($details['description'] ?? ''), $subject, null, $details);
+        return self::log("stock.{$type}", "Stock {$type}: ".($details['description'] ?? ''), $subject, null, $details);
     }
 }

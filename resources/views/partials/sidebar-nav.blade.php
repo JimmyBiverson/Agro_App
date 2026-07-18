@@ -97,6 +97,11 @@
                 <i class="fas fa-shield-halved w-5 text-center text-sm"></i> Audit Logs
             </a>
         </li>
+        <li>
+            <a href="{{ route('web.admin.stockMovements') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.stockMovement') ? 'active' : '' }}">
+                <i class="fas fa-exchange-alt w-5 text-center text-sm"></i> Stock Movements
+            </a>
+        </li>
 
         {{-- Content --}}
         <li><div class="sidebar-section">Content</div></li>

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Franchise;
 use App\Models\Order;
-use App\Models\Sale;
 use App\Models\WarehouseInventory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -72,10 +71,10 @@ class StaffDashboardController extends Controller
                 ->get(),
 
             'orders_trend' => Order::select(
-                    DB::raw('DATE(created_at) as date'),
-                    DB::raw('COUNT(*) as order_count'),
-                    DB::raw('SUM(total_amount) as total_value')
-                )
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('COUNT(*) as order_count'),
+                DB::raw('SUM(total_amount) as total_value')
+            )
                 ->where('created_at', '>=', $now->copy()->subDays(30)->startOfDay())
                 ->groupBy(DB::raw('DATE(created_at)'))
                 ->orderBy('date')

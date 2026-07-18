@@ -24,6 +24,7 @@ class FinanceController extends Controller
     public function showPayment(PaymentSubmission $paymentSubmission): JsonResponse
     {
         $paymentSubmission->load('franchise');
+
         return response()->json(['data' => $paymentSubmission]);
     }
 
@@ -82,7 +83,7 @@ class FinanceController extends Controller
     {
         $request->validate(['rejection_reason' => 'required|string']);
 
-        if (!in_array($paymentSubmission->status, ['pending', 'verified'])) {
+        if (! in_array($paymentSubmission->status, ['pending', 'verified'])) {
             return response()->json(['message' => 'Payment cannot be rejected in its current status.'], 422);
         }
 
@@ -111,6 +112,7 @@ class FinanceController extends Controller
         }
 
         $payments = $query->latest('submitted_at')->paginate(20);
+
         return response()->json($payments);
     }
 }

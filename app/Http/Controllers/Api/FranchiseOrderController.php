@@ -22,6 +22,7 @@ class FranchiseOrderController extends Controller
         }
 
         $orders = $query->latest()->paginate(20);
+
         return response()->json($orders);
     }
 
@@ -88,6 +89,7 @@ class FranchiseOrderController extends Controller
         }
 
         $order->load(['items.product', 'stockReceipt.items.product']);
+
         return response()->json(['data' => $order]);
     }
 }

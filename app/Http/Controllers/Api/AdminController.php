@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\Franchise;
-use App\Models\FranchiseInventory;
 use App\Models\Order;
 use App\Models\PaymentSubmission;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\SalesTarget;
 use App\Models\User;
 use App\Models\WarehouseInventory;
 use Illuminate\Http\JsonResponse;
@@ -52,16 +52,16 @@ class AdminController extends Controller
                 ->get(),
 
             'sales_trend' => Sale::select(
-                    DB::raw('DATE(sale_date) as date'),
-                    DB::raw('SUM(final_amount) as total_sales'),
-                    DB::raw('COUNT(*) as sale_count')
-                )
+                DB::raw('DATE(sale_date) as date'),
+                DB::raw('SUM(final_amount) as total_sales'),
+                DB::raw('COUNT(*) as sale_count')
+            )
                 ->where('sale_date', '>=', $now->copy()->subDays(30)->startOfDay())
                 ->groupBy(DB::raw('DATE(sale_date)'))
                 ->orderBy('date')
                 ->get(),
 
-            'top_products' => \App\Models\SaleItem::select('product_id', DB::raw('SUM(quantity) as total_qty'), DB::raw('SUM(subtotal) as total_revenue'))
+            'top_products' => SaleItem::select('product_id', DB::raw('SUM(quantity) as total_qty'), DB::raw('SUM(subtotal) as total_revenue'))
                 ->with('product:id,name,sku')
                 ->groupBy('product_id')
                 ->orderByDesc('total_revenue')
@@ -130,6 +130,7 @@ class AdminController extends Controller
     public function showFranchise(Franchise $franchise): JsonResponse
     {
         $franchise->loadCount(['users', 'orders', 'sales', 'paymentSubmissions']);
+
         return response()->json(['data' => $franchise]);
     }
 
@@ -157,6 +158,7 @@ class AdminController extends Controller
     public function users(): JsonResponse
     {
         $users = User::with(['role', 'franchise'])->latest()->paginate(20);
+
         return response()->json($users);
     }
 
@@ -259,7 +261,7 @@ class AdminController extends Controller
             'year' => 'required|integer|min:2024',
         ]);
 
-        $target = \App\Models\SalesTarget::updateOrCreate(
+        $target = SalesTarget::updateOrCreate(
             [
                 'franchise_id' => $request->franchise_id,
                 'product_category_id' => $request->product_category_id,

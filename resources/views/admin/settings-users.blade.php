@@ -61,6 +61,7 @@
                         <th class="px-4 py-3 text-left">Franchise</th>
                         <th class="px-4 py-3 text-center">Status</th>
                         <th class="px-4 py-3 text-left">Joined</th>
+                        <th class="px-4 py-3 text-center no-print">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -85,6 +86,13 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-xs" style="color:var(--text-muted)">{{ $u->created_at?->format('M d, Y') }}</td>
+                        <td class="px-4 py-3 text-center no-print">
+                            <button onclick="resetPassword({{ $u->id }}, '{{ addslashes($u->name) }}')"
+                                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition border hover:bg-amber-500/10"
+                                    style="border-color:var(--border-color); color:var(--warning)">
+                                <i class="fas fa-key mr-1"></i>Reset
+                            </button>
+                        </td>
                     </tr>
                     @empty
                     <tr><td colspan="5" class="px-4 py-8 text-center text-sm" style="color:var(--text-muted)">No users found</td></tr>
@@ -99,3 +107,41 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function resetPassword(userId, userName) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-backdrop" onclick="this.parentElement.remove()"></div>
+        <div class="modal-panel" style="max-width:440px; margin-top:10vh;">
+            <div style="padding:24px;">
+                <h3 style="font-size:16px; font-weight:700; margin-bottom:4px; color:var(--text-primary)">Reset Password</h3>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Set a new password for <strong>${userName}</strong></p>
+                <form method="POST" action="{{ route('web.admin.users.resetPassword') }}">
+                    @csrf
+                    <input type="hidden" name="user_id" value="${userId}">
+                    <div style="margin-bottom:16px;">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">New Password</label>
+                        <input type="text" name="new_password" required minlength="8"
+                               class="w-full rounded-xl border px-3 py-2.5 text-sm" placeholder="Min 8 characters"
+                               style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                    </div>
+                    <div class="flex gap-3 justify-end">
+                        <button type="button" onclick="this.closest('.modal-overlay').remove()"
+                                class="px-4 py-2.5 rounded-xl text-sm font-semibold transition border"
+                                style="border-color:var(--border-color); color:var(--text-muted); background:var(--bg-card)">Cancel</button>
+                        <button type="submit"
+                                class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition gradient-indigo hover:opacity-90">
+                            <i class="fas fa-key mr-1.5"></i> Reset Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+</script>
+@endpush

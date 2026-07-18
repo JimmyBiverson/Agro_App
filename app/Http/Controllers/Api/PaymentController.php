@@ -20,6 +20,7 @@ class PaymentController extends Controller
         }
 
         $payments = $query->latest('submitted_at')->paginate(20);
+
         return response()->json($payments);
     }
 

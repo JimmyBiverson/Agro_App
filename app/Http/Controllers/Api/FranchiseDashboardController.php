@@ -110,6 +110,7 @@ class FranchiseDashboardController extends Controller
                         });
                     }
                     $actual = $actualSales->sum('final_amount');
+
                     return [
                         'target_id' => $target->id,
                         'category' => $target->productCategory?->name ?? 'All Products',

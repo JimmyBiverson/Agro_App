@@ -87,6 +87,7 @@ class User extends Authenticatable
         if ($this->employee_id) {
             return "{$this->name} (#{$this->employee_id})";
         }
+
         return $this->name;
     }
 

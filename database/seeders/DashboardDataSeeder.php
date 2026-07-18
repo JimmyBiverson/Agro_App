@@ -2,10 +2,19 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\{Franchise, User, Product, Order, OrderItem, Sale, SaleItem, PaymentSubmission, WarehouseInventory, FranchiseInventory};
-use Illuminate\Support\Facades\DB;
+use App\Models\Franchise;
+use App\Models\FranchiseInventory;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\PaymentSubmission;
+use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\User;
+use App\Models\WarehouseInventory;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class DashboardDataSeeder extends Seeder
 {
@@ -125,7 +134,7 @@ class DashboardDataSeeder extends Seeder
                     'franchise_id' => $sale->franchise_id,
                     'amount' => $sale->final_amount,
                     'payment_method' => $sale->payment_method ?? 'cash',
-                    'transaction_reference' => 'TXN-' . strtoupper(uniqid()),
+                    'transaction_reference' => 'TXN-'.strtoupper(uniqid()),
                     'bank_name' => null,
                     'proof_of_payment_path' => null,
                     'status' => $paymentStatus,
@@ -185,10 +194,10 @@ class DashboardDataSeeder extends Seeder
         });
 
         $this->command->info('Dashboard data seeded successfully!');
-        $this->command->info('  Sales: ' . Sale::count());
-        $this->command->info('  Sale Items: ' . SaleItem::count());
-        $this->command->info('  Orders: ' . Order::count());
-        $this->command->info('  Order Items: ' . OrderItem::count());
-        $this->command->info('  Payments: ' . PaymentSubmission::count());
+        $this->command->info('  Sales: '.Sale::count());
+        $this->command->info('  Sale Items: '.SaleItem::count());
+        $this->command->info('  Orders: '.Order::count());
+        $this->command->info('  Order Items: '.OrderItem::count());
+        $this->command->info('  Payments: '.PaymentSubmission::count());
     }
 }

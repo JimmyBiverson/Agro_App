@@ -18,11 +18,12 @@ class CustomerController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                    ->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
         $customers = $query->latest()->paginate(20);
+
         return response()->json($customers);
     }
 
@@ -55,6 +56,7 @@ class CustomerController extends Controller
         }
 
         $customer->loadCount('sales');
+
         return response()->json(['data' => $customer]);
     }
 }

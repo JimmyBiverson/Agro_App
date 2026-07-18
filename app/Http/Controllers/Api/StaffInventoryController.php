@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\FranchiseInventory;
+use App\Models\StockMovement;
 use App\Models\WarehouseInventory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,12 +14,14 @@ class StaffInventoryController extends Controller
     public function warehouseStock(): JsonResponse
     {
         $stock = WarehouseInventory::with('product.category')->latest()->paginate(50);
+
         return response()->json($stock);
     }
 
     public function franchiseStock(): JsonResponse
     {
         $stock = FranchiseInventory::with(['franchise', 'product.category'])->latest()->paginate(50);
+
         return response()->json($stock);
     }
 
@@ -30,6 +33,9 @@ class StaffInventoryController extends Controller
             'reorder_level' => 'nullable|numeric|min:0',
         ]);
 
+        $previousQuantity = $inventory->getOriginal('quantity') ?? 0;
+        $quantityChange = $request->quantity - $previousQuantity;
+
         $inventory = WarehouseInventory::updateOrCreate(
             ['product_id' => $request->product_id],
             [
@@ -38,6 +44,10 @@ class StaffInventoryController extends Controller
                 'last_restocked_at' => now(),
             ]
         );
+
+        if ($quantityChange != 0) {
+            StockMovement::log($quantityChange > 0 ? 'warehouse_in' : 'adjustment', $request->product_id, $quantityChange, 0, WarehouseInventory::class, $inventory->id, 'Manual stock update by staff', $request->user()->id);
+        }
 
         $inventory->load('product');
 

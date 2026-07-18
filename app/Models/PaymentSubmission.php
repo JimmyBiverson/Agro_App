@@ -42,8 +42,8 @@ class PaymentSubmission extends Model
 
     public static function generatePaymentNumber(): string
     {
-        $prefix = 'PAY-' . date('Ym');
-        $last = self::where('payment_number', 'like', $prefix . '%')
+        $prefix = 'PAY-'.date('Ym');
+        $last = self::where('payment_number', 'like', $prefix.'%')
             ->orderByDesc('id')
             ->first();
 
@@ -53,6 +53,6 @@ class PaymentSubmission extends Model
             $sequence = 1;
         }
 
-        return $prefix . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        return $prefix.'-'.str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 }

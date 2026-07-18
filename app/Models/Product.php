@@ -48,7 +48,7 @@ class Product extends Model
             ->where('min_quantity', '<=', $quantity)
             ->where(function ($q) use ($quantity) {
                 $q->whereNull('max_quantity')
-                  ->orWhere('max_quantity', '>=', $quantity);
+                    ->orWhere('max_quantity', '>=', $quantity);
             })
             ->orderByDesc('min_quantity')
             ->first();

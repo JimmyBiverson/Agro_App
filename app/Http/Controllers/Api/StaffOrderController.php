@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\StockMovement;
 use App\Models\StockReceipt;
 use App\Models\WarehouseInventory;
 use App\Services\ActivityLogger;
@@ -26,12 +27,14 @@ class StaffOrderController extends Controller
         }
 
         $orders = $query->latest()->paginate(20);
+
         return response()->json($orders);
     }
 
     public function show(Order $order): JsonResponse
     {
         $order->load(['franchise', 'items.product', 'orderedByUser', 'stockReceipt']);
+
         return response()->json(['data' => $order]);
     }
 
@@ -48,7 +51,7 @@ class StaffOrderController extends Controller
 
         foreach ($order->items as $item) {
             $warehouse = WarehouseInventory::where('product_id', $item->product_id)->first();
-            if (!$warehouse || $warehouse->quantity < $item->quantity) {
+            if (! $warehouse || $warehouse->quantity < $item->quantity) {
                 return response()->json([
                     'message' => "Insufficient warehouse stock for {$item->product->name}.",
                 ], 422);
@@ -60,6 +63,8 @@ class StaffOrderController extends Controller
                 $warehouse = WarehouseInventory::where('product_id', $item->product_id)->first();
                 $warehouse->quantity -= $item->quantity;
                 $warehouse->save();
+
+                StockMovement::log('warehouse_out', $item->product_id, -$item->quantity, $item->unit_price, Order::class, $order->id, "Order {$order->order_number} approved", $request->user()->id);
             }
 
             $order->update([
