@@ -77,8 +77,7 @@
                     <div class="notification-row flex items-center justify-between rounded-2xl p-4 border-2 transition-all duration-300 hover:shadow-lg group"
                          :style="{{ $t['key'] }}
                              ? 'border-color:rgba(99,102,241,0.25); background:linear-gradient(135deg, rgba(99,102,241,0.04), rgba(139,92,246,0.04))'
-                             : 'border-color:var(--border-color); background:var(--bg-card)'"
-                         style="overflow:hidden">
+                             : 'border-color:var(--border-color); background:var(--bg-card)'">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="h-10 w-10 rounded-xl {{ $t['color'] }} flex items-center justify-center flex-shrink-0 transition-all duration-300"
                                  :style="{{ $t['key'] }} ? 'box-shadow:0 4px 12px rgba(99,102,241,0.3); transform:scale(1.05)' : 'box-shadow:none; transform:scale(1)'">
@@ -101,17 +100,17 @@
                                   :style="{{ $t['key'] }} ? 'color:#818cf8' : 'color:var(--text-muted)'"
                                   x-text="{{ $t['key'] }} ? 'ON' : 'OFF'"></span>
                             <button type="button" @click="{{ $t['key'] }} = !{{ $t['key'] }}"
-                                    class="relative flex-shrink-0 w-[52px] h-[28px] rounded-full transition-all duration-300 focus:outline-none overflow-hidden border-2"
+                                    class="relative flex-shrink-0 w-14 h-7 rounded-full transition-all duration-300 focus:outline-none overflow-hidden"
                                     :style="{{ $t['key'] }}
-                                        ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); border-color:rgba(139,92,246,0.5); box-shadow:0 0 16px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.15)'
-                                        : 'background:var(--bg-input); border-color:var(--border-color); box-shadow:inset 0 2px 4px rgba(0,0,0,0.06)'"
+                                        ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); border:2px solid rgba(139,92,246,0.5); box-shadow:0 0 16px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.15)'
+                                        : 'background:var(--bg-input); border:2px solid var(--border-color); box-shadow:inset 0 2px 4px rgba(0,0,0,0.06)'"
                                 role="switch" :aria-checked="{{ $t['key'] }}">
-                                <span class="absolute top-[2px] left-[2px] w-5 h-5 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
+                                <span class="absolute top-[3px] left-[3px] w-5 h-5 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
                                       :style="{{ $t['key'] }}
                                           ? 'transform:translateX(24px); background:white; box-shadow:0 2px 8px rgba(99,102,241,0.4)'
                                           : 'transform:translateX(0); background:var(--text-muted); box-shadow:0 1px 3px rgba(0,0,0,0.15)'">
-                                    <i class="fas text-[8px] transition-all duration-300"
-                                       :class="{{ $t['key'] }} ? 'fa-check text-indigo-500' : 'fa-xmark text-white opacity-50'"></i>
+                                    <i class="fas fa-check transition-all duration-300"
+                                       :style="{{ $t['key'] }} ? 'opacity:1; transform:scale(1); color:#6366f1' : 'opacity:0; transform:scale(0.5); color:var(--text-muted)'" style="font-size:8px"></i>
                                 </span>
                             </button>
                             <input type="hidden" name="{{ $t['key'] }}" :value="{{ $t['key'] }} ? '1' : '0'">
@@ -148,8 +147,7 @@
                     <div class="notification-row flex items-center justify-between rounded-2xl p-4 border-2 transition-all duration-300 hover:shadow-lg group"
                          :style="{{ $t['key'] }}
                              ? 'border-color:rgba(99,102,241,0.25); background:linear-gradient(135deg, rgba(99,102,241,0.04), rgba(139,92,246,0.04))'
-                             : 'border-color:var(--border-color); background:var(--bg-card)'"
-                         style="overflow:hidden">
+                             : 'border-color:var(--border-color); background:var(--bg-card)'">
                         <div class="flex items-center gap-3 min-w-0">
                             <div class="h-10 w-10 rounded-xl {{ $t['color'] }} flex items-center justify-center flex-shrink-0 transition-all duration-300"
                                  :style="{{ $t['key'] }} ? 'box-shadow:0 4px 12px rgba(99,102,241,0.3); transform:scale(1.05)' : 'box-shadow:none; transform:scale(1)'">
@@ -166,17 +164,17 @@
                                   :style="{{ $t['key'] }} ? 'color:#818cf8' : 'color:var(--text-muted)'"
                                   x-text="{{ $t['key'] }} ? 'ON' : 'OFF'"></span>
                             <button type="button" @click="{{ $t['key'] }} = !{{ $t['key'] }}"
-                                    class="relative flex-shrink-0 w-[52px] h-[28px] rounded-full transition-all duration-300 focus:outline-none overflow-hidden border-2"
+                                    class="relative flex-shrink-0 w-14 h-7 rounded-full transition-all duration-300 focus:outline-none overflow-hidden"
                                     :style="{{ $t['key'] }}
-                                        ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); border-color:rgba(139,92,246,0.5); box-shadow:0 0 16px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.15)'
-                                        : 'background:var(--bg-input); border-color:var(--border-color); box-shadow:inset 0 2px 4px rgba(0,0,0,0.06)'"
+                                        ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); border:2px solid rgba(139,92,246,0.5); box-shadow:0 0 16px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.15)'
+                                        : 'background:var(--bg-input); border:2px solid var(--border-color); box-shadow:inset 0 2px 4px rgba(0,0,0,0.06)'"
                                 role="switch" :aria-checked="{{ $t['key'] }}">
-                                <span class="absolute top-[2px] left-[2px] w-5 h-5 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
+                                <span class="absolute top-[3px] left-[3px] w-5 h-5 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
                                       :style="{{ $t['key'] }}
                                           ? 'transform:translateX(24px); background:white; box-shadow:0 2px 8px rgba(99,102,241,0.4)'
                                           : 'transform:translateX(0); background:var(--text-muted); box-shadow:0 1px 3px rgba(0,0,0,0.15)'">
-                                    <i class="fas text-[8px] transition-all duration-300"
-                                       :class="{{ $t['key'] }} ? 'fa-check text-indigo-500' : 'fa-xmark text-white opacity-50'"></i>
+                                    <i class="fas fa-check transition-all duration-300"
+                                       :style="{{ $t['key'] }} ? 'opacity:1; transform:scale(1); color:#6366f1' : 'opacity:0; transform:scale(0.5); color:var(--text-muted)'" style="font-size:8px"></i>
                                 </span>
                             </button>
                             <input type="hidden" name="{{ $t['key'] }}" :value="{{ $t['key'] }} ? '1' : '0'">
