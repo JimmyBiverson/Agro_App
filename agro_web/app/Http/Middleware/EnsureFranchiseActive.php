@@ -12,7 +12,7 @@ class EnsureFranchiseActive
     {
         $user = $request->user();
 
-        if ($user && $user->franchise_id && !$user->franchise?->is_active) {
+        if ($user && $user->franchise_id && ! $user->franchise?->is_active) {
             return response()->json(['message' => 'Your franchise account has been deactivated.'], 403);
         }
 

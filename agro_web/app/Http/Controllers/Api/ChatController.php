@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
-use App\Models\Message;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,11 +18,12 @@ class ChatController extends Controller
         if ($user->role?->name === 'Franchise Partner') {
             $query->where(function ($q) use ($user) {
                 $q->where('created_by', $user->id)
-                  ->orWhere('franchise_id', $user->franchise_id);
+                    ->orWhere('franchise_id', $user->franchise_id);
             });
         }
 
         $conversations = $query->latest()->paginate(20);
+
         return response()->json($conversations);
     }
 
@@ -62,6 +62,7 @@ class ChatController extends Controller
             }
         }
         $conversation->load(['messages.sender', 'creator', 'franchise']);
+
         return response()->json(['data' => $conversation]);
     }
 

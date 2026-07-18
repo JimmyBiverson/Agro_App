@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Franchise;
+use App\Models\FranchiseInventory;
 use App\Models\Order;
 use App\Models\PaymentSubmission;
 use App\Models\Sale;
-use App\Models\SaleItem;
 use App\Models\WarehouseInventory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,7 +38,7 @@ class ReportController extends Controller
         $sales = $query->latest('sale_date')->paginate(50);
 
         $summary = Sale::whereBetween('sale_date', [$dateFrom, $dateTo])
-            ->when($request->franchise_id, fn($q) => $q->where('franchise_id', $request->franchise_id))
+            ->when($request->franchise_id, fn ($q) => $q->where('franchise_id', $request->franchise_id))
             ->select(
                 DB::raw('COUNT(*) as total_transactions'),
                 DB::raw('SUM(total_amount) as gross_sales'),
@@ -53,7 +53,7 @@ class ReportController extends Controller
             ->join('products', 'products.id', '=', 'sale_items.product_id')
             ->join('categories', 'categories.id', '=', 'products.category_id')
             ->whereBetween('sales.sale_date', [$dateFrom, $dateTo])
-            ->when($request->franchise_id, fn($q) => $q->where('sales.franchise_id', $request->franchise_id))
+            ->when($request->franchise_id, fn ($q) => $q->where('sales.franchise_id', $request->franchise_id))
             ->select('categories.name as category', DB::raw('SUM(sale_items.quantity) as qty'), DB::raw('SUM(sale_items.subtotal) as revenue'))
             ->groupBy('categories.name')
             ->orderByDesc('revenue')
@@ -70,7 +70,7 @@ class ReportController extends Controller
             ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->join('products', 'products.id', '=', 'sale_items.product_id')
             ->whereBetween('sales.sale_date', [$dateFrom, $dateTo])
-            ->when($request->franchise_id, fn($q) => $q->where('sales.franchise_id', $request->franchise_id))
+            ->when($request->franchise_id, fn ($q) => $q->where('sales.franchise_id', $request->franchise_id))
             ->select('products.id', 'products.name', 'products.sku', DB::raw('SUM(sale_items.quantity) as qty'), DB::raw('SUM(sale_items.subtotal) as revenue'))
             ->groupBy('products.id', 'products.name', 'products.sku')
             ->orderByDesc('revenue')
@@ -105,13 +105,17 @@ class ReportController extends Controller
         $query = PaymentSubmission::whereBetween('submitted_at', [$dateFrom, $dateTo])
             ->with('franchise:id,name,code');
 
-        if ($request->franchise_id) $query->where('franchise_id', $request->franchise_id);
-        if ($request->status) $query->where('status', $request->status);
+        if ($request->franchise_id) {
+            $query->where('franchise_id', $request->franchise_id);
+        }
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
 
         $payments = $query->latest('submitted_at')->paginate(50);
 
         $summary = PaymentSubmission::whereBetween('submitted_at', [$dateFrom, $dateTo])
-            ->when($request->franchise_id, fn($q) => $q->where('franchise_id', $request->franchise_id))
+            ->when($request->franchise_id, fn ($q) => $q->where('franchise_id', $request->franchise_id))
             ->select(
                 DB::raw('COUNT(*) as total_submissions'),
                 DB::raw('SUM(amount) as total_submitted'),
@@ -122,7 +126,7 @@ class ReportController extends Controller
             ->first();
 
         $byStatus = PaymentSubmission::whereBetween('submitted_at', [$dateFrom, $dateTo])
-            ->when($request->franchise_id, fn($q) => $q->where('franchise_id', $request->franchise_id))
+            ->when($request->franchise_id, fn ($q) => $q->where('franchise_id', $request->franchise_id))
             ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(amount) as total'))
             ->groupBy('status')
             ->get();
@@ -157,7 +161,7 @@ class ReportController extends Controller
 
         if ($type === 'warehouse') {
             $stock = WarehouseInventory::with('product:id,name,sku,unit_of_measure,category_id')
-                ->when($request->has('low_stock_only'), fn($q) => $q->whereColumn('quantity', '<=', 'reorder_level'))
+                ->when($request->has('low_stock_only'), fn ($q) => $q->whereColumn('quantity', '<=', 'reorder_level'))
                 ->get();
 
             $summary = [
@@ -165,13 +169,17 @@ class ReportController extends Controller
                 'total_quantity' => $stock->sum('quantity'),
                 'total_reserved' => $stock->sum('reserved_quantity'),
                 'total_value' => $stock->sum('total_value'),
-                'low_stock_count' => $stock->filter(fn($s) => $s->quantity <= $s->reorder_level)->count(),
-                'out_of_stock_count' => $stock->filter(fn($s) => $s->quantity <= 0)->count(),
+                'low_stock_count' => $stock->filter(fn ($s) => $s->quantity <= $s->reorder_level)->count(),
+                'out_of_stock_count' => $stock->filter(fn ($s) => $s->quantity <= 0)->count(),
             ];
         } else {
-            $query = \App\Models\FranchiseInventory::with(['product:id,name,sku,unit_of_measure', 'franchise:id,name,code']);
-            if ($request->franchise_id) $query->where('franchise_id', $request->franchise_id);
-            if ($request->has('low_stock_only')) $query->whereColumn('quantity', '<=', 'reorder_level');
+            $query = FranchiseInventory::with(['product:id,name,sku,unit_of_measure', 'franchise:id,name,code']);
+            if ($request->franchise_id) {
+                $query->where('franchise_id', $request->franchise_id);
+            }
+            if ($request->has('low_stock_only')) {
+                $query->whereColumn('quantity', '<=', 'reorder_level');
+            }
 
             $stock = $query->get();
 
@@ -179,7 +187,7 @@ class ReportController extends Controller
                 'total_items' => $stock->count(),
                 'total_quantity' => $stock->sum('quantity'),
                 'total_value' => $stock->sum('total_value'),
-                'low_stock_count' => $stock->filter(fn($s) => $s->quantity <= $s->reorder_level)->count(),
+                'low_stock_count' => $stock->filter(fn ($s) => $s->quantity <= $s->reorder_level)->count(),
             ];
         }
 
@@ -207,13 +215,17 @@ class ReportController extends Controller
         $query = Order::whereBetween('created_at', [$dateFrom, $dateTo])
             ->with(['franchise:id,name,code', 'items.product:id,name']);
 
-        if ($request->franchise_id) $query->where('franchise_id', $request->franchise_id);
-        if ($request->status) $query->where('status', $request->status);
+        if ($request->franchise_id) {
+            $query->where('franchise_id', $request->franchise_id);
+        }
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
 
         $orders = $query->latest()->paginate(50);
 
         $summary = Order::whereBetween('created_at', [$dateFrom, $dateTo])
-            ->when($request->franchise_id, fn($q) => $q->where('franchise_id', $request->franchise_id))
+            ->when($request->franchise_id, fn ($q) => $q->where('franchise_id', $request->franchise_id))
             ->select(
                 DB::raw('COUNT(*) as total_orders'),
                 DB::raw('SUM(total_amount) as total_value'),
@@ -257,10 +269,10 @@ class ReportController extends Controller
         $dateTo = $request->date_to ? now()->parse($request->date_to)->endOfDay() : now()->endOfDay();
 
         $franchises = Franchise::where('is_active', true)
-            ->withCount(['orders as total_orders' => fn($q) => $q->whereBetween('created_at', [$dateFrom, $dateTo])])
-            ->withSum(['orders as total_order_value' => fn($q) => $q->whereBetween('created_at', [$dateFrom, $dateTo])], 'total_amount')
-            ->withCount(['sales as total_sales' => fn($q) => $q->whereBetween('sale_date', [$dateFrom, $dateTo])])
-            ->withSum(['sales as total_sales_value' => fn($q) => $q->whereBetween('sale_date', [$dateFrom, $dateTo])], 'final_amount')
+            ->withCount(['orders as total_orders' => fn ($q) => $q->whereBetween('created_at', [$dateFrom, $dateTo])])
+            ->withSum(['orders as total_order_value' => fn ($q) => $q->whereBetween('created_at', [$dateFrom, $dateTo])], 'total_amount')
+            ->withCount(['sales as total_sales' => fn ($q) => $q->whereBetween('sale_date', [$dateFrom, $dateTo])])
+            ->withSum(['sales as total_sales_value' => fn ($q) => $q->whereBetween('sale_date', [$dateFrom, $dateTo])], 'final_amount')
             ->get()
             ->map(function ($f) {
                 return [

@@ -12,17 +12,17 @@ class ApiCheckRole
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             return response()->json(['message' => 'Account is deactivated.'], 403);
         }
 
-        if (!empty($roles)) {
+        if (! empty($roles)) {
             $userRole = $user->role?->name;
-            if (!in_array($userRole, $roles)) {
+            if (! in_array($userRole, $roles)) {
                 return response()->json(['message' => 'Unauthorized. Insufficient permissions.'], 403);
             }
         }

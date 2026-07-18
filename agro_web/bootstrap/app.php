@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\ApiCheckRole;
+use App\Http\Middleware\EnsureFranchiseActive;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,8 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'api.role' => \App\Http\Middleware\ApiCheckRole::class,
-            'franchise.active' => \App\Http\Middleware\EnsureFranchiseActive::class,
+            'api.role' => ApiCheckRole::class,
+            'franchise.active' => EnsureFranchiseActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -4,7 +4,7 @@ use App\Http\Controllers\WebController;
 use App\Http\Middleware\AuthenticateWeb;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn() => redirect()->route('web.dashboard'));
+Route::get('/', fn () => redirect()->route('web.dashboard'));
 
 Route::get('/login', [WebController::class, 'showLogin'])->name('web.login');
 Route::post('/login', [WebController::class, 'login'])->name('web.login.submit');
@@ -58,6 +58,15 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     Route::get('/admin/settings/notifications', [WebController::class, 'adminSettingsNotifications'])->name('web.admin.settings.notifications');
     Route::post('/admin/settings/notifications', [WebController::class, 'adminSettingsNotificationsUpdate'])->name('web.admin.settings.notifications.update');
     Route::get('/admin/settings/system', [WebController::class, 'adminSettingsSystem'])->name('web.admin.settings.system');
+
+    // Stock Movements
+    Route::get('/admin/stock-movements', [WebController::class, 'adminStockMovements'])->name('web.admin.stockMovements');
+
+    // Report Exports
+    Route::get('/admin/reports/export', [WebController::class, 'adminReportExport'])->name('web.admin.reports.export');
+
+    // Admin Password Reset
+    Route::post('/admin/users/reset-password', [WebController::class, 'adminResetPassword'])->name('web.admin.users.resetPassword');
 
     // Staff
     Route::get('/staff/orders', [WebController::class, 'staffOrders'])->name('web.staff.orders');

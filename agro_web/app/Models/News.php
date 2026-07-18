@@ -7,5 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 class News extends Model
 {
     protected $fillable = ['title', 'slug', 'excerpt', 'body', 'image', 'is_published', 'published_at'];
+
     protected $casts = ['is_published' => 'boolean', 'published_at' => 'datetime'];
 }

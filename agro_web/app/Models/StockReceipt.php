@@ -39,8 +39,8 @@ class StockReceipt extends Model
 
     public static function generateReceiptNumber(): string
     {
-        $prefix = 'RCV-' . date('Ym');
-        $last = self::where('receipt_number', 'like', $prefix . '%')
+        $prefix = 'RCV-'.date('Ym');
+        $last = self::where('receipt_number', 'like', $prefix.'%')
             ->orderByDesc('id')
             ->first();
 
@@ -50,6 +50,6 @@ class StockReceipt extends Model
             $sequence = 1;
         }
 
-        return $prefix . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        return $prefix.'-'.str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 }

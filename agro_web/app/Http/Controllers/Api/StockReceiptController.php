@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\FranchiseInventory;
+use App\Models\StockMovement;
 use App\Models\StockReceipt;
 use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
@@ -30,6 +32,7 @@ class StockReceiptController extends Controller
         }
 
         $stockReceipt->load(['order', 'items.product', 'receiver']);
+
         return response()->json(['data' => $stockReceipt]);
     }
 
@@ -76,7 +79,7 @@ class StockReceiptController extends Controller
         ]);
 
         foreach ($stockReceipt->items as $item) {
-            $franchiseInventory = \App\Models\FranchiseInventory::firstOrNew([
+            $franchiseInventory = FranchiseInventory::firstOrNew([
                 'franchise_id' => $user->franchise_id,
                 'product_id' => $item->product_id,
             ]);
@@ -89,6 +92,10 @@ class StockReceiptController extends Controller
 
             $franchiseInventory->total_value = $franchiseInventory->quantity * $item->product->standard_price;
             $franchiseInventory->save();
+
+            if ($item->received_quantity > 0) {
+                StockMovement::log('franchise_in', $item->product_id, $item->received_quantity, $item->product->standard_price, StockReceipt::class, $stockReceipt->id, "Receipt {$stockReceipt->receipt_number} confirmed", $user->id);
+            }
         }
 
         $stockReceipt->order->update(['status' => 'delivered']);

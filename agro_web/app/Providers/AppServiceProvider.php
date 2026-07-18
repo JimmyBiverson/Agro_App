@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,12 +19,13 @@ class AppServiceProvider extends ServiceProvider
             $site = cache()->remember('site_settings', 3600, function () {
                 $keys = ['site_name', 'site_tagline', 'site_favicon', 'site_logo', 'og_image', 'site_phone', 'site_email', 'site_address',
                     'theme_accent', 'theme_success', 'theme_warning', 'theme_danger', 'theme_info'];
-                return \App\Models\Setting::whereIn('key', $keys)->pluck('value', 'key')->toArray();
+
+                return Setting::whereIn('key', $keys)->pluck('value', 'key')->toArray();
             });
             $view->with('site', $site);
 
             $notif = cache()->remember('notif_settings', 3600, function () {
-                return \App\Models\Setting::where('group_name', 'notifications')->pluck('value', 'key')->toArray();
+                return Setting::where('group_name', 'notifications')->pluck('value', 'key')->toArray();
             });
             $view->with('notif', $notif);
         });

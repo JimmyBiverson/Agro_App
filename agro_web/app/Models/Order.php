@@ -62,8 +62,8 @@ class Order extends Model
 
     public static function generateOrderNumber(): string
     {
-        $prefix = 'ORD-' . date('Ym');
-        $last = self::where('order_number', 'like', $prefix . '%')
+        $prefix = 'ORD-'.date('Ym');
+        $last = self::where('order_number', 'like', $prefix.'%')
             ->orderByDesc('id')
             ->first();
 
@@ -73,6 +73,6 @@ class Order extends Model
             $sequence = 1;
         }
 
-        return $prefix . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+        return $prefix.'-'.str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 }

@@ -21,17 +21,17 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             return response()->json(['message' => 'Your account has been deactivated.'], 403);
         }
 
-        if ($user->franchise_id && !$user->franchise?->is_active) {
+        if ($user->franchise_id && ! $user->franchise?->is_active) {
             return response()->json(['message' => 'Your franchise account has been deactivated.'], 403);
         }
 
@@ -50,6 +50,7 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
+
         return response()->json(['message' => 'Logged out successfully.']);
     }
 
@@ -92,7 +93,7 @@ class AuthController extends Controller
 
         $user = $request->user();
 
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return response()->json(['message' => 'Current password is incorrect.'], 422);
         }
 

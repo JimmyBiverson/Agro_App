@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\FranchiseInventory;
-use App\Models\Sale;
 use App\Models\Product;
+use App\Models\Sale;
+use App\Models\StockMovement;
 use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class FranchiseSalesController extends Controller
 {
@@ -25,6 +27,7 @@ class FranchiseSalesController extends Controller
         }
 
         $sales = $query->paginate(20);
+
         return response()->json($sales);
     }
 
@@ -50,8 +53,8 @@ class FranchiseSalesController extends Controller
                     ->where('product_id', $item['product_id'])
                     ->first();
 
-                if (!$inventory || $inventory->quantity < $item['quantity']) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                if (! $inventory || $inventory->quantity < $item['quantity']) {
+                    throw ValidationException::withMessages([
                         "items.{$item['product_id']}.quantity" => 'Insufficient stock.',
                     ]);
                 }
@@ -96,6 +99,8 @@ class FranchiseSalesController extends Controller
                 $inventory->quantity -= $item['quantity'];
                 $inventory->total_value = $inventory->quantity * $product->standard_price;
                 $inventory->save();
+
+                StockMovement::log('franchise_out', $item['product_id'], -$item['quantity'], $unitPrice, Sale::class, $sale->id, "Sale {$sale->sale_number}", $user->id);
             }
 
             return $sale;
@@ -120,6 +125,7 @@ class FranchiseSalesController extends Controller
         }
 
         $sale->load(['customer', 'items.product', 'creator']);
+
         return response()->json(['data' => $sale]);
     }
 }

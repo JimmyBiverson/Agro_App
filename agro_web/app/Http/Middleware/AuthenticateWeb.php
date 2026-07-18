@@ -17,7 +17,7 @@ class AuthenticateWeb
 
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('web.login');
         }
 
@@ -26,7 +26,7 @@ class AuthenticateWeb
 
         foreach ($this->roleRoutes as $prefix => $roles) {
             if (str_starts_with($routeName, "web.{$prefix}")) {
-                if (!in_array($userRole, $roles)) {
+                if (! in_array($userRole, $roles)) {
                     abort(403, 'Unauthorized access.');
                 }
                 break;
