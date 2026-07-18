@@ -22,16 +22,32 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     // Admin
     Route::get('/admin/franchises', [WebController::class, 'adminFranchises'])->name('web.admin.franchises');
     Route::get('/admin/users', [WebController::class, 'adminUsers'])->name('web.admin.users');
+    Route::post('/admin/users', [WebController::class, 'adminStoreUser'])->name('web.admin.users.store');
+    Route::post('/admin/users/delete', [WebController::class, 'adminDeleteUser'])->name('web.admin.users.delete');
     Route::get('/admin/products', [WebController::class, 'adminProducts'])->name('web.admin.products');
+    Route::post('/admin/products', [WebController::class, 'adminStoreProduct'])->name('web.admin.products.store');
+    Route::post('/admin/products/delete', [WebController::class, 'adminDeleteProduct'])->name('web.admin.products.delete');
     Route::get('/admin/categories', [WebController::class, 'adminCategories'])->name('web.admin.categories');
+    Route::post('/admin/categories', [WebController::class, 'adminStoreCategory'])->name('web.admin.categories.store');
+    Route::post('/admin/categories/delete', [WebController::class, 'adminDeleteCategory'])->name('web.admin.categories.delete');
     Route::get('/admin/orders', [WebController::class, 'adminOrders'])->name('web.admin.orders');
+    Route::post('/admin/orders/{id}/approve', [WebController::class, 'adminApproveOrder'])->name('web.admin.orders.approve');
+    Route::post('/admin/orders/{id}/decline', [WebController::class, 'adminDeclineOrder'])->name('web.admin.orders.decline');
     Route::get('/admin/payments', [WebController::class, 'adminPayments'])->name('web.admin.payments');
     Route::get('/admin/reports', [WebController::class, 'adminReports'])->name('web.admin.reports');
     Route::get('/admin/audit', [WebController::class, 'adminAudit'])->name('web.admin.audit');
     Route::get('/admin/news', [WebController::class, 'adminNews'])->name('web.admin.news');
+    Route::post('/admin/news', [WebController::class, 'adminStoreNews'])->name('web.admin.news.store');
+    Route::post('/admin/news/delete', [WebController::class, 'adminDeleteNews'])->name('web.admin.news.delete');
     Route::get('/admin/faqs', [WebController::class, 'adminFaqs'])->name('web.admin.faqs');
+    Route::post('/admin/faqs', [WebController::class, 'adminStoreFaq'])->name('web.admin.faqs.store');
+    Route::post('/admin/faqs/delete', [WebController::class, 'adminDeleteFaq'])->name('web.admin.faqs.delete');
     Route::get('/admin/slides', [WebController::class, 'adminSlides'])->name('web.admin.slides');
+    Route::post('/admin/slides', [WebController::class, 'adminStoreSlide'])->name('web.admin.slides.store');
+    Route::post('/admin/slides/delete', [WebController::class, 'adminDeleteSlide'])->name('web.admin.slides.delete');
     Route::get('/admin/pages', [WebController::class, 'adminPages'])->name('web.admin.pages');
+    Route::post('/admin/pages', [WebController::class, 'adminStorePage'])->name('web.admin.pages.store');
+    Route::post('/admin/pages/delete', [WebController::class, 'adminDeletePage'])->name('web.admin.pages.delete');
     Route::get('/admin/settings', [WebController::class, 'adminSettings'])->name('web.admin.settings.general');
     Route::get('/admin/settings/site', [WebController::class, 'adminSettingsSite'])->name('web.admin.settings.site');
     Route::post('/admin/settings/site', [WebController::class, 'adminSettingsSiteUpdate'])->name('web.admin.settings.site.update');
@@ -43,11 +59,15 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
 
     // Staff
     Route::get('/staff/orders', [WebController::class, 'staffOrders'])->name('web.staff.orders');
+    Route::post('/staff/orders/{id}/approve', [WebController::class, 'staffApproveOrder'])->name('web.staff.orders.approve');
+    Route::post('/staff/orders/{id}/decline', [WebController::class, 'staffDeclineOrder'])->name('web.staff.orders.decline');
     Route::get('/staff/inventory', [WebController::class, 'staffInventory'])->name('web.staff.inventory');
     Route::get('/staff/franchise-stock', [WebController::class, 'staffFranchiseStock'])->name('web.staff.franchiseStock');
 
     // Finance
     Route::get('/finance/payments', [WebController::class, 'financePayments'])->name('web.finance.payments');
+    Route::post('/finance/payments/{id}/accept', [WebController::class, 'financeAcceptPayment'])->name('web.finance.payments.accept');
+    Route::post('/finance/payments/{id}/reject', [WebController::class, 'financeRejectPayment'])->name('web.finance.payments.reject');
     Route::get('/finance/reports', [WebController::class, 'financeReports'])->name('web.finance.reports');
 
     // Franchise

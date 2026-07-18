@@ -595,4 +595,223 @@ class WebController extends Controller
         $user->update(['avatar' => $path]);
         return redirect()->route('web.profile')->with('success', 'Profile picture updated!');
     }
+
+    // ── Admin CRUD: Products ──────────────────────────────────
+    public function adminStoreProduct(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'sku' => 'required|string|max:50|unique:products,sku',
+            'category_id' => 'required|exists:categories,id',
+            'unit_of_measure' => 'required|string|max:50',
+            'selling_price' => 'required|numeric|min:0',
+            'standard_price' => 'required|numeric|min:0',
+            'packaging_details' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+        Product::create($request->only('name', 'sku', 'category_id', 'unit_of_measure', 'selling_price', 'standard_price', 'packaging_details', 'description'));
+        return redirect()->route('web.admin.products')->with('success', 'Product created successfully!');
+    }
+
+    public function adminDeleteProduct(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:products,id']);
+        Product::destroy($request->id);
+        return redirect()->route('web.admin.products')->with('success', 'Product deleted.');
+    }
+
+    // ── Admin CRUD: Users ──────────────────────────────────
+    public function adminStoreUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
+            'role_id' => 'required|exists:roles,id',
+            'franchise_id' => 'nullable|exists:franchises,id',
+            'phone' => 'nullable|string|max:20',
+        ]);
+        $data = $request->only('name', 'email', 'role_id', 'franchise_id', 'phone');
+        $data['password'] = Hash::make($request->password);
+        $data['is_active'] = true;
+        User::create($data);
+        return redirect()->route('web.admin.users')->with('success', 'User created successfully!');
+    }
+
+    public function adminDeleteUser(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:users,id']);
+        if (auth()->id() === $request->id) {
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+        User::destroy($request->id);
+        return redirect()->route('web.admin.users')->with('success', 'User deleted.');
+    }
+
+    // ── Admin CRUD: Categories ──────────────────────────────────
+    public function adminStoreCategory(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+        $data = $request->only('name', 'description', 'sort_order');
+        $data['slug'] = $request->slug ?: \Illuminate\Support\Str::slug($request->name);
+        $data['is_active'] = true;
+        \App\Models\Category::create($data);
+        return redirect()->route('web.admin.categories')->with('success', 'Category created!');
+    }
+
+    public function adminDeleteCategory(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:categories,id']);
+        \App\Models\Category::destroy($request->id);
+        return redirect()->route('web.admin.categories')->with('success', 'Category deleted.');
+    }
+
+    // ── Admin: Order Actions ──────────────────────────────────
+    public function adminApproveOrder(Request $request, $id)
+    {
+        $order = Order::findOrFail($id);
+        $order->update(['status' => 'approved', 'approved_by' => auth()->id(), 'approved_at' => now()]);
+        return back()->with('success', "Order {$order->order_number} approved!");
+    }
+
+    public function adminDeclineOrder(Request $request, $id)
+    {
+        $request->validate(['decline_reason' => 'required|string|max:500']);
+        $order = Order::findOrFail($id);
+        $order->update(['status' => 'declined', 'approved_by' => auth()->id(), 'approved_at' => now(), 'decline_reason' => $request->decline_reason]);
+        return back()->with('success', "Order {$order->order_number} declined.");
+    }
+
+    // ── Admin CRUD: News ──────────────────────────────────
+    public function adminStoreNews(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'excerpt' => 'nullable|string',
+            'body' => 'nullable|string',
+        ]);
+        $data = $request->only('title', 'excerpt', 'body');
+        $data['slug'] = \Illuminate\Support\Str::slug($request->title);
+        $data['is_published'] = true;
+        $data['published_at'] = now();
+        \App\Models\News::create($data);
+        return redirect()->route('web.admin.news')->with('success', 'Article published!');
+    }
+
+    public function adminDeleteNews(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:news,id']);
+        \App\Models\News::destroy($request->id);
+        return redirect()->route('web.admin.news')->with('success', 'Article deleted.');
+    }
+
+    // ── Admin CRUD: FAQs ──────────────────────────────────
+    public function adminStoreFaq(Request $request)
+    {
+        $request->validate([
+            'question' => 'required|string|max:500',
+            'answer' => 'required|string',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+        $data = $request->only('question', 'answer', 'sort_order');
+        $data['is_active'] = true;
+        \App\Models\Faq::create($data);
+        return redirect()->route('web.admin.faqs')->with('success', 'FAQ added!');
+    }
+
+    public function adminDeleteFaq(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:faqs,id']);
+        \App\Models\Faq::destroy($request->id);
+        return redirect()->route('web.admin.faqs')->with('success', 'FAQ deleted.');
+    }
+
+    // ── Admin CRUD: Slides ──────────────────────────────────
+    public function adminStoreSlide(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'subtitle' => 'nullable|string|max:255',
+            'button_text' => 'nullable|string|max:100',
+            'button_url' => 'nullable|url',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+        $data = $request->only('title', 'subtitle', 'button_text', 'button_url', 'sort_order');
+        $data['is_active'] = true;
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('slides', 'public');
+        }
+        \App\Models\Slide::create($data);
+        return redirect()->route('web.admin.slides')->with('success', 'Slide created!');
+    }
+
+    public function adminDeleteSlide(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:slides,id']);
+        \App\Models\Slide::destroy($request->id);
+        return redirect()->route('web.admin.slides')->with('success', 'Slide deleted.');
+    }
+
+    // ── Admin CRUD: Pages ──────────────────────────────────
+    public function adminStorePage(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'body' => 'nullable|string',
+            'meta_description' => 'nullable|string|max:500',
+        ]);
+        $data = $request->only('title', 'body', 'meta_description');
+        $data['slug'] = \Illuminate\Support\Str::slug($request->title);
+        $data['is_published'] = true;
+        \App\Models\Page::create($data);
+        return redirect()->route('web.admin.pages')->with('success', 'Page published!');
+    }
+
+    public function adminDeletePage(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:pages,id']);
+        \App\Models\Page::destroy($request->id);
+        return redirect()->route('web.admin.pages')->with('success', 'Page deleted.');
+    }
+
+    // ── Staff: Order Actions ──────────────────────────────────
+    public function staffApproveOrder(Request $request, $id)
+    {
+        $order = Order::findOrFail($id);
+        $order->update(['status' => 'approved', 'approved_by' => auth()->id(), 'approved_at' => now()]);
+        return back()->with('success', "Order {$order->order_number} approved!");
+    }
+
+    public function staffDeclineOrder(Request $request, $id)
+    {
+        $request->validate(['decline_reason' => 'required|string|max:500']);
+        $order = Order::findOrFail($id);
+        $order->update(['status' => 'declined', 'approved_by' => auth()->id(), 'approved_at' => now(), 'decline_reason' => $request->decline_reason]);
+        return back()->with('success', "Order {$order->order_number} declined.");
+    }
+
+    // ── Finance: Payment Actions ──────────────────────────────────
+    public function financeAcceptPayment(Request $request, $id)
+    {
+        $payment = PaymentSubmission::findOrFail($id);
+        $payment->update(['status' => 'accepted', 'accepted_by' => auth()->id(), 'accepted_at' => now()]);
+        $franchise = $payment->franchise;
+        if ($franchise) {
+            $franchise->update(['account_balance' => $franchise->account_balance - $payment->amount]);
+        }
+        return back()->with('success', "Payment {$payment->payment_number} accepted!");
+    }
+
+    public function financeRejectPayment(Request $request, $id)
+    {
+        $request->validate(['rejection_reason' => 'required|string|max:500']);
+        $payment = PaymentSubmission::findOrFail($id);
+        $payment->update(['status' => 'rejected', 'rejection_reason' => $request->rejection_reason]);
+        return back()->with('success', "Payment {$payment->payment_number} rejected.");
+    }
 }
