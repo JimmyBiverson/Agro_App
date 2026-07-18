@@ -18,6 +18,7 @@
                         <th class="px-4 py-3 text-right">Amount</th>
                         <th class="px-4 py-3 text-center">Status</th>
                         <th class="px-4 py-3 text-left">Date</th>
+                        <th class="px-4 py-3 text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -39,9 +40,30 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-xs" style="color:var(--text-muted)">{{ $o->created_at->format('M d, Y') }}</td>
+                        <td class="px-4 py-3 text-center">
+                            @if($o->status === 'pending')
+                            <div class="flex items-center justify-center gap-1">
+                                <form action="{{ route('web.staff.orders.approve', $o->id) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" class="px-2 py-1 bg-emerald-600/20 text-emerald-400 rounded text-xs hover:bg-emerald-600/40 transition" title="Approve">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                                <form action="{{ route('web.staff.orders.decline', $o->id) }}" method="POST" class="inline" onsubmit="return confirm('Decline order {{ $o->order_number }}?')">
+                                    @csrf
+                                    <input type="hidden" name="decline_reason" value="Declined by staff">
+                                    <button type="submit" class="px-2 py-1 bg-red-600/20 text-red-400 rounded text-xs hover:bg-red-600/40 transition" title="Decline">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            @else
+                            <span class="text-xs" style="color:var(--text-muted)">-</span>
+                            @endif
+                        </td>
                     </tr>
                     @empty
-                    <tr><td colspan="6" class="px-4 py-6 text-center text-sm" style="color:var(--text-muted)">No orders found</td></tr>
+                    <tr><td colspan="7" class="px-4 py-6 text-center text-sm" style="color:var(--text-muted)">No orders found</td></tr>
                     @endforelse
                 </tbody>
             </table>

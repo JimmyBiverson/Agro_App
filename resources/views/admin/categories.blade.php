@@ -4,33 +4,29 @@
 
 @section('content')
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    {{-- Category Form --}}
     <div class="lg:col-span-1">
         <div class="card-full">
             <div class="card-header">
-                <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Add / Edit Category</h3>
+                <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Add Category</h3>
             </div>
             <div class="card-body">
-                <form class="space-y-4">
+                <form action="{{ route('web.admin.categories.store') }}" method="POST" class="space-y-4">
+                    @csrf
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Category Name</label>
-                        <input type="text" placeholder="e.g. Herbicides" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Category Name *</label>
+                        <input type="text" name="name" required placeholder="e.g. Herbicides" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
                     </div>
                     <div>
                         <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Slug</label>
-                        <input type="text" placeholder="auto-generated" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <input type="text" name="slug" placeholder="auto-generated from name" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
                     </div>
                     <div>
                         <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Description</label>
-                        <textarea rows="3" placeholder="Brief description..." class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)"></textarea>
+                        <textarea name="description" rows="3" placeholder="Brief description..." class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)"></textarea>
                     </div>
                     <div>
                         <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Sort Order</label>
-                        <input type="number" value="0" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" id="is_active" checked class="rounded border-gray-300">
-                        <label for="is_active" class="text-xs font-medium" style="color:var(--text-secondary)">Active</label>
+                        <input type="number" name="sort_order" value="0" min="0" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
                     </div>
                     <button type="submit" class="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
                         <i class="fas fa-save mr-1"></i> Save Category
@@ -40,7 +36,6 @@
         </div>
     </div>
 
-    {{-- Categories List --}}
     <div class="lg:col-span-2">
         <div class="card-full">
             <div class="card-header">
@@ -72,8 +67,11 @@
                                     <span class="badge {{ $cat->is_active ? 'badge-success' : 'badge-danger' }}">{{ $cat->is_active ? 'Active' : 'Inactive' }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-center">
-                                    <button class="text-indigo-400 hover:text-indigo-300 text-sm mr-2"><i class="fas fa-pen"></i></button>
-                                    <button class="text-red-400 hover:text-red-300 text-sm"><i class="fas fa-trash"></i></button>
+                                    <form action="{{ route('web.admin.categories.delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete category {{ addslashes($cat->name) }}?')">
+                                        @csrf
+                                        <input type="hidden" name="id" value="{{ $cat->id }}">
+                                        <button type="submit" class="text-red-400 hover:text-red-300 text-sm"><i class="fas fa-trash"></i></button>
+                                    </form>
                                 </td>
                             </tr>
                             @empty

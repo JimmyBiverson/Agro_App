@@ -40,7 +40,7 @@ class DashboardDataSeeder extends Seeder
                     'discount' => rand(0, 3) === 0 ? rand(5000, 25000) : 0,
                     'final_amount' => 0,
                     'payment_method' => ['cash', 'mobile_money', 'bank_transfer'][rand(0, 2)],
-                    'payment_status' => $daysAgo > 14 ? 'paid' : (rand(0, 3) === 0 ? 'unpaid' : 'paid'),
+                    'payment_status' => $daysAgo > 14 ? 'paid' : (rand(0, 3) === 0 ? 'credit' : 'paid'),
                     'notes' => null,
                     'sale_date' => $saleDate,
                 ]);
