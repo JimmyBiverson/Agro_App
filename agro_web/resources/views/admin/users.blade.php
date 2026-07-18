@@ -39,7 +39,7 @@
                                 <form action="{{ route('web.admin.users.delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete user {{ addslashes($u->name) }}?')">
                                     @csrf
                                     <input type="hidden" name="id" value="{{ $u->id }}">
-                                    <button type="submit" class="text-red-400 hover:text-red-300 text-sm"><i class="fas fa-trash"></i></button>
+                                    <button type="submit" class="btn-delete"><i class="fas fa-trash-can text-xs"></i></button>
                                 </form>
                                 @else
                                 <span class="text-xs" style="color:var(--text-muted)">You</span>
@@ -57,37 +57,40 @@
     </div>
 
     <!-- Add User Modal -->
-    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display:none" @keydown.escape.window="open = false">
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
-        <div class="relative w-full max-w-lg rounded-2xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto" style="background:var(--bg-card); border-color:var(--border-color)" @click.stop>
+    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="modal-overlay" style="display:none" @keydown.escape.window="open = false">
+        <div class="modal-backdrop" @click="open = false"></div>
+        <div class="modal-panel" @click.stop>
             <div class="flex items-center justify-between mb-5">
-                <h3 class="text-lg font-bold" style="color:var(--text-primary)">Add New User</h3>
-                <button @click="open = false" class="text-sm" style="color:var(--text-muted)"><i class="fas fa-times text-lg"></i></button>
+                <div>
+                    <h3 class="text-lg font-bold" style="color:var(--text-primary)">Add New User</h3>
+                    <p class="text-xs mt-0.5" style="color:var(--text-muted)">Create a new user account with role assignment.</p>
+                </div>
+                <button @click="open = false" class="btn-delete" style="color:var(--text-muted);width:2rem;height:2rem"><i class="fas fa-times"></i></button>
             </div>
             <form action="{{ route('web.admin.users.store') }}" method="POST" class="space-y-4">
                 @csrf
                 <div>
-                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Full Name *</label>
-                    <input type="text" name="name" required placeholder="e.g. John Okello" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                    <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Full Name *</label>
+                    <input type="text" name="name" required placeholder="e.g. John Okello">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Email *</label>
-                    <input type="email" name="email" required placeholder="user@example.com" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                    <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Email *</label>
+                    <input type="email" name="email" required placeholder="user@example.com">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Password *</label>
-                        <input type="password" name="password" required minlength="6" placeholder="Min 6 characters" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Password *</label>
+                        <input type="password" name="password" required minlength="6" placeholder="Min 6 characters">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Confirm Password *</label>
-                        <input type="password" name="password_confirmation" required class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Confirm Password *</label>
+                        <input type="password" name="password_confirmation" required placeholder="Re-enter password">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Role *</label>
-                        <select name="role_id" required class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Role *</label>
+                        <select name="role_id" required>
                             <option value="">Select role</option>
                             @foreach(\App\Models\Role::orderBy('name')->get() as $role)
                             <option value="{{ $role->id }}">{{ $role->name }}</option>
@@ -95,8 +98,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Franchise</label>
-                        <select name="franchise_id" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Franchise</label>
+                        <select name="franchise_id">
                             <option value="">None</option>
                             @foreach(\App\Models\Franchise::orderBy('name')->get() as $f)
                             <option value="{{ $f->id }}">{{ $f->name }}</option>
@@ -105,12 +108,12 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Phone</label>
-                    <input type="text" name="phone" placeholder="+256..." class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                    <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Phone</label>
+                    <input type="text" name="phone" placeholder="+256...">
                 </div>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" @click="open = false" class="px-4 py-2.5 rounded-lg text-sm font-medium border" style="border-color:var(--border-color); color:var(--text-secondary)">Cancel</button>
-                    <button type="submit" class="px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"><i class="fas fa-save mr-1"></i> Save User</button>
+                <div class="flex justify-end gap-3 pt-2 border-t" style="border-color:var(--border-color)">
+                    <button type="button" @click="open = false" class="px-5 py-2.5 rounded-lg text-sm font-medium border transition hover:opacity-80" style="border-color:var(--border-color); color:var(--text-secondary)">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/25"><i class="fas fa-save mr-1.5"></i> Save User</button>
                 </div>
             </form>
         </div>

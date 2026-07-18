@@ -13,27 +13,27 @@
                 <form action="{{ route('web.admin.slides.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                     @csrf
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Title *</label>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Title *</label>
                         <input type="text" name="title" required placeholder="Banner headline" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Subtitle</label>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Subtitle</label>
                         <input type="text" name="subtitle" placeholder="Supporting text" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Image</label>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Image</label>
                         <input type="file" name="image" accept="image/*" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Button Text</label>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Button Text</label>
                         <input type="text" name="button_text" placeholder="e.g. Shop Now" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Button URL</label>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Button URL</label>
                         <input type="url" name="button_url" placeholder="https://..." class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Sort Order</label>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Sort Order</label>
                         <input type="number" name="sort_order" value="0" min="0" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
                     </div>
                     <button type="submit" class="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
@@ -74,7 +74,7 @@
                                     <form action="{{ route('web.admin.slides.delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete slide {{ addslashes($slide->title) }}?')">
                                         @csrf
                                         <input type="hidden" name="id" value="{{ $slide->id }}">
-                                        <button type="submit" class="text-red-400 hover:text-red-300 text-sm"><i class="fas fa-trash"></i></button>
+                                        <button type="submit" class="btn-delete"><i class="fas fa-trash-can text-xs"></i></button>
                                     </form>
                                 </td>
                             </tr>

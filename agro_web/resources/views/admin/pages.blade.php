@@ -36,7 +36,7 @@
                                 <form action="{{ route('web.admin.pages.delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete page {{ addslashes($page->title) }}?')">
                                     @csrf
                                     <input type="hidden" name="id" value="{{ $page->id }}">
-                                    <button type="submit" class="text-red-400 hover:text-red-300 text-sm"><i class="fas fa-trash"></i></button>
+                                    <button type="submit" class="btn-delete"><i class="fas fa-trash-can text-xs"></i></button>
                                 </form>
                             </td>
                         </tr>
@@ -51,30 +51,33 @@
     </div>
 
     <!-- Add Page Modal -->
-    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display:none" @keydown.escape.window="open = false">
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
-        <div class="relative w-full max-w-lg rounded-2xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto" style="background:var(--bg-card); border-color:var(--border-color)" @click.stop>
+    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="modal-overlay" style="display:none" @keydown.escape.window="open = false">
+        <div class="modal-backdrop" @click="open = false"></div>
+        <div class="modal-panel" @click.stop>
             <div class="flex items-center justify-between mb-5">
-                <h3 class="text-lg font-bold" style="color:var(--text-primary)">Add Page</h3>
-                <button @click="open = false" class="text-sm" style="color:var(--text-muted)"><i class="fas fa-times text-lg"></i></button>
+                <div>
+                    <h3 class="text-lg font-bold" style="color:var(--text-primary)">Add Page</h3>
+                    <p class="text-xs mt-0.5" style="color:var(--text-muted)">Create a new CMS page for the site.</p>
+                </div>
+                <button @click="open = false" class="btn-delete" style="color:var(--text-muted);width:2rem;height:2rem"><i class="fas fa-times"></i></button>
             </div>
             <form action="{{ route('web.admin.pages.store') }}" method="POST" class="space-y-4">
                 @csrf
                 <div>
-                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Title *</label>
-                    <input type="text" name="title" required placeholder="Page title" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                    <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Title *</label>
+                    <input type="text" name="title" required placeholder="Page title">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Body</label>
-                    <textarea name="body" rows="8" placeholder="Page content..." class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)"></textarea>
+                    <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Body</label>
+                    <textarea name="body" rows="8" placeholder="Page content..."></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Meta Description</label>
-                    <input type="text" name="meta_description" placeholder="SEO description..." class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                    <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Meta Description</label>
+                    <input type="text" name="meta_description" placeholder="SEO description...">
                 </div>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" @click="open = false" class="px-4 py-2.5 rounded-lg text-sm font-medium border" style="border-color:var(--border-color); color:var(--text-secondary)">Cancel</button>
-                    <button type="submit" class="px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"><i class="fas fa-save mr-1"></i> Publish</button>
+                <div class="flex justify-end gap-3 pt-2 border-t" style="border-color:var(--border-color)">
+                    <button type="button" @click="open = false" class="px-5 py-2.5 rounded-lg text-sm font-medium border transition hover:opacity-80" style="border-color:var(--border-color); color:var(--text-secondary)">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/25"><i class="fas fa-save mr-1.5"></i> Publish</button>
                 </div>
             </form>
         </div>
