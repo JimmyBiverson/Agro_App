@@ -74,31 +74,45 @@
                     ];
                     @endphp
                     @foreach($emailToggles as $t)
-                    <div class="flex items-center justify-between rounded-xl p-4 border transition hover:shadow-sm" style="border-color:var(--border-color); background:var(--bg-card)">
-                        <div class="flex items-center gap-3">
-                            <div class="h-9 w-9 rounded-lg {{ $t['color'] }} flex items-center justify-center flex-shrink-0">
-                                <i class="fas {{ $t['icon'] }} text-white text-xs"></i>
+                    <div class="notification-row flex items-center justify-between rounded-2xl p-4 border-2 transition-all duration-300 hover:shadow-lg group"
+                         :style="{{ $t['key'] }}
+                             ? 'border-color:rgba(99,102,241,0.25); background:linear-gradient(135deg, rgba(99,102,241,0.04), rgba(139,92,246,0.04))'
+                             : 'border-color:var(--border-color); background:var(--bg-card)'"
+                         style="overflow:hidden">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="h-10 w-10 rounded-xl {{ $t['color'] }} flex items-center justify-center flex-shrink-0 transition-all duration-300"
+                                 :style="{{ $t['key'] }} ? 'box-shadow:0 4px 12px rgba(99,102,241,0.3); transform:scale(1.05)' : 'box-shadow:none; transform:scale(1)'">
+                                <i class="fas {{ $t['icon'] }} text-white text-sm"></i>
                             </div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <p class="text-sm font-medium" style="color:var(--text-primary)">{{ $t['label'] }}</p>
-                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider" style="background:var(--accent-light); color:var(--accent)">{{ $t['role'] }}</span>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <p class="text-sm font-semibold" style="color:var(--text-primary)">{{ $t['label'] }}</p>
+                                    <span class="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
+                                          :style="{{ $t['key'] }}
+                                              ? 'background:rgba(99,102,241,0.12); color:#818cf8'
+                                              : 'background:rgba(148,163,184,0.1); color:var(--text-muted)'">{{ $t['role'] }}</span>
                                 </div>
-                                <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ $t['desc'] }}</p>
+                                <p class="text-xs mt-0.5 leading-relaxed" style="color:var(--text-muted)">{{ $t['desc'] }}</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 flex-shrink-0 ml-4">
-                            <span class="text-[10px] font-semibold uppercase tracking-wider"
-                                  :style="{{ $t['key'] }} ? 'color:var(--success)' : 'color:var(--text-muted)'"
+                        <div class="flex items-center gap-3 flex-shrink-0 ml-4 pl-4 border-l"
+                             :style="{{ $t['key'] }} ? 'border-color:rgba(99,102,241,0.2)' : 'border-color:var(--border-color)'">
+                            <span class="text-[10px] font-bold uppercase tracking-wider min-w-[28px] text-center"
+                                  :style="{{ $t['key'] }} ? 'color:#818cf8' : 'color:var(--text-muted)'"
                                   x-text="{{ $t['key'] }} ? 'ON' : 'OFF'"></span>
                             <button type="button" @click="{{ $t['key'] }} = !{{ $t['key'] }}"
-                                    class="relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                    class="relative flex-shrink-0 w-[52px] h-[28px] rounded-full transition-all duration-300 focus:outline-none overflow-hidden border-2"
                                     :style="{{ $t['key'] }}
-                                        ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 2px 8px rgba(99,102,241,0.4); focus-ring-color:var(--accent)'
-                                        : 'background:var(--border-color); box-shadow:none'"
+                                        ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); border-color:rgba(139,92,246,0.5); box-shadow:0 0 16px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.15)'
+                                        : 'background:var(--bg-input); border-color:var(--border-color); box-shadow:inset 0 2px 4px rgba(0,0,0,0.06)'"
                                 role="switch" :aria-checked="{{ $t['key'] }}">
-                                <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300"
-                                      :style="{{ $t['key'] }} ? 'transform:translateX(24px)' : 'transform:translateX(0)'"></span>
+                                <span class="absolute top-[2px] left-[2px] w-5 h-5 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
+                                      :style="{{ $t['key'] }}
+                                          ? 'transform:translateX(24px); background:white; box-shadow:0 2px 8px rgba(99,102,241,0.4)'
+                                          : 'transform:translateX(0); background:var(--text-muted); box-shadow:0 1px 3px rgba(0,0,0,0.15)'">
+                                    <i class="fas text-[8px] transition-all duration-300"
+                                       :class="{{ $t['key'] }} ? 'fa-check text-indigo-500' : 'fa-xmark text-white opacity-50'"></i>
+                                </span>
                             </button>
                             <input type="hidden" name="{{ $t['key'] }}" :value="{{ $t['key'] }} ? '1' : '0'">
                         </div>
@@ -131,28 +145,39 @@
                     ];
                     @endphp
                     @foreach($inAppToggles as $t)
-                    <div class="flex items-center justify-between rounded-xl p-4 border transition hover:shadow-sm" style="border-color:var(--border-color); background:var(--bg-card)">
-                        <div class="flex items-center gap-3">
-                            <div class="h-9 w-9 rounded-lg {{ $t['color'] }} flex items-center justify-center flex-shrink-0">
-                                <i class="fas {{ $t['icon'] }} text-white text-xs"></i>
+                    <div class="notification-row flex items-center justify-between rounded-2xl p-4 border-2 transition-all duration-300 hover:shadow-lg group"
+                         :style="{{ $t['key'] }}
+                             ? 'border-color:rgba(99,102,241,0.25); background:linear-gradient(135deg, rgba(99,102,241,0.04), rgba(139,92,246,0.04))'
+                             : 'border-color:var(--border-color); background:var(--bg-card)'"
+                         style="overflow:hidden">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="h-10 w-10 rounded-xl {{ $t['color'] }} flex items-center justify-center flex-shrink-0 transition-all duration-300"
+                                 :style="{{ $t['key'] }} ? 'box-shadow:0 4px 12px rgba(99,102,241,0.3); transform:scale(1.05)' : 'box-shadow:none; transform:scale(1)'">
+                                <i class="fas {{ $t['icon'] }} text-white text-sm"></i>
                             </div>
-                            <div>
-                                <p class="text-sm font-medium" style="color:var(--text-primary)">{{ $t['label'] }}</p>
-                                <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ $t['desc'] }}</p>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold" style="color:var(--text-primary)">{{ $t['label'] }}</p>
+                                <p class="text-xs mt-0.5 leading-relaxed" style="color:var(--text-muted)">{{ $t['desc'] }}</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 flex-shrink-0 ml-4">
-                            <span class="text-[10px] font-semibold uppercase tracking-wider"
-                                  :style="{{ $t['key'] }} ? 'color:var(--success)' : 'color:var(--text-muted)'"
+                        <div class="flex items-center gap-3 flex-shrink-0 ml-4 pl-4 border-l"
+                             :style="{{ $t['key'] }} ? 'border-color:rgba(99,102,241,0.2)' : 'border-color:var(--border-color)'">
+                            <span class="text-[10px] font-bold uppercase tracking-wider min-w-[28px] text-center"
+                                  :style="{{ $t['key'] }} ? 'color:#818cf8' : 'color:var(--text-muted)'"
                                   x-text="{{ $t['key'] }} ? 'ON' : 'OFF'"></span>
                             <button type="button" @click="{{ $t['key'] }} = !{{ $t['key'] }}"
-                                    class="relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                    class="relative flex-shrink-0 w-[52px] h-[28px] rounded-full transition-all duration-300 focus:outline-none overflow-hidden border-2"
                                     :style="{{ $t['key'] }}
-                                        ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 2px 8px rgba(99,102,241,0.4)'
-                                        : 'background:var(--border-color); box-shadow:none'"
+                                        ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); border-color:rgba(139,92,246,0.5); box-shadow:0 0 16px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.15)'
+                                        : 'background:var(--bg-input); border-color:var(--border-color); box-shadow:inset 0 2px 4px rgba(0,0,0,0.06)'"
                                 role="switch" :aria-checked="{{ $t['key'] }}">
-                                <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300"
-                                      :style="{{ $t['key'] }} ? 'transform:translateX(24px)' : 'transform:translateX(0)'"></span>
+                                <span class="absolute top-[2px] left-[2px] w-5 h-5 rounded-full shadow-lg transition-all duration-300 flex items-center justify-center"
+                                      :style="{{ $t['key'] }}
+                                          ? 'transform:translateX(24px); background:white; box-shadow:0 2px 8px rgba(99,102,241,0.4)'
+                                          : 'transform:translateX(0); background:var(--text-muted); box-shadow:0 1px 3px rgba(0,0,0,0.15)'">
+                                    <i class="fas text-[8px] transition-all duration-300"
+                                       :class="{{ $t['key'] }} ? 'fa-check text-indigo-500' : 'fa-xmark text-white opacity-50'"></i>
+                                </span>
                             </button>
                             <input type="hidden" name="{{ $t['key'] }}" :value="{{ $t['key'] }} ? '1' : '0'">
                         </div>
