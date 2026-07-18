@@ -89,18 +89,18 @@
                         </div>
                         <div class="flex items-center gap-3 flex-shrink-0 ml-4">
                             <span class="text-[10px] font-semibold uppercase tracking-wider"
-                                  :style="notif_{{ $t['key'] }} ? 'color:var(--success)' : 'color:var(--text-muted)'"
-                                  x-text="notif_{{ $t['key'] }} ? 'ON' : 'OFF'"></span>
-                            <button type="button" @click="notif_{{ $t['key'] }} = !notif_{{ $t['key'] }}"
+                                  :style="{{ $t['key'] }} ? 'color:var(--success)' : 'color:var(--text-muted)'"
+                                  x-text="{{ $t['key'] }} ? 'ON' : 'OFF'"></span>
+                            <button type="button" @click="{{ $t['key'] }} = !{{ $t['key'] }}"
                                     class="relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
-                                    :style="notif_{{ $t['key'] }}
+                                    :style="{{ $t['key'] }}
                                         ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 2px 8px rgba(99,102,241,0.4); focus-ring-color:var(--accent)'
                                         : 'background:var(--border-color); box-shadow:none'"
-                                role="switch" :aria-checked="notif_{{ $t['key'] }}">
+                                role="switch" :aria-checked="{{ $t['key'] }}">
                                 <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300"
-                                      :style="notif_{{ $t['key'] }} ? 'transform:translateX(24px)' : 'transform:translateX(0)'"></span>
+                                      :style="{{ $t['key'] }} ? 'transform:translateX(24px)' : 'transform:translateX(0)'"></span>
                             </button>
-                            <input type="hidden" name="{{ $t['key'] }}" :value="notif_{{ $t['key'] }} ? '1' : '0'">
+                            <input type="hidden" name="{{ $t['key'] }}" :value="{{ $t['key'] }} ? '1' : '0'">
                         </div>
                     </div>
                     @endforeach
@@ -143,18 +143,18 @@
                         </div>
                         <div class="flex items-center gap-3 flex-shrink-0 ml-4">
                             <span class="text-[10px] font-semibold uppercase tracking-wider"
-                                  :style="notif_{{ $t['key'] }} ? 'color:var(--success)' : 'color:var(--text-muted)'"
-                                  x-text="notif_{{ $t['key'] }} ? 'ON' : 'OFF'"></span>
-                            <button type="button" @click="notif_{{ $t['key'] }} = !notif_{{ $t['key'] }}"
+                                  :style="{{ $t['key'] }} ? 'color:var(--success)' : 'color:var(--text-muted)'"
+                                  x-text="{{ $t['key'] }} ? 'ON' : 'OFF'"></span>
+                            <button type="button" @click="{{ $t['key'] }} = !{{ $t['key'] }}"
                                     class="relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2"
-                                    :style="notif_{{ $t['key'] }}
+                                    :style="{{ $t['key'] }}
                                         ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 2px 8px rgba(99,102,241,0.4)'
                                         : 'background:var(--border-color); box-shadow:none'"
-                                role="switch" :aria-checked="notif_{{ $t['key'] }}">
+                                role="switch" :aria-checked="{{ $t['key'] }}">
                                 <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300"
-                                      :style="notif_{{ $t['key'] }} ? 'transform:translateX(24px)' : 'transform:translateX(0)'"></span>
+                                      :style="{{ $t['key'] }} ? 'transform:translateX(24px)' : 'transform:translateX(0)'"></span>
                             </button>
-                            <input type="hidden" name="{{ $t['key'] }}" :value="notif_{{ $t['key'] }} ? '1' : '0'">
+                            <input type="hidden" name="{{ $t['key'] }}" :value="{{ $t['key'] }} ? '1' : '0'">
                         </div>
                     </div>
                     @endforeach
