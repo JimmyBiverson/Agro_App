@@ -62,15 +62,15 @@
                         <td class="px-4 py-3 text-center">
                             @if($payment->status === 'pending')
                             <div class="flex items-center justify-center gap-1">
-                                <form action="{{ route('web.finance.payments.accept', $payment->id) }}" method="POST" class="inline">
+                                <form action="{{ route('web.admin.payments.accept', $payment->id) }}" method="POST" class="inline">
                                     @csrf
                                     <button type="submit" class="btn-action btn-approve" title="Accept">
                                         <i class="fas fa-check"></i>
                                     </button>
                                 </form>
-                                <form action="{{ route('web.finance.payments.reject', $payment->id) }}" method="POST" class="inline" onsubmit="return confirm('Reject payment {{ $payment->payment_number }}?')">
+                                <form action="{{ route('web.admin.payments.reject', $payment->id) }}" method="POST" class="inline" onsubmit="return confirm('Reject payment {{ $payment->payment_number }}?')">
                                     @csrf
-                                    <input type="hidden" name="rejection_reason" value="Rejected by finance">
+                                    <input type="hidden" name="rejection_reason" value="Rejected by admin">
                                     <button type="submit" class="btn-action btn-decline" title="Reject">
                                         <i class="fas fa-times"></i>
                                     </button>

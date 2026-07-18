@@ -34,6 +34,8 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     Route::post('/admin/orders/{id}/approve', [WebController::class, 'adminApproveOrder'])->name('web.admin.orders.approve');
     Route::post('/admin/orders/{id}/decline', [WebController::class, 'adminDeclineOrder'])->name('web.admin.orders.decline');
     Route::get('/admin/payments', [WebController::class, 'adminPayments'])->name('web.admin.payments');
+    Route::post('/admin/payments/{id}/accept', [WebController::class, 'adminAcceptPayment'])->name('web.admin.payments.accept');
+    Route::post('/admin/payments/{id}/reject', [WebController::class, 'adminRejectPayment'])->name('web.admin.payments.reject');
     Route::get('/admin/reports', [WebController::class, 'adminReports'])->name('web.admin.reports');
     Route::get('/admin/audit', [WebController::class, 'adminAudit'])->name('web.admin.audit');
     Route::get('/admin/news', [WebController::class, 'adminNews'])->name('web.admin.news');
