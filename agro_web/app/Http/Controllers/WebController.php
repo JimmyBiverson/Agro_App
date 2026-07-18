@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Category;
+use App\Models\Conversation;
+use App\Models\Customer;
 use App\Models\Faq;
 use App\Models\Franchise;
 use App\Models\FranchiseInventory;
@@ -12,6 +14,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Page;
 use App\Models\PaymentSubmission;
+use App\Models\PriceSlab;
 use App\Models\Product;
 use App\Models\Role;
 use App\Models\Sale;
@@ -20,8 +23,10 @@ use App\Models\SalesTarget;
 use App\Models\Setting;
 use App\Models\Slide;
 use App\Models\StockMovement;
+use App\Models\StockReceipt;
 use App\Models\User;
 use App\Models\WarehouseInventory;
+use App\Services\ActivityLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -1176,5 +1181,395 @@ class WebController extends Controller
         $payment->update(['status' => 'rejected', 'rejection_reason' => $request->rejection_reason]);
 
         return back()->with('success', "Payment {$payment->payment_number} rejected.");
+    }
+
+    // ── Admin: Franchise CRUD ──────────────────────────────────
+    public function adminStoreFranchise(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:20|unique:franchises,code',
+            'contact_person' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'region' => 'nullable|string|max:100',
+            'address' => 'nullable|string|max:500',
+            'credit_limit' => 'nullable|numeric|min:0',
+        ]);
+        $data = $request->only('name', 'code', 'contact_person', 'phone', 'email', 'region', 'address', 'credit_limit');
+        $data['is_active'] = true;
+        $data['account_balance'] = 0;
+        Franchise::create($data);
+
+        return redirect()->route('web.admin.franchises')->with('success', 'Franchise created successfully!');
+    }
+
+    public function adminDeleteFranchise(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:franchises,id']);
+        $franchise = Franchise::findOrFail($request->id);
+        if ($franchise->users()->count() > 0) {
+            return back()->with('error', 'Cannot delete franchise with linked users. Remove users first.');
+        }
+        $franchise->delete();
+
+        return redirect()->route('web.admin.franchises')->with('success', 'Franchise deleted.');
+    }
+
+    public function adminToggleFranchise(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:franchises,id']);
+        $franchise = Franchise::findOrFail($request->id);
+        $franchise->update(['is_active' => ! $franchise->is_active]);
+        $status = $franchise->is_active ? 'activated' : 'deactivated';
+
+        return back()->with('success', "Franchise {$status} successfully!");
+    }
+
+    // ── Admin: User Toggle ──────────────────────────────────
+    public function adminToggleUser(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:users,id']);
+        if (auth()->id() == $request->id) {
+            return back()->with('error', 'You cannot deactivate your own account.');
+        }
+        $user = User::findOrFail($request->id);
+        $user->update(['is_active' => ! $user->is_active]);
+        $status = $user->is_active ? 'activated' : 'deactivated';
+
+        return back()->with('success', "User {$status} successfully!");
+    }
+
+    // ── Admin: Price Slab CRUD ──────────────────────────────────
+    public function adminStorePriceSlab(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'min_qty' => 'required|integer|min:1',
+            'max_qty' => 'nullable|integer|min:1|gte:min_qty',
+            'slab_price' => 'required|numeric|min:0',
+        ]);
+        PriceSlab::create($request->only('product_id', 'min_qty', 'max_qty', 'slab_price'));
+
+        return back()->with('success', 'Price slab added!');
+    }
+
+    public function adminDeletePriceSlab(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:price_slabs,id']);
+        PriceSlab::destroy($request->id);
+
+        return back()->with('success', 'Price slab removed.');
+    }
+
+    // ── Admin: Sales Targets CRUD ──────────────────────────────
+    public function adminStoreSalesTarget(Request $request)
+    {
+        $request->validate([
+            'franchise_id' => 'required|exists:franchises,id',
+            'product_category_id' => 'nullable|exists:categories,id',
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2024',
+            'target_amount' => 'required|numeric|min:0',
+        ]);
+        SalesTarget::create($request->only('franchise_id', 'product_category_id', 'month', 'year', 'target_amount'));
+
+        return back()->with('success', 'Sales target set!');
+    }
+
+    public function adminDeleteSalesTarget(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:sales_targets,id']);
+        SalesTarget::destroy($request->id);
+
+        return back()->with('success', 'Sales target removed.');
+    }
+
+    // ── Staff: Stock Update ──────────────────────────────────
+    public function staffUpdateWarehouseStock(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|numeric|min:0',
+            'reorder_level' => 'nullable|numeric|min:0',
+        ]);
+
+        $existing = WarehouseInventory::where('product_id', $request->product_id)->first();
+        $previousQuantity = $existing?->quantity ?? 0;
+        $quantityChange = $request->quantity - $previousQuantity;
+
+        $inventory = WarehouseInventory::updateOrCreate(
+            ['product_id' => $request->product_id],
+            [
+                'quantity' => $request->quantity,
+                'reorder_level' => $request->reorder_level ?? 0,
+                'last_restocked_at' => now(),
+            ]
+        );
+
+        if ($quantityChange != 0) {
+            StockMovement::log(
+                $quantityChange > 0 ? 'warehouse_in' : 'adjustment',
+                $request->product_id,
+                $quantityChange,
+                0,
+                WarehouseInventory::class,
+                $inventory->id,
+                'Manual stock update by staff',
+                auth()->id()
+            );
+        }
+
+        return back()->with('success', 'Warehouse stock updated successfully!');
+    }
+
+    // ── Staff: Stock Receipts ──────────────────────────────────
+    public function staffStockReceipts()
+    {
+        $receipts = StockReceipt::with(['franchise:id,name,code', 'items.product:id,name,sku', 'order:id,order_number'])
+            ->latest()
+            ->paginate(20);
+
+        return view('staff.stock-receipts', compact('receipts'));
+    }
+
+    // ── Franchise: Place Order ──────────────────────────────────
+    public function franchisePlaceOrder(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $user = auth()->user();
+
+        $order = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $user) {
+            $order = Order::create([
+                'order_number' => Order::generateOrderNumber(),
+                'franchise_id' => $user->franchise_id,
+                'ordered_by' => $user->id,
+                'status' => 'pending',
+                'notes' => $request->notes,
+            ]);
+
+            $totalAmount = 0;
+            foreach ($request->items as $item) {
+                $product = Product::findOrFail($item['product_id']);
+                $quantity = $item['quantity'];
+                $unitPrice = $product->getBestPrice($quantity);
+                $subtotal = $quantity * $unitPrice;
+                $order->items()->create([
+                    'product_id' => $product->id,
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'original_unit_price' => $product->standard_price,
+                    'subtotal' => $subtotal,
+                ]);
+                $totalAmount += $subtotal;
+            }
+            $order->update(['total_amount' => $totalAmount]);
+
+            return $order;
+        });
+
+        ActivityLogger::orderPlaced($order);
+
+        return redirect()->route('web.franchise.orders')->with('success', "Order {$order->order_number} placed successfully!");
+    }
+
+    // ── Franchise: Create Sale ──────────────────────────────────
+    public function franchiseCreateSale(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'nullable|exists:customers,id',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'payment_method' => 'required|in:cash,mobile_money,bank_transfer,credit',
+            'discount' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $user = auth()->user();
+
+        $sale = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $user) {
+            $totalAmount = 0;
+            foreach ($request->items as $item) {
+                $inventory = FranchiseInventory::where('franchise_id', $user->franchise_id)
+                    ->where('product_id', $item['product_id'])->first();
+                if (! $inventory || $inventory->quantity < $item['quantity']) {
+                    return back()->with('error', 'Insufficient stock for one or more products.');
+                }
+                $unitPrice = $inventory->product->getBestPrice($item['quantity']);
+                $totalAmount += $item['quantity'] * $unitPrice;
+            }
+
+            $discount = $request->discount ?? 0;
+            $finalAmount = $totalAmount - $discount;
+
+            $sale = Sale::create([
+                'sale_number' => Sale::generateSaleNumber(),
+                'franchise_id' => $user->franchise_id,
+                'customer_id' => $request->customer_id,
+                'created_by' => $user->id,
+                'total_amount' => $totalAmount,
+                'discount' => $discount,
+                'final_amount' => $finalAmount,
+                'payment_method' => $request->payment_method,
+                'payment_status' => $request->payment_method === 'credit' ? 'pending' : 'paid',
+                'notes' => $request->notes,
+                'sale_date' => now()->toDateString(),
+            ]);
+
+            foreach ($request->items as $item) {
+                $product = Product::find($item['product_id']);
+                $unitPrice = $product->getBestPrice($item['quantity']);
+                $subtotal = $item['quantity'] * $unitPrice;
+                $sale->items()->create([
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $unitPrice,
+                    'subtotal' => $subtotal,
+                ]);
+
+                $inventory = FranchiseInventory::where('franchise_id', $user->franchise_id)
+                    ->where('product_id', $item['product_id'])->first();
+                $inventory->quantity -= $item['quantity'];
+                $inventory->total_value = $inventory->quantity * $product->standard_price;
+                $inventory->save();
+
+                StockMovement::log('franchise_out', $item['product_id'], -$item['quantity'], $unitPrice, Sale::class, $sale->id, "Sale {$sale->sale_number}", $user->id);
+            }
+
+            return $sale;
+        });
+
+        if (is_array($sale)) {
+            return back()->with('error', 'Sale creation failed.');
+        }
+
+        ActivityLogger::saleCreated($sale);
+
+        return redirect()->route('web.franchise.sales')->with('success', "Sale {$sale->sale_number} recorded!");
+    }
+
+    // ── Franchise: Create Customer ──────────────────────────────
+    public function franchiseCreateCustomer(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'address' => 'nullable|string|max:500',
+            'is_wholesale' => 'nullable|boolean',
+        ]);
+
+        $user = auth()->user();
+        $data = $request->only('name', 'phone', 'email', 'address');
+        $data['franchise_id'] = $user->franchise_id;
+        $data['customer_code'] = 'C-'.strtoupper(uniqid());
+        $data['is_wholesale'] = $request->boolean('is_wholesale');
+        $data['is_active'] = true;
+        Customer::create($data);
+
+        return back()->with('success', 'Customer created successfully!');
+    }
+
+    // ── Franchise: Submit Payment ──────────────────────────────
+    public function franchiseSubmitPayment(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'payment_method' => 'required|in:cash,mobile_money,bank_transfer',
+            'transaction_reference' => 'nullable|string|max:100',
+            'proof_of_payment' => 'nullable|image|mimes:jpeg,png,jpg,pdf|max:5120',
+        ]);
+
+        $user = auth()->user();
+        $data = [
+            'payment_number' => 'PAY-'.strtoupper(uniqid()),
+            'franchise_id' => $user->franchise_id,
+            'amount' => $request->amount,
+            'payment_method' => $request->payment_method,
+            'transaction_reference' => $request->transaction_reference,
+            'status' => 'pending',
+            'submitted_at' => now(),
+        ];
+
+        if ($request->hasFile('proof_of_payment')) {
+            $data['proof_of_payment'] = $request->file('proof_of_payment')->store('payment-proofs', 'public');
+        }
+
+        PaymentSubmission::create($data);
+
+        return redirect()->route('web.franchise.payments')->with('success', 'Payment submitted successfully!');
+    }
+
+    // ── Franchise: Chat ──────────────────────────────────────────
+    public function franchiseChatMessages(Request $request)
+    {
+        $user = auth()->user();
+        $conversations = Conversation::with(['latestMessage.sender', 'creator'])
+            ->where(function ($q) use ($user) {
+                $q->where('created_by', $user->id)
+                    ->orWhere('franchise_id', $user->franchise_id);
+            })
+            ->latest()
+            ->get();
+
+        if ($request->ajax()) {
+            return response()->json($conversations);
+        }
+
+        return view('franchise.chat', compact('conversations'));
+    }
+
+    public function franchiseChatSend(Request $request)
+    {
+        $request->validate([
+            'conversation_id' => 'required|exists:conversations,id',
+            'message' => 'required|string|max:2000',
+        ]);
+
+        $user = auth()->user();
+        $conversation = Conversation::findOrFail($request->conversation_id);
+
+        if ($user->role?->name === 'Franchise Partner') {
+            if ($conversation->franchise_id !== $user->franchise_id && $conversation->created_by !== $user->id) {
+                return back()->with('error', 'Unauthorized.');
+            }
+        }
+
+        $conversation->messages()->create([
+            'sender_id' => $user->id,
+            'message' => $request->message,
+        ]);
+
+        return back()->with('success', 'Message sent!');
+    }
+
+    public function franchiseChatCreate(Request $request)
+    {
+        $request->validate([
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string|max:2000',
+        ]);
+
+        $user = auth()->user();
+        $conversation = Conversation::create([
+            'franchise_id' => $user->franchise_id,
+            'created_by' => $user->id,
+            'subject' => $request->subject,
+            'priority' => 'normal',
+            'status' => 'open',
+        ]);
+        $conversation->messages()->create([
+            'sender_id' => $user->id,
+            'message' => $request->message,
+        ]);
+
+        return back()->with('success', 'Conversation started!');
     }
 }

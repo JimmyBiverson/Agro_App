@@ -1,11 +1,76 @@
 @extends('layouts.app')
 @section('title', 'My Payments')
-@section('page-title', 'Payment History')
+@section('page-title', 'Payments')
 
 @section('content')
+@php $franchise = auth()->user()->franchise; @endphp
+
+<div class="mb-8">
+    <div class="card-full">
+        <div class="card-header">
+            <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Submit Payment</h3>
+        </div>
+        <div class="card-body">
+            <div class="mb-4 p-3 rounded-lg" style="background:var(--bg-input)">
+                <span class="text-xs" style="color:var(--text-muted)">Outstanding Balance:</span>
+                <span class="text-lg font-bold" style="color:var(--accent)">UGX {{ number_format($franchise->account_balance ?? 0) }}</span>
+            </div>
+
+            <form action="{{ route('web.franchise.payments.submit') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Amount (UGX) *</label>
+                        <input type="number" name="amount" min="1" required value="{{ old('amount') }}"
+                            class="w-full rounded-lg border px-3 py-2.5 text-sm"
+                            style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)"
+                            placeholder="Enter amount">
+                        @error('amount') <p class="text-xs mt-1" style="color:#ef4444">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Payment Method *</label>
+                        <select name="payment_method" required
+                            class="w-full rounded-lg border px-3 py-2.5 text-sm"
+                            style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                            <option value="">Select method</option>
+                            <option value="cash" {{ old('payment_method') === 'cash' ? 'selected' : '' }}>Cash</option>
+                            <option value="mobile_money" {{ old('payment_method') === 'mobile_money' ? 'selected' : '' }}>Mobile Money</option>
+                            <option value="bank_transfer" {{ old('payment_method') === 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                        </select>
+                        @error('payment_method') <p class="text-xs mt-1" style="color:#ef4444">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Transaction Reference</label>
+                        <input type="text" name="transaction_reference" value="{{ old('transaction_reference') }}"
+                            class="w-full rounded-lg border px-3 py-2.5 text-sm"
+                            style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)"
+                            placeholder="e.g. TXN-12345">
+                        @error('transaction_reference') <p class="text-xs mt-1" style="color:#ef4444">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Proof of Payment</label>
+                        <input type="file" name="proof_of_payment" accept="image/*"
+                            class="w-full rounded-lg border px-3 py-2.5 text-sm"
+                            style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <p class="text-xs mt-1" style="color:var(--text-muted)">Images only, max 5MB</p>
+                        @error('proof_of_payment') <p class="text-xs mt-1" style="color:#ef4444">{{ $message }}</p> @enderror
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit"
+                        class="px-5 py-2.5 gradient-indigo text-white rounded-lg text-sm font-semibold hover:opacity-90 transition">
+                        Submit Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="card-full">
     <div class="card-header">
-        <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Payments ({{ $payments->total() }})</h3>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Payment History ({{ $payments->total() }})</h3>
     </div>
     <div class="card-body p-0">
         <div class="overflow-x-auto">
