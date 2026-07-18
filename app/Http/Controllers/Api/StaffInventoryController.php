@@ -33,7 +33,8 @@ class StaffInventoryController extends Controller
             'reorder_level' => 'nullable|numeric|min:0',
         ]);
 
-        $previousQuantity = $inventory->getOriginal('quantity') ?? 0;
+        $existing = WarehouseInventory::where('product_id', $request->product_id)->first();
+        $previousQuantity = $existing?->quantity ?? 0;
         $quantityChange = $request->quantity - $previousQuantity;
 
         $inventory = WarehouseInventory::updateOrCreate(

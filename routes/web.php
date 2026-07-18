@@ -86,5 +86,32 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     Route::get('/franchise/sales', [WebController::class, 'franchiseSales'])->name('web.franchise.sales');
     Route::get('/franchise/inventory', [WebController::class, 'franchiseInventory'])->name('web.franchise.inventory');
     Route::get('/franchise/payments', [WebController::class, 'franchisePayments'])->name('web.franchise.payments');
-    Route::get('/franchise/chat', [WebController::class, 'franchiseChat'])->name('web.franchise.chat');
+    // Admin: Franchise CRUD
+    Route::post('/admin/franchises', [WebController::class, 'adminStoreFranchise'])->name('web.admin.franchises.store');
+    Route::post('/admin/franchises/delete', [WebController::class, 'adminDeleteFranchise'])->name('web.admin.franchises.delete');
+    Route::post('/admin/franchises/toggle', [WebController::class, 'adminToggleFranchise'])->name('web.admin.franchises.toggle');
+
+    // Admin: User Toggle
+    Route::post('/admin/users/toggle', [WebController::class, 'adminToggleUser'])->name('web.admin.users.toggle');
+
+    // Admin: Price Slabs
+    Route::post('/admin/price-slabs', [WebController::class, 'adminStorePriceSlab'])->name('web.admin.priceSlabs.store');
+    Route::post('/admin/price-slabs/delete', [WebController::class, 'adminDeletePriceSlab'])->name('web.admin.priceSlabs.delete');
+
+    // Admin: Sales Targets
+    Route::post('/admin/sales-targets', [WebController::class, 'adminStoreSalesTarget'])->name('web.admin.salesTargets.store');
+    Route::post('/admin/sales-targets/delete', [WebController::class, 'adminDeleteSalesTarget'])->name('web.admin.salesTargets.delete');
+
+    // Staff: Stock + Receipts
+    Route::post('/staff/inventory/update', [WebController::class, 'staffUpdateWarehouseStock'])->name('web.staff.inventory.update');
+    Route::get('/staff/stock-receipts', [WebController::class, 'staffStockReceipts'])->name('web.staff.stockReceipts');
+
+    // Franchise: Order + Sale + Customer + Payment + Chat
+    Route::post('/franchise/orders/place', [WebController::class, 'franchisePlaceOrder'])->name('web.franchise.orders.place');
+    Route::post('/franchise/sales/create', [WebController::class, 'franchiseCreateSale'])->name('web.franchise.sales.create');
+    Route::post('/franchise/customers/create', [WebController::class, 'franchiseCreateCustomer'])->name('web.franchise.customers.create');
+    Route::post('/franchise/payments/submit', [WebController::class, 'franchiseSubmitPayment'])->name('web.franchise.payments.submit');
+    Route::get('/franchise/chat', [WebController::class, 'franchiseChatMessages'])->name('web.franchise.chat');
+    Route::post('/franchise/chat/send', [WebController::class, 'franchiseChatSend'])->name('web.franchise.chat.send');
+    Route::post('/franchise/chat/create', [WebController::class, 'franchiseChatCreate'])->name('web.franchise.chat.create');
 });
