@@ -1249,7 +1249,12 @@ class WebController extends Controller
             'max_qty' => 'nullable|integer|min:1|gte:min_qty',
             'slab_price' => 'required|numeric|min:0',
         ]);
-        PriceSlab::create($request->only('product_id', 'min_qty', 'max_qty', 'slab_price'));
+        PriceSlab::create([
+            'product_id' => $request->product_id,
+            'min_quantity' => $request->min_qty,
+            'max_quantity' => $request->max_qty,
+            'slab_price' => $request->slab_price,
+        ]);
 
         return back()->with('success', 'Price slab added!');
     }
@@ -1499,7 +1504,7 @@ class WebController extends Controller
         ];
 
         if ($request->hasFile('proof_of_payment')) {
-            $data['proof_of_payment'] = $request->file('proof_of_payment')->store('payment-proofs', 'public');
+            $data['proof_of_payment_path'] = $request->file('proof_of_payment')->store('payment-proofs', 'public');
         }
 
         PaymentSubmission::create($data);
