@@ -89,19 +89,20 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($inventory as $i)
+                    @foreach($inventory as $i => $item)
+                    @php $idx = $loop->iteration; @endphp
                     <tr class="border-b hover:opacity-80 transition-opacity" style="border-color:var(--border-color)"
-                        x-show="search === '' || '{{ strtolower($i->product?->sku . ' ' . $i->product?->name) }}'.includes(search.toLowerCase())">
-                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--accent)">{{ $i->product?->sku }}</td>
-                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $i->product?->name }}</td>
-                        <td class="px-4 py-3 text-sm" style="color:var(--text-muted)">{{ $i->product?->unit ?? 'N/A' }}</td>
-                        <td class="px-4 py-3 text-sm text-right font-medium" style="color:var(--text-primary)">{{ number_format($i->quantity) }}</td>
-                        <td class="px-4 py-3 text-sm text-right" style="color:var(--text-muted)">{{ number_format($i->reorder_level) }}</td>
-                        <td class="px-4 py-3 text-sm text-right" style="color:var(--text-primary)">UGX {{ number_format($i->product?->selling_price ?? 0) }}</td>
-                        <td class="px-4 py-3 text-sm text-right font-medium" style="color:var(--text-primary)">UGX {{ number_format($i->total_value) }}</td>
+                        x-show="(search === '' || '{{ strtolower($item->product?->sku . ' ' . $item->product?->name) }}'.includes(search.toLowerCase())) && (idx >= (page - 1) * perPage + 1 && idx <= page * perPage)">
+                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--accent)">{{ $item->product?->sku }}</td>
+                        <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $item->product?->name }}</td>
+                        <td class="px-4 py-3 text-sm" style="color:var(--text-muted)">{{ $item->product?->unit_of_measure ?? 'N/A' }}</td>
+                        <td class="px-4 py-3 text-sm text-right font-medium" style="color:var(--text-primary)">{{ number_format($item->quantity) }}</td>
+                        <td class="px-4 py-3 text-sm text-right" style="color:var(--text-muted)">{{ number_format($item->reorder_level) }}</td>
+                        <td class="px-4 py-3 text-sm text-right" style="color:var(--text-primary)">UGX {{ number_format($item->product?->selling_price ?? 0) }}</td>
+                        <td class="px-4 py-3 text-sm text-right font-medium" style="color:var(--text-primary)">UGX {{ number_format($item->total_value) }}</td>
                         <td class="px-4 py-3 text-center">
-                            <span class="badge {{ $i->quantity == 0 ? 'badge-danger' : ($i->quantity <= $i->reorder_level ? 'badge-danger' : 'badge-success') }}">
-                                {{ $i->quantity == 0 ? 'Out of Stock' : ($i->quantity <= $i->reorder_level ? 'Low Stock' : 'OK') }}
+                            <span class="badge {{ $item->quantity == 0 ? 'badge-danger' : ($item->quantity <= $item->reorder_level ? 'badge-danger' : 'badge-success') }}">
+                                {{ $item->quantity == 0 ? 'Out of Stock' : ($item->quantity <= $item->reorder_level ? 'Low Stock' : 'OK') }}
                             </span>
                         </td>
                         <td class="px-4 py-3 text-center">
@@ -110,9 +111,7 @@
                             </a>
                         </td>
                     </tr>
-                    @empty
-                    <tr><td colspan="9" class="px-4 py-8 text-center text-sm" style="color:var(--text-muted)">No inventory items found.</td></tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -166,9 +165,17 @@
                         <td class="px-4 py-3 text-sm font-medium" style="color:var(--accent)">{{ $m->product?->sku }}</td>
                         <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $m->product?->name }}</td>
                         <td class="px-4 py-3 text-center">
-                            <span class="badge {{ $m->type === 'out' ? 'badge-danger' : 'badge-success' }}">
-                                {{ ucfirst($m->type) }}
-                            </span>
+                            @php
+                                $typeLabels = [
+                                    'warehouse_out' => ['Warehouse Out', 'badge-danger'],
+                                    'warehouse_in' => ['Warehouse In', 'badge-success'],
+                                    'franchise_in' => ['Franchise In', 'badge-success'],
+                                    'franchise_out' => ['Franchise Out', 'badge-danger'],
+                                    'adjustment' => ['Adjustment', 'badge-warning'],
+                                ];
+                                $label = $typeLabels[$m->type] ?? ['Unknown', 'badge-secondary'];
+                            @endphp
+                            <span class="badge {{ $label[1] }}">{{ $label[0] }}</span>
                         </td>
                         <td class="px-4 py-3 text-sm text-right font-medium" style="color:var(--text-primary)">{{ number_format($m->quantity) }}</td>
                         <td class="px-4 py-3 text-sm text-right" style="color:var(--text-muted)">{{ $m->reference_type ? class_basename($m->reference_type) . '#' . $m->reference_id : '-' }}</td>

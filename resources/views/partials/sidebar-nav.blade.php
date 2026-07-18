@@ -2,14 +2,12 @@
     $user = auth()->user();
     $role = $user->role?->name ?? '';
     $current = request()->route()->getName();
-    $showBadges = ($notif['notif_inapp_badge_counts'] ?? '1') === '1';
-    $pending_orders = $showBadges ? \App\Models\Order::where('status', 'pending')->count() : 0;
+    $pending_orders = $nOrders ?? 0;
     if ($role === 'Franchise Partner') {
-        $pending_payments = $showBadges ? \App\Models\PaymentSubmission::where('status', 'pending')->where('franchise_id', $user->franchise_id)->count() : 0;
+        $pending_payments = $nMyPayments ?? 0;
     } else {
-        $pending_payments = $showBadges ? \App\Models\PaymentSubmission::where('status', 'pending')->count() : 0;
+        $pending_payments = $nPayments ?? 0;
     }
-    $pending_count = $role === 'System Administrator' ? $pending_orders + $pending_payments : ($role === 'Farmmantra Staff' ? $pending_orders : ($role === 'Finance Department' ? $pending_payments : 0));
 @endphp
 
 <div class="flex h-16 items-center gap-3 px-5 border-b" style="border-color:rgba(255,255,255,0.08)">

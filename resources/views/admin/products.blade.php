@@ -78,8 +78,8 @@
                         @forelse($slabs as $slab)
                         <tr class="border-b" style="border-color:var(--border-color)">
                             <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $slab->product?->name }} ({{ $slab->product?->sku }})</td>
-                            <td class="px-4 py-3 text-sm text-right" style="color:var(--text-secondary)">{{ $slab->min_qty }}</td>
-                            <td class="px-4 py-3 text-sm text-right" style="color:var(--text-secondary)">{{ $slab->max_qty ?? '∞' }}</td>
+                            <td class="px-4 py-3 text-sm text-right" style="color:var(--text-secondary)">{{ $slab->min_quantity }}</td>
+                            <td class="px-4 py-3 text-sm text-right" style="color:var(--text-secondary)">{{ $slab->max_quantity ?? '∞' }}</td>
                             <td class="px-4 py-3 text-sm text-right font-semibold" style="color:var(--text-primary)">UGX {{ number_format($slab->slab_price) }}</td>
                             <td class="px-4 py-3 text-center">
                                 <form action="{{ route('web.admin.priceSlabs.delete') }}" method="POST" class="inline" onsubmit="return confirm('Remove this price slab?')">

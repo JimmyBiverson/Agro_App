@@ -324,24 +324,7 @@
                     <i x-show="!dark" class="fas fa-moon" style="color:var(--text-muted)"></i>
                     <i x-show="dark" class="fas fa-sun text-yellow-400"></i>
                 </button>
-                {{-- Notification Bell --}}
-                @php
-                    $role = auth()->user()->role?->name;
-                    $showBadges = ($notif['notif_inapp_badge_counts'] ?? '1') === '1';
-                    $nOrders = $showBadges ? \App\Models\Order::where('status', 'pending')->count() : 0;
-                    $nPayments = $showBadges ? \App\Models\PaymentSubmission::where('status', 'pending')->count() : 0;
-                    $nLowStock = $showBadges ? \App\Models\WarehouseInventory::whereColumn('quantity', '<=', 'reorder_level')->count() : 0;
-                    $nPendingTotal = \App\Models\PaymentSubmission::where('status', 'pending')->sum('amount');
-                    $fid = auth()->user()->franchise_id;
-                    $nMyOrders = $fid ? \App\Models\Order::where('franchise_id', $fid)->where('status', 'pending')->count() : 0;
-                    $nMyPayments = $fid ? \App\Models\PaymentSubmission::where('franchise_id', $fid)->where('status', 'pending')->count() : 0;
-                    $nMyLowStock = $fid ? \App\Models\FranchiseInventory::where('franchise_id', $fid)->whereColumn('quantity', '<=', 'reorder_level')->count() : 0;
-                    $bellCount = 0;
-                    if ($role === 'System Administrator') { $bellCount = ($nOrders > 0 ? 1 : 0) + ($nPayments > 0 ? 1 : 0) + ($nLowStock > 0 ? 1 : 0); }
-                    elseif ($role === 'Farmmantra Staff') { $bellCount = ($nOrders > 0 ? 1 : 0) + ($nLowStock > 0 ? 1 : 0); }
-                    elseif ($role === 'Finance Department') { $bellCount = $nPayments > 0 ? 1 : 0; }
-                    elseif ($role === 'Franchise Partner') { $bellCount = ($nMyOrders > 0 ? 1 : 0) + ($nMyPayments > 0 ? 1 : 0) + ($nMyLowStock > 0 ? 1 : 0); }
-                @endphp
+                {{-- Notification Bell (variables from View Composer) --}}
                 <div class="relative" x-data="{ notifOpen: false }">
                     <button @click="notifOpen = !notifOpen" class="p-2.5 rounded-xl relative transition" onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background=''">
                         <i class="fas fa-bell" style="color:var(--text-muted)"></i>
