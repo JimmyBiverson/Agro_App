@@ -181,8 +181,9 @@
 
         /* ── Modal system ─────────────────────────────────────── */
         .modal-overlay {
-            position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem;
+            position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 5vh 1rem 1rem;
         }
+        .modal-overlay .modal-panel { margin-top: 0; }
         .modal-backdrop {
             position: fixed; inset: 0;
             background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
