@@ -40,7 +40,7 @@
                                 <form action="{{ route('web.admin.products.delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete product {{ addslashes($p->name) }}?')">
                                     @csrf
                                     <input type="hidden" name="id" value="{{ $p->id }}">
-                                    <button type="submit" class="text-red-400 hover:text-red-300 text-sm"><i class="fas fa-trash"></i></button>
+                                    <button type="submit" class="btn-delete"><i class="fas fa-trash-can text-xs"></i></button>
                                 </form>
                             </td>
                         </tr>
@@ -55,29 +55,32 @@
     </div>
 
     <!-- Add Product Modal -->
-    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display:none" @keydown.escape.window="open = false">
-        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
-        <div class="relative w-full max-w-lg rounded-2xl border p-6 shadow-2xl max-h-[90vh] overflow-y-auto" style="background:var(--bg-card); border-color:var(--border-color)" @click.stop>
+    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="modal-overlay" style="display:none" @keydown.escape.window="open = false">
+        <div class="modal-backdrop" @click="open = false"></div>
+        <div class="modal-panel" @click.stop>
             <div class="flex items-center justify-between mb-5">
-                <h3 class="text-lg font-bold" style="color:var(--text-primary)">Add New Product</h3>
-                <button @click="open = false" class="text-sm" style="color:var(--text-muted)"><i class="fas fa-times text-lg"></i></button>
+                <div>
+                    <h3 class="text-lg font-bold" style="color:var(--text-primary)">Add New Product</h3>
+                    <p class="text-xs mt-0.5" style="color:var(--text-muted)">Fill in the details below to add a product to inventory.</p>
+                </div>
+                <button @click="open = false" class="btn-delete" style="color:var(--text-muted);width:2rem;height:2rem"><i class="fas fa-times"></i></button>
             </div>
             <form action="{{ route('web.admin.products.store') }}" method="POST" class="space-y-4">
                 @csrf
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Product Name *</label>
-                        <input type="text" name="name" required placeholder="e.g. Roundup Gold" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Product Name *</label>
+                        <input type="text" name="name" required placeholder="e.g. Roundup Gold">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">SKU *</label>
-                        <input type="text" name="sku" required placeholder="e.g. HER-001" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">SKU *</label>
+                        <input type="text" name="sku" required placeholder="e.g. HER-001">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Category *</label>
-                        <select name="category_id" required class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Category *</label>
+                        <select name="category_id" required>
                             <option value="">Select category</option>
                             @foreach(\App\Models\Category::orderBy('name')->get() as $cat)
                             <option value="{{ $cat->id }}">{{ $cat->name }}</option>
@@ -85,31 +88,31 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Unit of Measure *</label>
-                        <input type="text" name="unit_of_measure" required placeholder="e.g. Litre, Kg, Pack" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Unit of Measure *</label>
+                        <input type="text" name="unit_of_measure" required placeholder="e.g. Litre, Kg, Pack">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Selling Price (UGX) *</label>
-                        <input type="number" name="selling_price" required min="0" placeholder="0" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Selling Price (UGX) *</label>
+                        <input type="number" name="selling_price" required min="0" placeholder="0">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Standard Price (UGX) *</label>
-                        <input type="number" name="standard_price" required min="0" placeholder="0" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Standard Price (UGX) *</label>
+                        <input type="number" name="standard_price" required min="0" placeholder="0">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Packaging Details</label>
-                    <input type="text" name="packaging_details" placeholder="e.g. 1L bottle, 5kg bag" class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                    <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Packaging Details</label>
+                    <input type="text" name="packaging_details" placeholder="e.g. 1L bottle, 5kg bag">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium mb-1.5" style="color:var(--text-secondary)">Description</label>
-                    <textarea name="description" rows="3" placeholder="Product description..." class="w-full rounded-lg border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)"></textarea>
+                    <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Description</label>
+                    <textarea name="description" rows="3" placeholder="Product description..."></textarea>
                 </div>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" @click="open = false" class="px-4 py-2.5 rounded-lg text-sm font-medium border" style="border-color:var(--border-color); color:var(--text-secondary)">Cancel</button>
-                    <button type="submit" class="px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"><i class="fas fa-save mr-1"></i> Save Product</button>
+                <div class="flex justify-end gap-3 pt-2 border-t" style="border-color:var(--border-color)">
+                    <button type="button" @click="open = false" class="px-5 py-2.5 rounded-lg text-sm font-medium border transition hover:opacity-80" style="border-color:var(--border-color); color:var(--text-secondary)">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/25"><i class="fas fa-save mr-1.5"></i> Save Product</button>
                 </div>
             </form>
         </div>

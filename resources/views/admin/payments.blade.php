@@ -64,14 +64,14 @@
                             <div class="flex items-center justify-center gap-1">
                                 <form action="{{ route('web.finance.payments.accept', $payment->id) }}" method="POST" class="inline">
                                     @csrf
-                                    <button type="submit" class="px-2 py-1 bg-emerald-600/20 text-emerald-400 rounded text-xs hover:bg-emerald-600/40 transition" title="Accept">
+                                    <button type="submit" class="btn-action btn-approve" title="Accept">
                                         <i class="fas fa-check"></i>
                                     </button>
                                 </form>
                                 <form action="{{ route('web.finance.payments.reject', $payment->id) }}" method="POST" class="inline" onsubmit="return confirm('Reject payment {{ $payment->payment_number }}?')">
                                     @csrf
                                     <input type="hidden" name="rejection_reason" value="Rejected by finance">
-                                    <button type="submit" class="px-2 py-1 bg-red-600/20 text-red-400 rounded text-xs hover:bg-red-600/40 transition" title="Reject">
+                                    <button type="submit" class="btn-action btn-decline" title="Reject">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </form>

@@ -64,14 +64,14 @@
                             <div class="flex items-center justify-center gap-1">
                                 <form action="{{ route('web.admin.orders.approve', $order->id) }}" method="POST" class="inline">
                                     @csrf
-                                    <button type="submit" class="px-2 py-1 bg-emerald-600/20 text-emerald-400 rounded text-xs hover:bg-emerald-600/40 transition" title="Approve">
+                                    <button type="submit" class="btn-action btn-approve" title="Approve">
                                         <i class="fas fa-check"></i>
                                     </button>
                                 </form>
                                 <form action="{{ route('web.admin.orders.decline', $order->id) }}" method="POST" class="inline" onsubmit="return confirm('Decline order {{ $order->order_number }}?')">
                                     @csrf
                                     <input type="hidden" name="decline_reason" value="Declined by admin">
-                                    <button type="submit" class="px-2 py-1 bg-red-600/20 text-red-400 rounded text-xs hover:bg-red-600/40 transition" title="Decline">
+                                    <button type="submit" class="btn-action btn-decline" title="Decline">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </form>

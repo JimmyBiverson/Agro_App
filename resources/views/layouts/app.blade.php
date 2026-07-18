@@ -179,6 +179,105 @@
         .gradient-cyan { background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); }
         .gradient-purple { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
 
+        /* ── Modal system ─────────────────────────────────────── */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem;
+        }
+        .modal-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        }
+        html.dark .modal-backdrop { background: rgba(0,0,0,0.75); }
+        .modal-panel {
+            position: relative; width: 100%; max-width: 32rem; max-height: 90vh; overflow-y: auto;
+            background: var(--bg-card-solid); border: 1px solid var(--border-color);
+            border-radius: 1.25rem; box-shadow: 0 25px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05) inset;
+            padding: 1.5rem;
+        }
+        html.dark .modal-panel { box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06) inset; }
+
+        /* ── Modal form inputs ─────────────────────────────────── */
+        .modal-panel label { color: var(--text-secondary); }
+        .modal-panel input[type="text"],
+        .modal-panel input[type="email"],
+        .modal-panel input[type="password"],
+        .modal-panel input[type="number"],
+        .modal-panel input[type="url"],
+        .modal-panel input[type="file"],
+        .modal-panel textarea,
+        .modal-panel select {
+            width: 100%; border-radius: 0.625rem; border: 1px solid var(--border-color);
+            padding: 0.625rem 0.75rem; font-size: 0.875rem; outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .modal-panel input[type="text"],
+        .modal-panel input[type="email"],
+        .modal-panel input[type="password"],
+        .modal-panel input[type="number"],
+        .modal-panel input[type="url"],
+        .modal-panel textarea {
+            background: var(--bg-input); color: var(--text-primary);
+        }
+        html.dark .modal-panel input[type="text"],
+        html.dark .modal-panel input[type="email"],
+        html.dark .modal-panel input[type="password"],
+        html.dark .modal-panel input[type="number"],
+        html.dark .modal-panel input[type="url"],
+        html.dark .modal-panel textarea {
+            background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); color: var(--text-primary);
+        }
+        .modal-panel input:focus,
+        .modal-panel textarea:focus,
+        .modal-panel select:focus {
+            border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light);
+        }
+        .modal-panel select {
+            background: var(--bg-input); color: var(--text-primary);
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem;
+        }
+        html.dark .modal-panel select {
+            background-color: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1);
+            color: var(--text-primary);
+        }
+        .modal-panel select option {
+            background: var(--bg-card-solid); color: var(--text-primary);
+        }
+        html.dark .modal-panel select option {
+            background: #1e293b; color: #f1f5f9;
+        }
+        .modal-panel input::placeholder,
+        .modal-panel textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* ── Delete button hover effect ─────────────────────── */
+        .btn-delete {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 2rem; height: 2rem; border-radius: 0.5rem; border: none; cursor: pointer;
+            color: #ef4444; background: transparent; transition: all 0.2s;
+        }
+        .btn-delete:hover { background: rgba(239,68,68,0.15); color: #dc2626; transform: scale(1.1); }
+        html.dark .btn-delete:hover { background: rgba(239,68,68,0.2); color: #f87171; }
+        .btn-delete:active { transform: scale(0.95); }
+
+        /* ── Action button hover effects ─────────────────────── */
+        .btn-action {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; border: none; cursor: pointer;
+            transition: all 0.2s; font-size: 0.75rem;
+        }
+        .btn-action:active { transform: scale(0.9); }
+        .btn-approve {
+            color: #10b981; background: rgba(16,185,129,0.1);
+        }
+        .btn-approve:hover { background: rgba(16,185,129,0.25); box-shadow: 0 0 12px rgba(16,185,129,0.2); transform: scale(1.1); }
+        .btn-decline {
+            color: #ef4444; background: rgba(239,68,68,0.1);
+        }
+        .btn-decline:hover { background: rgba(239,68,68,0.25); box-shadow: 0 0 12px rgba(239,68,68,0.2); transform: scale(1.1); }
+
         .page-enter { animation: pageSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes pageSlide { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
