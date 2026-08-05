@@ -89,10 +89,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($inventory as $i => $item)
-                    @php $idx = $loop->iteration; @endphp
+                    @foreach($inventory as $item)
                     <tr class="border-b hover:opacity-80 transition-opacity" style="border-color:var(--border-color)"
-                        x-show="(search === '' || '{{ strtolower($item->product?->sku . ' ' . $item->product?->name) }}'.includes(search.toLowerCase())) && (idx >= (page - 1) * perPage + 1 && idx <= page * perPage)">
+                        x-show="(search === '' || '{{ strtolower($item->product?->sku . ' ' . $item->product?->name) }}'.includes(search.toLowerCase())) && ({{ $loop->iteration }} >= (page - 1) * perPage + 1 && {{ $loop->iteration }} <= page * perPage)">
                         <td class="px-4 py-3 text-sm font-medium" style="color:var(--accent)">{{ $item->product?->sku }}</td>
                         <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $item->product?->name }}</td>
                         <td class="px-4 py-3 text-sm" style="color:var(--text-muted)">{{ $item->product?->unit_of_measure ?? 'N/A' }}</td>

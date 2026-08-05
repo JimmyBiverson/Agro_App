@@ -15,7 +15,7 @@ class FranchiseOrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $query = Order::forFranchise($user->franchise_id)->with('items.product');
+        $query = Order::forFranchise($user->franchise_id)->with('items.product.category');
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -31,7 +31,7 @@ class FranchiseOrderController extends Controller
         $request->validate([
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.quantity' => 'required|numeric|min:0.01',
             'notes' => 'nullable|string',
         ]);
 
@@ -65,12 +65,21 @@ class FranchiseOrderController extends Controller
                 $totalAmount += $subtotal;
             }
 
+            if ($user->franchise && $user->franchise->credit_limit > 0) {
+                $potentialBalance = (float) $user->franchise->account_balance + $totalAmount;
+                if ($potentialBalance > (float) $user->franchise->credit_limit) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'order' => 'Order total exceeds available credit limit.',
+                    ]);
+                }
+            }
+
             $order->update(['total_amount' => $totalAmount]);
 
             return $order;
         });
 
-        $result->load('items.product');
+        $result->load('items.product.category');
 
         ActivityLogger::orderPlaced($result);
 
@@ -88,7 +97,7 @@ class FranchiseOrderController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        $order->load(['items.product', 'stockReceipt.items.product']);
+        $order->load(['items.product.category', 'stockReceipt.items.product']);
 
         return response()->json(['data' => $order]);
     }

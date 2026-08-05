@@ -100,6 +100,12 @@ class StockReceiptController extends Controller
 
         $stockReceipt->order->update(['status' => 'delivered']);
 
+        $franchise = $user->franchise;
+        if ($franchise) {
+            $franchise->account_balance += $stockReceipt->order->total_amount;
+            $franchise->save();
+        }
+
         ActivityLogger::orderDelivered($stockReceipt->order, $user->id);
 
         return response()->json([

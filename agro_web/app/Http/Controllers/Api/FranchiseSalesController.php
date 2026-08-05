@@ -48,6 +48,9 @@ class FranchiseSalesController extends Controller
         $result = DB::transaction(function () use ($request, $user) {
             $totalAmount = 0;
 
+            $productIds = collect($request->items)->pluck('product_id')->unique()->all();
+            $products = Product::with('priceSlabs')->whereIn('id', $productIds)->get()->keyBy('id');
+
             foreach ($request->items as $item) {
                 $inventory = FranchiseInventory::where('franchise_id', $user->franchise_id)
                     ->where('product_id', $item['product_id'])
@@ -59,12 +62,13 @@ class FranchiseSalesController extends Controller
                     ]);
                 }
 
-                $unitPrice = $inventory->product->getBestPrice($item['quantity']);
+                $product = $products->get($item['product_id']);
+                $unitPrice = $product->getBestPrice($item['quantity']);
                 $totalAmount += $item['quantity'] * $unitPrice;
             }
 
             $discount = $request->discount ?? 0;
-            $finalAmount = $totalAmount - $discount;
+            $finalAmount = max(0, $totalAmount - $discount);
 
             $sale = Sale::create([
                 'sale_number' => Sale::generateSaleNumber(),
@@ -75,13 +79,13 @@ class FranchiseSalesController extends Controller
                 'discount' => $discount,
                 'final_amount' => $finalAmount,
                 'payment_method' => $request->payment_method,
-                'payment_status' => $request->payment_method === 'credit' ? 'pending' : 'paid',
+                'payment_status' => $request->payment_method === 'credit' ? 'credit' : 'paid',
                 'notes' => $request->notes,
                 'sale_date' => now()->toDateString(),
             ]);
 
             foreach ($request->items as $item) {
-                $product = Product::find($item['product_id']);
+                $product = $products->get($item['product_id']);
                 $unitPrice = $product->getBestPrice($item['quantity']);
                 $subtotal = $item['quantity'] * $unitPrice;
 

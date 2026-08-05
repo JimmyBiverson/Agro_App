@@ -65,7 +65,7 @@ class FinanceController extends Controller
         ]);
 
         $franchise = Franchise::find($paymentSubmission->franchise_id);
-        $franchise->account_balance += $paymentSubmission->verified_amount;
+        $franchise->account_balance -= $paymentSubmission->verified_amount;
         $franchise->save();
 
         ActivityLogger::paymentAccepted($paymentSubmission, $request->user()->id);
@@ -89,8 +89,8 @@ class FinanceController extends Controller
 
         $paymentSubmission->update([
             'status' => 'rejected',
-            'verified_by' => $request->user()->id,
-            'verified_at' => now(),
+            'rejected_by' => $request->user()->id,
+            'rejected_at' => now(),
             'rejection_reason' => $request->rejection_reason,
         ]);
 

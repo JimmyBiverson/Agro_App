@@ -160,7 +160,7 @@ class ReportController extends Controller
         $type = $request->type ?? 'warehouse';
 
         if ($type === 'warehouse') {
-            $stock = WarehouseInventory::with('product:id,name,sku,unit_of_measure,category_id')
+            $stock = WarehouseInventory::with('product:id,name,sku,standard_price,unit_of_measure,category_id')
                 ->when($request->has('low_stock_only'), fn ($q) => $q->whereColumn('quantity', '<=', 'reorder_level'))
                 ->get();
 
@@ -168,7 +168,7 @@ class ReportController extends Controller
                 'total_products' => $stock->count(),
                 'total_quantity' => $stock->sum('quantity'),
                 'total_reserved' => $stock->sum('reserved_quantity'),
-                'total_value' => $stock->sum('total_value'),
+                'total_value' => $stock->sum(fn ($s) => $s->quantity * ($s->product?->standard_price ?? 0)),
                 'low_stock_count' => $stock->filter(fn ($s) => $s->quantity <= $s->reorder_level)->count(),
                 'out_of_stock_count' => $stock->filter(fn ($s) => $s->quantity <= 0)->count(),
             ];

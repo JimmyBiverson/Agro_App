@@ -16,6 +16,7 @@ use App\Models\Page;
 use App\Models\PaymentSubmission;
 use App\Models\PriceSlab;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\Role;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -23,6 +24,7 @@ use App\Models\SalesTarget;
 use App\Models\Setting;
 use App\Models\Slide;
 use App\Models\StockMovement;
+use Illuminate\Support\Facades\DB;
 use App\Models\StockReceipt;
 use App\Models\User;
 use App\Models\WarehouseInventory;
@@ -79,7 +81,7 @@ class WebController extends Controller
     {
         Auth::logout();
 
-        return redirect()->route('web.login');
+        return redirect()->route('login');
     }
 
     public function dashboard()
@@ -749,11 +751,14 @@ class WebController extends Controller
     public function financeReports()
     {
         $now = now();
+        $monthSql = fn (string $column) => DB::getDriverName() === 'sqlite'
+            ? "strftime('%m', {$column})"
+            : "MONTH({$column})";
         $data = [
             'total_collected_ytd' => PaymentSubmission::where('status', 'accepted')->whereYear('accepted_at', $now->year)->sum('verified_amount'),
             'total_collected_month' => PaymentSubmission::where('status', 'accepted')->whereMonth('accepted_at', $now->month)->sum('verified_amount'),
             'total_outstanding' => Franchise::where('account_balance', '>', 0)->sum('account_balance'),
-            'monthly_collections' => PaymentSubmission::where('status', 'accepted')->select(\Illuminate\Support\Facades\DB::raw('MONTH(accepted_at) as month'), \Illuminate\Support\Facades\DB::raw('SUM(verified_amount) as total'))->whereYear('accepted_at', $now->year)->groupBy(\Illuminate\Support\Facades\DB::raw('MONTH(accepted_at)'))->orderBy('month')->get(),
+            'monthly_collections' => PaymentSubmission::where('status', 'accepted')->select(\Illuminate\Support\Facades\DB::raw("{$monthSql('accepted_at')} as month"), \Illuminate\Support\Facades\DB::raw('SUM(verified_amount) as total'))->whereYear('accepted_at', $now->year)->groupBy(\Illuminate\Support\Facades\DB::raw($monthSql('accepted_at')))->orderBy('month')->get(),
             'monthly_reconciliation' => collect(),
         ];
 
@@ -900,8 +905,32 @@ class WebController extends Controller
             'standard_price' => 'required|numeric|min:0',
             'packaging_details' => 'nullable|string|max:255',
             'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
-        Product::create($request->only('name', 'sku', 'category_id', 'unit_of_measure', 'selling_price', 'standard_price', 'packaging_details', 'description'));
+        $data = $request->only('name', 'sku', 'category_id', 'unit_of_measure', 'selling_price', 'standard_price', 'packaging_details', 'description');
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $product = Product::create($data);
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $idx => $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('products', 'public');
+                    if (empty($product->image) && $idx === 0) {
+                        $product->update(['image' => $path]);
+                    } else {
+                        $product->images()->create([
+                            'image_path' => $path,
+                            'sort_order' => $idx,
+                        ]);
+                    }
+                }
+            }
+        }
 
         return redirect()->route('web.admin.products')->with('success', 'Product created successfully!');
     }
@@ -909,9 +938,94 @@ class WebController extends Controller
     public function adminDeleteProduct(Request $request)
     {
         $request->validate(['id' => 'required|exists:products,id']);
-        Product::destroy($request->id);
+        $product = Product::with('images')->findOrFail($request->id);
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
+        }
+        foreach ($product->images as $img) {
+            if ($img->image_path) {
+                Storage::disk('public')->delete($img->image_path);
+            }
+        }
+        $product->delete();
 
         return redirect()->route('web.admin.products')->with('success', 'Product deleted.');
+    }
+
+    public function adminDeleteProductImage(Request $request)
+    {
+        $request->validate(['id' => 'required|exists:product_images,id']);
+        $img = ProductImage::findOrFail($request->id);
+        if ($img->image_path) {
+            Storage::disk('public')->delete($img->image_path);
+        }
+        $img->delete();
+
+        return back()->with('success', 'Image removed.');
+    }
+
+    public function adminUpdateProduct(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:products,id',
+            'name' => 'required|string|max:255',
+            'sku' => 'required|string|max:50|unique:products,sku,'.$request->id,
+            'category_id' => 'required|exists:categories,id',
+            'unit_of_measure' => 'required|string|max:50',
+            'selling_price' => 'required|numeric|min:0',
+            'standard_price' => 'required|numeric|min:0',
+            'packaging_details' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'is_active' => 'nullable|boolean',
+            'delete_images' => 'nullable|array',
+            'delete_images.*' => 'integer|exists:product_images,id',
+        ]);
+        $product = Product::findOrFail($request->id);
+        $data = $request->only('name', 'sku', 'category_id', 'unit_of_measure', 'selling_price', 'standard_price', 'packaging_details', 'description');
+        $data['is_active'] = $request->has('is_active') ? (bool) $request->is_active : $product->is_active;
+
+        if ($request->hasFile('image')) {
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $product->update($data);
+
+        if ($request->filled('delete_images')) {
+            $imagesToDelete = ProductImage::where('product_id', $product->id)
+                ->whereIn('id', $request->delete_images)
+                ->get();
+
+            foreach ($imagesToDelete as $img) {
+                if ($img->image_path) {
+                    Storage::disk('public')->delete($img->image_path);
+                }
+                $img->delete();
+            }
+        }
+
+        if ($request->hasFile('images')) {
+            $maxSort = $product->images()->max('sort_order') ?? 0;
+            foreach ($request->file('images') as $idx => $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('products', 'public');
+                    if (empty($product->image) && $idx === 0) {
+                        $product->update(['image' => $path]);
+                    } else {
+                        $product->images()->create([
+                            'image_path' => $path,
+                            'sort_order' => $maxSort + $idx + 1,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return redirect()->route('web.admin.products')->with('success', 'Product updated successfully!');
     }
 
     // ── Admin CRUD: Users ──────────────────────────────────
@@ -944,6 +1058,27 @@ class WebController extends Controller
         return redirect()->route('web.admin.users')->with('success', 'User deleted.');
     }
 
+    public function adminUpdateUser(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:users,id',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,'.$request->id,
+            'role_id' => 'required|exists:roles,id',
+            'franchise_id' => 'nullable|exists:franchises,id',
+            'phone' => 'nullable|string|max:20',
+            'password' => 'nullable|string|min:6|confirmed',
+        ]);
+        $user = User::findOrFail($request->id);
+        $data = $request->only('name', 'email', 'role_id', 'franchise_id', 'phone');
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+        $user->update($data);
+
+        return redirect()->route('web.admin.users')->with('success', 'User updated successfully!');
+    }
+
     // ── Admin CRUD: Categories ──────────────────────────────────
     public function adminStoreCategory(Request $request)
     {
@@ -967,6 +1102,22 @@ class WebController extends Controller
         Category::destroy($request->id);
 
         return redirect()->route('web.admin.categories')->with('success', 'Category deleted.');
+    }
+
+    public function adminUpdateCategory(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+        $category = Category::findOrFail($request->id);
+        $data = $request->only('name', 'description', 'sort_order');
+        $data['slug'] = Str::slug($request->name);
+        $category->update($data);
+
+        return redirect()->route('web.admin.categories')->with('success', 'Category updated!');
     }
 
     // ── Admin: Order Actions ──────────────────────────────────
@@ -1051,6 +1202,24 @@ class WebController extends Controller
         return redirect()->route('web.admin.news')->with('success', 'Article deleted.');
     }
 
+    public function adminUpdateNews(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:news,id',
+            'title' => 'required|string|max:255',
+            'excerpt' => 'nullable|string',
+            'body' => 'nullable|string',
+            'is_published' => 'nullable|boolean',
+        ]);
+        $news = News::findOrFail($request->id);
+        $data = $request->only('title', 'excerpt', 'body');
+        $data['slug'] = Str::slug($request->title);
+        $data['is_published'] = $request->has('is_published') ? (bool) $request->is_published : $news->is_published;
+        $news->update($data);
+
+        return redirect()->route('web.admin.news')->with('success', 'Article updated!');
+    }
+
     // ── Admin CRUD: FAQs ──────────────────────────────────
     public function adminStoreFaq(Request $request)
     {
@@ -1072,6 +1241,23 @@ class WebController extends Controller
         Faq::destroy($request->id);
 
         return redirect()->route('web.admin.faqs')->with('success', 'FAQ deleted.');
+    }
+
+    public function adminUpdateFaq(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:faqs,id',
+            'question' => 'required|string|max:500',
+            'answer' => 'required|string',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'nullable|boolean',
+        ]);
+        $faq = Faq::findOrFail($request->id);
+        $data = $request->only('question', 'answer', 'sort_order');
+        $data['is_active'] = $request->has('is_active') ? (bool) $request->is_active : $faq->is_active;
+        $faq->update($data);
+
+        return redirect()->route('web.admin.faqs')->with('success', 'FAQ updated!');
     }
 
     // ── Admin CRUD: Slides ──────────────────────────────────
@@ -1102,6 +1288,31 @@ class WebController extends Controller
         return redirect()->route('web.admin.slides')->with('success', 'Slide deleted.');
     }
 
+    public function adminUpdateSlide(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:slides,id',
+            'title' => 'required|string|max:255',
+            'subtitle' => 'nullable|string|max:255',
+            'button_text' => 'nullable|string|max:100',
+            'button_url' => 'nullable|url',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'nullable|boolean',
+        ]);
+        $slide = Slide::findOrFail($request->id);
+        $data = $request->only('title', 'subtitle', 'button_text', 'button_url', 'sort_order');
+        $data['is_active'] = $request->has('is_active') ? (bool) $request->is_active : $slide->is_active;
+        if ($request->hasFile('image')) {
+            if ($slide->image) {
+                Storage::disk('public')->delete($slide->image);
+            }
+            $data['image'] = $request->file('image')->store('slides', 'public');
+        }
+        $slide->update($data);
+
+        return redirect()->route('web.admin.slides')->with('success', 'Slide updated!');
+    }
+
     // ── Admin CRUD: Pages ──────────────────────────────────
     public function adminStorePage(Request $request)
     {
@@ -1124,6 +1335,24 @@ class WebController extends Controller
         Page::destroy($request->id);
 
         return redirect()->route('web.admin.pages')->with('success', 'Page deleted.');
+    }
+
+    public function adminUpdatePage(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:pages,id',
+            'title' => 'required|string|max:255',
+            'body' => 'nullable|string',
+            'meta_description' => 'nullable|string|max:500',
+            'is_published' => 'nullable|boolean',
+        ]);
+        $page = Page::findOrFail($request->id);
+        $data = $request->only('title', 'body', 'meta_description');
+        $data['slug'] = Str::slug($request->title);
+        $data['is_published'] = $request->has('is_published') ? (bool) $request->is_published : $page->is_published;
+        $page->update($data);
+
+        return redirect()->route('web.admin.pages')->with('success', 'Page updated!');
     }
 
     // ── Staff: Order Actions ──────────────────────────────────
@@ -1216,6 +1445,25 @@ class WebController extends Controller
         return redirect()->route('web.admin.franchises')->with('success', 'Franchise deleted.');
     }
 
+    public function adminUpdateFranchise(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:franchises,id',
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:20|unique:franchises,code,'.$request->id,
+            'contact_person' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'region' => 'nullable|string|max:100',
+            'address' => 'nullable|string|max:500',
+            'credit_limit' => 'nullable|numeric|min:0',
+        ]);
+        $franchise = Franchise::findOrFail($request->id);
+        $franchise->update($request->only('name', 'code', 'contact_person', 'phone', 'email', 'region', 'address', 'credit_limit'));
+
+        return redirect()->route('web.admin.franchises')->with('success', 'Franchise updated successfully!');
+    }
+
     public function adminToggleFranchise(Request $request)
     {
         $request->validate(['id' => 'required|exists:franchises,id']);
@@ -1267,6 +1515,26 @@ class WebController extends Controller
         return back()->with('success', 'Price slab removed.');
     }
 
+    public function adminUpdatePriceSlab(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:price_slabs,id',
+            'product_id' => 'required|exists:products,id',
+            'min_qty' => 'required|integer|min:1',
+            'max_qty' => 'nullable|integer|min:1|gte:min_qty',
+            'slab_price' => 'required|numeric|min:0',
+        ]);
+        $slab = PriceSlab::findOrFail($request->id);
+        $slab->update([
+            'product_id' => $request->product_id,
+            'min_quantity' => $request->min_qty,
+            'max_quantity' => $request->max_qty,
+            'slab_price' => $request->slab_price,
+        ]);
+
+        return back()->with('success', 'Price slab updated!');
+    }
+
     // ── Admin: Sales Targets CRUD ──────────────────────────────
     public function adminStoreSalesTarget(Request $request)
     {
@@ -1288,6 +1556,22 @@ class WebController extends Controller
         SalesTarget::destroy($request->id);
 
         return back()->with('success', 'Sales target removed.');
+    }
+
+    public function adminUpdateSalesTarget(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:sales_targets,id',
+            'franchise_id' => 'required|exists:franchises,id',
+            'product_category_id' => 'nullable|exists:categories,id',
+            'month' => 'required|integer|min:1|max:12',
+            'year' => 'required|integer|min:2024',
+            'target_amount' => 'required|numeric|min:0',
+        ]);
+        $target = SalesTarget::findOrFail($request->id);
+        $target->update($request->only('franchise_id', 'product_category_id', 'month', 'year', 'target_amount'));
+
+        return back()->with('success', 'Sales target updated!');
     }
 
     // ── Staff: Stock Update ──────────────────────────────────

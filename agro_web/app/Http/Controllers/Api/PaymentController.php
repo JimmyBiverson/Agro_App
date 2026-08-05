@@ -31,7 +31,7 @@ class PaymentController extends Controller
             'payment_method' => 'required|string|in:bank_transfer,mobile_money,cash,cheque',
             'transaction_reference' => 'nullable|string|max:100',
             'bank_name' => 'nullable|string|max:100',
-            'proof_of_payment' => 'required|file|image|max:5120',
+            'proof_of_payment' => 'nullable|file|image|max:5120',
             'notes' => 'nullable|string',
         ]);
 
@@ -68,5 +68,26 @@ class PaymentController extends Controller
         }
 
         return response()->json(['data' => $paymentSubmission]);
+    }
+
+    public function uploadProof(Request $request, PaymentSubmission $paymentSubmission): JsonResponse
+    {
+        $user = request()->user();
+
+        if ($paymentSubmission->franchise_id !== $user->franchise_id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $request->validate([
+            'proof_of_payment' => 'required|file|image|max:5120',
+        ]);
+
+        $proofPath = $request->file('proof_of_payment')->store('payment-proofs', 'public');
+        $paymentSubmission->update(['proof_of_payment_path' => $proofPath]);
+
+        return response()->json([
+            'message' => 'Proof of payment uploaded.',
+            'data' => $paymentSubmission->fresh(),
+        ]);
     }
 }

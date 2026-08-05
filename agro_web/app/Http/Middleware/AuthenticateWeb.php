@@ -18,7 +18,7 @@ class AuthenticateWeb
     public function handle(Request $request, Closure $next): Response
     {
         if (! auth()->check()) {
-            return redirect()->route('web.login');
+            return redirect()->route('login');
         }
 
         $routeName = $request->route()->getName() ?? '';

@@ -3,7 +3,7 @@
 @section('page-title', 'Franchise Management')
 
 @section('content')
-<div x-data="{ open: false }">
+<div x-data="{ open: false, editing: false, editFranchise: {} }">
     <div class="card-full">
         <div class="card-header">
             <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Franchises ({{ $franchises->total() }})</h3>
@@ -38,6 +38,10 @@
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <div class="flex items-center justify-center gap-1.5">
+                                    <button type="button" class="btn-action" title="Edit" style="color:var(--accent); background:rgba(99,102,241,0.12)"
+                                        @click="editFranchise = {{ \Illuminate\Support\Js::from(['id' => $f->id, 'name' => $f->name, 'code' => $f->code, 'contact_person' => (string) $f->contact_person, 'phone' => (string) $f->phone, 'email' => (string) $f->email, 'region' => (string) $f->region, 'address' => (string) $f->address, 'credit_limit' => (string) $f->credit_limit]) }}; editing = true">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
                                     <form action="{{ route('web.admin.franchises.toggle') }}" method="POST" class="inline">
                                         @csrf
                                         <input type="hidden" name="id" value="{{ $f->id }}">
@@ -117,6 +121,66 @@
                 <div class="flex justify-end gap-3 pt-2 border-t" style="border-color:var(--border-color)">
                     <button type="button" @click="open = false" class="px-5 py-2.5 rounded-lg text-sm font-medium border transition hover:opacity-80" style="border-color:var(--border-color); color:var(--text-secondary)">Cancel</button>
                     <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/25"><i class="fas fa-save mr-1.5"></i> Save Franchise</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Franchise Modal -->
+    <div x-show="editing" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="modal-overlay" style="display:none" @keydown.escape.window="editing = false">
+        <div class="modal-backdrop" @click="editing = false"></div>
+        <div class="modal-panel" @click.stop>
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h3 class="text-lg font-bold" style="color:var(--text-primary)">Edit Franchise</h3>
+                    <p class="text-xs mt-0.5" style="color:var(--text-muted)">Update franchise details.</p>
+                </div>
+                <button @click="editing = false" class="btn-delete" style="color:var(--text-muted);width:2rem;height:2rem"><i class="fas fa-times"></i></button>
+            </div>
+            <form action="{{ route('web.admin.franchises.update') }}" method="POST" class="space-y-4">
+                @csrf
+                <input type="hidden" name="id" :value="editFranchise.id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Franchise Name *</label>
+                        <input type="text" name="name" required x-model="editFranchise.name">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Code *</label>
+                        <input type="text" name="code" required x-model="editFranchise.code">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Contact Person</label>
+                        <input type="text" name="contact_person" x-model="editFranchise.contact_person">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Phone</label>
+                        <input type="text" name="phone" x-model="editFranchise.phone">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Email</label>
+                        <input type="email" name="email" x-model="editFranchise.email">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Region</label>
+                        <input type="text" name="region" x-model="editFranchise.region">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Address</label>
+                    <input type="text" name="address" x-model="editFranchise.address">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Credit Limit (UGX)</label>
+                    <input type="number" name="credit_limit" min="0" x-model="editFranchise.credit_limit">
+                </div>
+                <div class="flex justify-end gap-3 pt-2 border-t" style="border-color:var(--border-color)">
+                    <button type="button" @click="editing = false" class="px-5 py-2.5 rounded-lg text-sm font-medium border transition hover:opacity-80" style="border-color:var(--border-color); color:var(--text-secondary)">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/25"><i class="fas fa-save mr-1.5"></i> Update Franchise</button>
                 </div>
             </form>
         </div>

@@ -21,10 +21,26 @@ class DashboardDataSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function () {
-            $franchises = Franchise::where('id', '>', 1)->get();
+            $franchises = Franchise::where('is_active', true)->get();
+            if ($franchises->isEmpty()) {
+                $this->command->info('No franchises found. Skipping dashboard data seeding.');
+
+                return;
+            }
             $products = Product::where('is_active', true)->get();
+            if ($products->isEmpty()) {
+                $this->command->info('No products found. Skipping dashboard data seeding.');
+
+                return;
+            }
             $staff = User::where('name', 'Farmmantra Staff')->first();
             $finance = User::where('name', 'Finance Officer')->first();
+
+            if (! $staff || ! $finance) {
+                $this->command->info('Staff or Finance user not found. Skipping dashboard data seeding.');
+
+                return;
+            }
 
             $now = Carbon::now();
             $thisMonth = $now->copy()->startOfMonth();
@@ -163,7 +179,7 @@ class DashboardDataSeeder extends Seeder
 
             // --- FRANCHISE INVENTORY for each franchise x some products ---
             foreach ($franchises as $franchise) {
-                $stockProducts = $products->random(rand(8, 15));
+                $stockProducts = $products->random(min(rand(8, 15), $products->count()));
                 foreach ($stockProducts as $product) {
                     FranchiseInventory::updateOrCreate(
                         [

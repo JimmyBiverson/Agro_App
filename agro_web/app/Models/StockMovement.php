@@ -20,7 +20,7 @@ class StockMovement extends Model
     ];
 
     protected $casts = [
-        'quantity' => 'integer',
+        'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'total_value' => 'decimal:2',
     ];
@@ -43,7 +43,7 @@ class StockMovement extends Model
     public static function log(
         string $type,
         int $productId,
-        int $quantity,
+        float $quantity,
         float $unitPrice = 0,
         ?string $referenceType = null,
         ?int $referenceId = null,

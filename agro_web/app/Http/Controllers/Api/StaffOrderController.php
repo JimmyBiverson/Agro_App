@@ -16,7 +16,7 @@ class StaffOrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Order::with(['franchise', 'items.product', 'orderedByUser']);
+        $query = Order::with(['franchise', 'items.product.category', 'orderedByUser']);
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -33,7 +33,7 @@ class StaffOrderController extends Controller
 
     public function show(Order $order): JsonResponse
     {
-        $order->load(['franchise', 'items.product', 'orderedByUser', 'stockReceipt']);
+        $order->load(['franchise', 'items.product.category', 'orderedByUser', 'stockReceipt']);
 
         return response()->json(['data' => $order]);
     }
@@ -63,6 +63,8 @@ class StaffOrderController extends Controller
                 $warehouse = WarehouseInventory::where('product_id', $item->product_id)->first();
                 $warehouse->quantity -= $item->quantity;
                 $warehouse->save();
+
+                $item->update(['status' => 'approved']);
 
                 StockMovement::log('warehouse_out', $item->product_id, -$item->quantity, $item->unit_price, Order::class, $order->id, "Order {$order->order_number} approved", $request->user()->id);
             }
@@ -95,7 +97,7 @@ class StaffOrderController extends Controller
             return $order;
         });
 
-        $result->load(['franchise', 'items.product', 'stockReceipt.items.product']);
+        $result->load(['franchise', 'items.product.category', 'stockReceipt.items.product']);
 
         ActivityLogger::orderApproved($result, $request->user()->id);
 
@@ -115,14 +117,16 @@ class StaffOrderController extends Controller
 
         $order->update([
             'status' => 'declined',
-            'approved_by' => $request->user()->id,
-            'approved_at' => now(),
+            'declined_by' => $request->user()->id,
+            'declined_at' => now(),
             'decline_reason' => $request->decline_reason,
         ]);
 
+        $order->items()->update(['status' => 'declined']);
+
         ActivityLogger::orderDeclined($order, $request->user()->id, $request->decline_reason);
 
-        return response()->json(['message' => 'Order declined.', 'data' => $order->fresh()]);
+        return response()->json(['message' => 'Order declined.', 'data' => $order->fresh(['franchise', 'items.product.category'])]);
     }
 
     public function adjust(Request $request, Order $order): JsonResponse
@@ -130,7 +134,7 @@ class StaffOrderController extends Controller
         $request->validate([
             'items' => 'required|array',
             'items.*.order_item_id' => 'required|exists:order_items,id',
-            'items.*.adjusted_quantity' => 'required|integer|min:0',
+            'items.*.adjusted_quantity' => 'required|numeric|min:0',
             'items.*.adjustment_notes' => 'nullable|string',
         ]);
 
@@ -146,6 +150,7 @@ class StaffOrderController extends Controller
                 $orderItem->update([
                     'adjusted_quantity' => $item['adjusted_quantity'],
                     'adjustment_notes' => $item['adjustment_notes'] ?? null,
+                    'status' => 'adjusted',
                 ]);
                 $newTotal += $item['adjusted_quantity'] * $orderItem->unit_price;
             }
@@ -153,6 +158,6 @@ class StaffOrderController extends Controller
 
         $order->update(['total_amount' => $newTotal]);
 
-        return response()->json(['message' => 'Order items adjusted.', 'data' => $order->fresh(['items.product'])]);
+        return response()->json(['message' => 'Order items adjusted.', 'data' => $order->fresh(['items.product.category'])]);
     }
 }

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('web.dashboard'));
 
-Route::get('/login', [WebController::class, 'showLogin'])->name('web.login');
+Route::get('/login', [WebController::class, 'showLogin'])->name('login');
 Route::post('/login', [WebController::class, 'login'])->name('web.login.submit');
 
 Route::middleware(AuthenticateWeb::class)->group(function () {
@@ -23,12 +23,16 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     Route::get('/admin/franchises', [WebController::class, 'adminFranchises'])->name('web.admin.franchises');
     Route::get('/admin/users', [WebController::class, 'adminUsers'])->name('web.admin.users');
     Route::post('/admin/users', [WebController::class, 'adminStoreUser'])->name('web.admin.users.store');
+    Route::post('/admin/users/update', [WebController::class, 'adminUpdateUser'])->name('web.admin.users.update');
     Route::post('/admin/users/delete', [WebController::class, 'adminDeleteUser'])->name('web.admin.users.delete');
     Route::get('/admin/products', [WebController::class, 'adminProducts'])->name('web.admin.products');
     Route::post('/admin/products', [WebController::class, 'adminStoreProduct'])->name('web.admin.products.store');
+    Route::post('/admin/products/update', [WebController::class, 'adminUpdateProduct'])->name('web.admin.products.update');
     Route::post('/admin/products/delete', [WebController::class, 'adminDeleteProduct'])->name('web.admin.products.delete');
+    Route::post('/admin/products/delete-image', [WebController::class, 'adminDeleteProductImage'])->name('web.admin.products.deleteImage');
     Route::get('/admin/categories', [WebController::class, 'adminCategories'])->name('web.admin.categories');
     Route::post('/admin/categories', [WebController::class, 'adminStoreCategory'])->name('web.admin.categories.store');
+    Route::post('/admin/categories/update', [WebController::class, 'adminUpdateCategory'])->name('web.admin.categories.update');
     Route::post('/admin/categories/delete', [WebController::class, 'adminDeleteCategory'])->name('web.admin.categories.delete');
     Route::get('/admin/orders', [WebController::class, 'adminOrders'])->name('web.admin.orders');
     Route::post('/admin/orders/{id}/approve', [WebController::class, 'adminApproveOrder'])->name('web.admin.orders.approve');
@@ -40,15 +44,19 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     Route::get('/admin/audit', [WebController::class, 'adminAudit'])->name('web.admin.audit');
     Route::get('/admin/news', [WebController::class, 'adminNews'])->name('web.admin.news');
     Route::post('/admin/news', [WebController::class, 'adminStoreNews'])->name('web.admin.news.store');
+    Route::post('/admin/news/update', [WebController::class, 'adminUpdateNews'])->name('web.admin.news.update');
     Route::post('/admin/news/delete', [WebController::class, 'adminDeleteNews'])->name('web.admin.news.delete');
     Route::get('/admin/faqs', [WebController::class, 'adminFaqs'])->name('web.admin.faqs');
     Route::post('/admin/faqs', [WebController::class, 'adminStoreFaq'])->name('web.admin.faqs.store');
+    Route::post('/admin/faqs/update', [WebController::class, 'adminUpdateFaq'])->name('web.admin.faqs.update');
     Route::post('/admin/faqs/delete', [WebController::class, 'adminDeleteFaq'])->name('web.admin.faqs.delete');
     Route::get('/admin/slides', [WebController::class, 'adminSlides'])->name('web.admin.slides');
     Route::post('/admin/slides', [WebController::class, 'adminStoreSlide'])->name('web.admin.slides.store');
+    Route::post('/admin/slides/update', [WebController::class, 'adminUpdateSlide'])->name('web.admin.slides.update');
     Route::post('/admin/slides/delete', [WebController::class, 'adminDeleteSlide'])->name('web.admin.slides.delete');
     Route::get('/admin/pages', [WebController::class, 'adminPages'])->name('web.admin.pages');
     Route::post('/admin/pages', [WebController::class, 'adminStorePage'])->name('web.admin.pages.store');
+    Route::post('/admin/pages/update', [WebController::class, 'adminUpdatePage'])->name('web.admin.pages.update');
     Route::post('/admin/pages/delete', [WebController::class, 'adminDeletePage'])->name('web.admin.pages.delete');
     Route::get('/admin/settings', [WebController::class, 'adminSettings'])->name('web.admin.settings.general');
     Route::get('/admin/settings/site', [WebController::class, 'adminSettingsSite'])->name('web.admin.settings.site');
@@ -88,6 +96,7 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     Route::get('/franchise/payments', [WebController::class, 'franchisePayments'])->name('web.franchise.payments');
     // Admin: Franchise CRUD
     Route::post('/admin/franchises', [WebController::class, 'adminStoreFranchise'])->name('web.admin.franchises.store');
+    Route::post('/admin/franchises/update', [WebController::class, 'adminUpdateFranchise'])->name('web.admin.franchises.update');
     Route::post('/admin/franchises/delete', [WebController::class, 'adminDeleteFranchise'])->name('web.admin.franchises.delete');
     Route::post('/admin/franchises/toggle', [WebController::class, 'adminToggleFranchise'])->name('web.admin.franchises.toggle');
 
@@ -96,10 +105,12 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
 
     // Admin: Price Slabs
     Route::post('/admin/price-slabs', [WebController::class, 'adminStorePriceSlab'])->name('web.admin.priceSlabs.store');
+    Route::post('/admin/price-slabs/update', [WebController::class, 'adminUpdatePriceSlab'])->name('web.admin.priceSlabs.update');
     Route::post('/admin/price-slabs/delete', [WebController::class, 'adminDeletePriceSlab'])->name('web.admin.priceSlabs.delete');
 
     // Admin: Sales Targets
     Route::post('/admin/sales-targets', [WebController::class, 'adminStoreSalesTarget'])->name('web.admin.salesTargets.store');
+    Route::post('/admin/sales-targets/update', [WebController::class, 'adminUpdateSalesTarget'])->name('web.admin.salesTargets.update');
     Route::post('/admin/sales-targets/delete', [WebController::class, 'adminDeleteSalesTarget'])->name('web.admin.salesTargets.delete');
 
     // Staff: Stock + Receipts

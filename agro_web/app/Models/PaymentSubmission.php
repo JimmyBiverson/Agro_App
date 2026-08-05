@@ -14,7 +14,7 @@ class PaymentSubmission extends Model
         'payment_method', 'transaction_reference', 'bank_name',
         'proof_of_payment_path', 'status', 'submitted_at',
         'verified_by', 'verified_at', 'accepted_by', 'accepted_at',
-        'rejection_reason', 'finance_notes', 'verified_amount',
+        'rejected_by', 'rejected_at', 'rejection_reason', 'finance_notes', 'verified_amount',
     ];
 
     protected $casts = [
@@ -23,6 +23,7 @@ class PaymentSubmission extends Model
         'submitted_at' => 'datetime',
         'verified_at' => 'datetime',
         'accepted_at' => 'datetime',
+        'rejected_at' => 'datetime',
     ];
 
     public function franchise()
@@ -38,6 +39,11 @@ class PaymentSubmission extends Model
     public function acceptor()
     {
         return $this->belongsTo(User::class, 'accepted_by');
+    }
+
+    public function rejector()
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
     }
 
     public static function generatePaymentNumber(): string

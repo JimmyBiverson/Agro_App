@@ -11,6 +11,30 @@ $products = \App\Models\Product::with('category')->where('is_active', true)->ord
 
     <div class="card-full mb-6">
         <div class="card-header">
+            <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Product Catalog</h3>
+        </div>
+        <div class="card-body">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                @foreach($products as $p)
+                <div class="rounded-xl border p-3 flex flex-col" style="border-color:var(--border-color); background:var(--bg-input)">
+                    <div style="width:100%;height:7rem;border-radius:0.5rem;margin-bottom:0.5rem;display:flex;align-items:center;justify-content:center;background:var(--bg-card);overflow:hidden">
+                        @if($p->image_url)
+                        <img src="{{ $p->image_url }}" alt="{{ $p->name }}" style="height:100%;max-width:100%;object-fit:contain;background:var(--bg-card)" loading="lazy">
+                        @else
+                        <div class="flex items-center justify-center text-xs" style="color:var(--text-muted)"><i class="fas fa-flask fa-2x"></i></div>
+                        @endif
+                    </div>
+                    <div class="text-xs font-semibold leading-tight mb-0.5" style="color:var(--text-primary)">{{ $p->name }}</div>
+                    <div class="text-[10px] mb-1.5" style="color:var(--text-muted)">{{ $p->category?->name }} · {{ $p->unit_of_measure }}</div>
+                    <div class="text-xs font-bold mt-auto" style="color:var(--accent)">UGX {{ number_format($p->standard_price) }}</div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    <div class="card-full mb-6">
+        <div class="card-header">
             <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Place New Order</h3>
         </div>
         <div class="card-body">

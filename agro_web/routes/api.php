@@ -12,11 +12,14 @@ use App\Http\Controllers\Api\FranchiseInventoryController;
 use App\Http\Controllers\Api\FranchiseOrderController;
 use App\Http\Controllers\Api\FranchiseSalesController;
 use App\Http\Controllers\Api\MasterDataController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\StaffDashboardController;
 use App\Http\Controllers\Api\StaffInventoryController;
 use App\Http\Controllers\Api\StaffOrderController;
+use App\Http\Controllers\Api\StockMovementController;
 use App\Http\Controllers\Api\StockReceiptController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +33,7 @@ use Illuminate\Support\Facades\Route;
 
 // ─── Public ──────────────────────────────────────────────────────
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/settings/public', [SettingsController::class, 'public']);
 
 // ─── Authenticated ───────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -40,11 +44,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile', [AuthController::class, 'updateProfile']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
 
+    // ── Notifications (all authenticated) ────────────────────
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+
     // ── Master Data (all roles) ──────────────────────────────
     Route::get('/categories', [MasterDataController::class, 'categories']);
     Route::get('/products', [MasterDataController::class, 'products']);
     Route::get('/products/{product}', [MasterDataController::class, 'product']);
     Route::get('/products/{product}/price-slabs', [MasterDataController::class, 'priceSlabs']);
+
+    // ── Stock Movements (all authenticated) ──────────────────
+    Route::get('/stock-movements', [StockMovementController::class, 'index']);
 
     // ── Chat (all authenticated) ─────────────────────────────
     Route::get('/conversations', [ChatController::class, 'index']);
@@ -97,6 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/payments', [PaymentController::class, 'index']);
         Route::post('/payments', [PaymentController::class, 'store']);
         Route::get('/payments/{paymentSubmission}', [PaymentController::class, 'show']);
+        Route::post('/payments/{paymentSubmission}/upload-proof', [PaymentController::class, 'uploadProof']);
     });
 
     // ══════════════════════════════════════════════════════════
@@ -153,5 +167,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/products/{product}/price-slabs', [AdminController::class, 'storePriceSlab']);
 
         Route::post('/sales-targets', [AdminController::class, 'storeSalesTarget']);
+
+        // Settings
+        Route::get('/settings', [SettingsController::class, 'index']);
+        Route::put('/settings', [SettingsController::class, 'update']);
+        Route::post('/settings/upload-image', [SettingsController::class, 'uploadImage']);
     });
 });

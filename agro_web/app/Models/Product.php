@@ -21,9 +21,16 @@ class Product extends Model
         'is_active' => 'boolean',
     ];
 
+    protected $appends = ['image_url', 'all_images'];
+
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
     }
 
     public function priceSlabs()
@@ -54,5 +61,36 @@ class Product extends Model
             ->first();
 
         return $slab ? (float) $slab->slab_price : (float) $this->standard_price;
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if (empty($this->image)) {
+            return null;
+        }
+
+        if (filter_var($this->image, FILTER_VALIDATE_URL)) {
+            return $this->image;
+        }
+
+        return url('storage/' . ltrim($this->image, '/'));
+    }
+
+    public function getAllImagesAttribute(): array
+    {
+        $urls = [];
+        if ($this->image_url) {
+            $urls[] = $this->image_url;
+        }
+
+        if ($this->relationLoaded('images')) {
+            foreach ($this->images as $img) {
+                if ($img->image_url && !in_array($img->image_url, $urls)) {
+                    $urls[] = $img->image_url;
+                }
+            }
+        }
+
+        return $urls;
     }
 }

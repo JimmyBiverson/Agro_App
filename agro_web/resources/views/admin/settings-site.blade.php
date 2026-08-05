@@ -54,7 +54,7 @@
                         <div class="flex items-center gap-4 mb-4">
                             <div class="h-14 w-20 rounded-lg overflow-hidden border flex-shrink-0" style="border-color:var(--border-color); background:var(--bg-input)">
                                 @if($hasLogo)
-                                <img src="{{ asset('storage/'.$site['site_logo']) }}" alt="Logo" class="h-full w-full object-contain p-1">
+                                <img src="{{ asset('storage/'.$site['site_logo']) }}" alt="Logo" style="width:100%;height:100%;object-fit:contain;padding:0.25rem">
                                 @else
                                 <div class="h-full w-full gradient-indigo flex items-center justify-center">
                                     <span class="text-white font-bold text-sm">FM</span>
@@ -92,7 +92,7 @@
                         <div class="flex items-center gap-4 mb-4">
                             <div class="h-10 w-10 rounded-lg overflow-hidden border flex-shrink-0" style="border-color:var(--border-color); background:var(--bg-input)">
                                 @if($hasFavicon)
-                                <img src="{{ asset('storage/'.$site['site_favicon']) }}" alt="Favicon" class="h-full w-full object-contain p-1">
+                                <img src="{{ asset('storage/'.$site['site_favicon']) }}" alt="Favicon" style="width:100%;height:100%;object-fit:contain;padding:0.25rem">
                                 @else
                                 <div class="h-full w-full gradient-indigo flex items-center justify-center">
                                     <span class="text-white font-bold text-[10px]">FM</span>
@@ -130,7 +130,7 @@
                         <div class="flex items-center gap-4 mb-4">
                             <div class="h-14 w-20 rounded-lg overflow-hidden border flex-shrink-0" style="border-color:var(--border-color); background:var(--bg-input)">
                                 @if(!empty($site['og_image']) && Storage::disk('public')->exists($site['og_image']))
-                                <img src="{{ asset('storage/'.$site['og_image']) }}" alt="OG" class="h-full w-full object-cover">
+                                <img src="{{ asset('storage/'.$site['og_image']) }}" alt="OG" style="width:100%;height:100%;object-fit:cover">
                                 @else
                                 <div class="h-full w-full gradient-purple flex items-center justify-center">
                                     <i class="fas fa-share-nodes text-white text-sm"></i>

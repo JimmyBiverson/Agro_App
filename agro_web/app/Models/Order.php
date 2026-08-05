@@ -13,13 +13,14 @@ class Order extends Model
         'order_number', 'franchise_id', 'ordered_by', 'status',
         'received_at', 'served_at', 'completed_at', 'notes',
         'expected_delivery_date', 'approved_by', 'approved_at',
-        'decline_reason', 'total_amount',
+        'declined_by', 'declined_at', 'decline_reason', 'total_amount',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
         'expected_delivery_date' => 'datetime',
         'approved_at' => 'datetime',
+        'declined_at' => 'datetime',
         'received_at' => 'datetime',
         'served_at' => 'datetime',
         'completed_at' => 'datetime',
@@ -38,6 +39,11 @@ class Order extends Model
     public function approvedByUser()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function declinedByUser()
+    {
+        return $this->belongsTo(User::class, 'declined_by');
     }
 
     public function items()

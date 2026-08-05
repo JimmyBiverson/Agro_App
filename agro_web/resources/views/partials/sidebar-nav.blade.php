@@ -10,24 +10,24 @@
     }
 @endphp
 
-<div class="flex h-16 items-center gap-3 px-5 border-b" style="border-color:rgba(255,255,255,0.08)">
+<div class="flex h-16 items-center gap-3 px-5 border-b flex-shrink-0" style="border-color:rgba(255,255,255,0.08)">
     <div class="h-9 w-9 rounded-lg overflow-hidden flex-shrink-0">
         @if(!empty($site['site_logo']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($site['site_logo']))
-        <img src="{{ asset('storage/'.$site['site_logo']) }}" alt="{{ $site['site_name'] ?? 'FM' }}" class="h-full w-full object-contain" style="background:rgba(255,255,255,0.05)">
+        <img src="{{ asset('storage/'.$site['site_logo']) }}" alt="{{ $site['site_name'] ?? 'FM' }}" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.05)">
         @else
         <div class="h-full w-full gradient-indigo flex items-center justify-center">
             <span class="text-white font-bold text-sm">FM</span>
         </div>
         @endif
     </div>
-    <div>
-        <span class="text-white font-bold text-base leading-tight block">{{ $site['site_name'] ?? 'Farmmantra' }}</span>
-        <span class="text-gray-400 text-[10px] font-medium tracking-wider uppercase">{{ $site['site_tagline'] ?? 'Agro Chemicals' }}</span>
+    <div class="min-w-0 flex-1">
+        <span class="text-white font-bold text-base leading-tight block truncate">{{ $site['site_name'] ?? 'Farmmantra' }}</span>
+        <span class="text-gray-400 text-[10px] font-medium tracking-wider uppercase truncate block">{{ $site['site_tagline'] ?? 'Agro Chemicals' }}</span>
     </div>
 </div>
 
-<nav class="flex flex-1 flex-col py-3 px-3 overflow-y-auto" style="scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent">
-    <ul class="space-y-0.5">
+<nav class="flex flex-1 flex-col py-3 px-3 overflow-y-auto flex-shrink-0" style="scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent; min-height:0">
+    <ul class="space-y-0.5 flex-shrink-0">
 
         <li>
             <a href="{{ route('web.dashboard') }}" class="sidebar-link {{ str_starts_with($current, 'web.dashboard') ? 'active' : '' }}">
@@ -153,6 +153,11 @@
                 <i class="fas fa-store w-5 text-center text-sm"></i> Franchise Stock
             </a>
         </li>
+        <li>
+            <a href="{{ route('web.staff.stockReceipts') }}" class="sidebar-link {{ str_starts_with($current, 'web.staff.stockReceipt') ? 'active' : '' }}">
+                <i class="fas fa-truck-ramp-box w-5 text-center text-sm"></i> Stock Receipts
+            </a>
+        </li>
         @endif
 
         {{-- ═══ FINANCE ═══ --}}
@@ -217,7 +222,7 @@
     </ul>
 
     {{-- Bottom User Info --}}
-    <div class="mt-auto pt-4 border-t" style="border-color:rgba(255,255,255,0.08)">
+    <div class="mt-auto pt-4 border-t flex-shrink-0" style="border-color:rgba(255,255,255,0.08)">
         <a href="{{ route('web.profile') }}" class="flex items-center gap-3 px-2 py-3 rounded-lg transition" style="background:rgba(255,255,255,0.04); text-decoration:none" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
             @if($user->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar))
             <img src="{{ asset('storage/'.$user->avatar) }}" alt="{{ $user->name }}" class="h-8 w-8 rounded-full object-cover flex-shrink-0">

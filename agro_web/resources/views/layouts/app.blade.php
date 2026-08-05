@@ -100,7 +100,8 @@
         .sidebar {
             background: var(--bg-sidebar); width: 260px; height: 100vh;
             position: fixed; top: 0; left: 0; z-index: 40;
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); overflow-y: auto;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column; overflow: hidden;
             border-right: 1px solid rgba(255,255,255,0.05);
         }
         .sidebar::-webkit-scrollbar { width: 3px; }

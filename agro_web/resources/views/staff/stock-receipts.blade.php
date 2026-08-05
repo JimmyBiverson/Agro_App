@@ -32,7 +32,7 @@
                             @endforeach
                         </td>
                         <td class="px-4 py-3 text-center">
-                            <span class="badge {{ $receipt->status === 'received' ? 'badge-success' : 'badge-warning' }}">{{ ucfirst($receipt->status) }}</span>
+                            <span class="badge {{ $receipt->status === 'confirmed' ? 'badge-success' : ($receipt->status === 'discrepancy' ? 'badge-danger' : 'badge-warning') }}">{{ ucfirst($receipt->status) }}</span>
                         </td>
                         <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $receipt->received_at?->format('d M Y, H:i') }}</td>
                     </tr>

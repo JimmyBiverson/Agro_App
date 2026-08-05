@@ -186,7 +186,7 @@ class AdminController extends Controller
 
     public function products(): JsonResponse
     {
-        $products = Product::with(['category', 'priceSlabs', 'warehouseInventory'])
+        $products = Product::with(['category', 'priceSlabs', 'warehouseInventory', 'images'])
             ->latest()
             ->paginate(20);
 
@@ -203,12 +203,19 @@ class AdminController extends Controller
             'packaging_details' => 'nullable|string',
             'standard_price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        $product = Product::create($request->only([
+        $data = $request->only([
             'name', 'sku', 'category_id', 'unit_of_measure',
             'packaging_details', 'standard_price', 'description',
-        ]));
+        ]);
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $product = Product::create($data);
 
         WarehouseInventory::create(['product_id' => $product->id, 'quantity' => 0]);
 
@@ -225,12 +232,22 @@ class AdminController extends Controller
             'standard_price' => 'sometimes|numeric|min:0',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        $product->update($request->only([
+        $data = $request->only([
             'name', 'category_id', 'unit_of_measure',
             'packaging_details', 'standard_price', 'description', 'is_active',
-        ]));
+        ]);
+
+        if ($request->hasFile('image')) {
+            if ($product->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($product->image)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
+            }
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $product->update($data);
 
         return response()->json(['message' => 'Product updated.', 'data' => $product->fresh('category')]);
     }

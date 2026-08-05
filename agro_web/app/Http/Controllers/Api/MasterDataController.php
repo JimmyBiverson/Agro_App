@@ -17,12 +17,12 @@ class MasterDataController extends Controller
             ->withCount('products')
             ->get();
 
-        return response()->json($categories);
+        return response()->json(['data' => $categories]);
     }
 
     public function products(Request $request): JsonResponse
     {
-        $query = Product::with(['category', 'priceSlabs', 'warehouseInventory'])
+        $query = Product::with(['category', 'priceSlabs', 'warehouseInventory', 'images'])
             ->where('is_active', true);
 
         if ($request->has('category_id')) {
@@ -44,7 +44,7 @@ class MasterDataController extends Controller
 
     public function product(Product $product): JsonResponse
     {
-        $product->load(['category', 'priceSlabs', 'warehouseInventory']);
+        $product->load(['category', 'priceSlabs', 'warehouseInventory', 'images']);
 
         return response()->json(['data' => $product]);
     }
