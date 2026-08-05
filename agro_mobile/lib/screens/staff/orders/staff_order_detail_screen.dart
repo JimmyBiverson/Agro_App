@@ -1,0 +1,671 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/enums/app_enums.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../models/order.dart';
+import '../../../providers/order_provider.dart';
+import '../../../widgets/common/app_card.dart';
+import '../../../widgets/common/app_button.dart';
+import '../../../widgets/common/app_text_field.dart';
+import '../../../widgets/common/status_badge.dart';
+import '../../../widgets/common/error_view.dart';
+import '../../../widgets/common/loading_view.dart';
+
+class StaffOrderDetailScreen extends StatefulWidget {
+  final String orderId;
+
+  const StaffOrderDetailScreen({super.key, required this.orderId});
+
+  @override
+  State<StaffOrderDetailScreen> createState() => _StaffOrderDetailScreenState();
+}
+
+class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
+  DateTime? _selectedDeliveryDate;
+  String _notes = '';
+  String _declineReason = '';
+  Map<String, double> _adjustedQuantities = {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrderProvider>().loadOrder(widget.orderId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Order Details')),
+      body: Consumer<OrderProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
+            return const LoadingView();
+          }
+
+          if (provider.error != null) {
+            return ErrorView(
+              message: provider.error!,
+              onRetry: () => provider.loadOrder(widget.orderId),
+            );
+          }
+
+          final order = provider.selectedOrder;
+          if (order == null) {
+            return const ErrorView(message: 'Order not found');
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildFranchiseHeader(order),
+                const SizedBox(height: 16),
+                _buildOrderItems(order),
+                const SizedBox(height: 16),
+                _buildOrderTotal(order),
+                const SizedBox(height: 16),
+                _buildStatusTimeline(order),
+                const SizedBox(height: 16),
+                _buildActionSection(order, provider),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFranchiseHeader(Order order) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  order.franchiseName,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                StatusBadge.fromOrderStatus(order.status),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Franchise ID: ${order.franchiseId}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Order #${order.id}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Placed on ${Formatters.dateTime(order.createdAt)}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderItems(Order order) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Order Items',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...order.items.map((item) => _buildOrderItem(item)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderItem(OrderItem item) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.productName,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${item.quantity} x ${Formatters.currency(item.unitPrice)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                Formatters.currency(item.totalPrice),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderTotal(Order order) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Total Amount',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              Formatters.currency(order.totalAmount),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryGreen,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusTimeline(Order order) {
+    final steps = [
+      _TimelineStep('Placed', Icons.shopping_cart, true),
+      _TimelineStep('Approved', Icons.check_circle, order.statusEnum != OrderStatus.pending),
+      _TimelineStep('Delivered', Icons.local_shipping, order.statusEnum == OrderStatus.delivered),
+    ];
+
+    if (order.statusEnum == OrderStatus.declined) {
+      steps[1] = _TimelineStep('Declined', Icons.cancel, true);
+    }
+
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Order Status',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: List.generate(steps.length * 2 - 1, (index) {
+                if (index.isOdd) {
+                  final stepIndex = index ~/ 2;
+                  final isCompleted = steps[stepIndex].isActive &&
+                      stepIndex < steps.length - 1 &&
+                      steps[stepIndex + 1].isActive;
+                  return Expanded(
+                    child: Container(
+                      height: 2,
+                      color: isCompleted ? AppColors.primaryGreen : AppColors.divider,
+                    ),
+                  );
+                }
+                final stepIndex = index ~/ 2;
+                final step = steps[stepIndex];
+                return _buildTimelineStep(step);
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimelineStep(_TimelineStep step) {
+    return Column(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: step.isActive ? AppColors.primaryGreen : AppColors.divider,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            step.icon,
+            color: step.isActive ? Colors.white : AppColors.textSecondary,
+            size: 20,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          step.label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: step.isActive ? AppColors.primaryGreen : AppColors.textSecondary,
+            fontWeight: step.isActive ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionSection(Order order, OrderProvider provider) {
+    switch (order.statusEnum) {
+      case OrderStatus.pending:
+        return _buildPendingActions(order, provider);
+      case OrderStatus.approved:
+        return _buildApprovedInfo(order);
+      case OrderStatus.declined:
+        return _buildDeclinedInfo(order);
+      case OrderStatus.delivered:
+        return _buildDeliveredInfo(order);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildPendingActions(Order order, OrderProvider provider) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Actions',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            AppButton(
+              label: 'Approve',
+              onPressed: () => _showApproveDialog(order, provider),
+              backgroundColor: AppColors.success,
+              icon: Icons.check_circle_outline,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: AppButton(
+                    label: 'Decline',
+                    onPressed: () => _showDeclineDialog(order, provider),
+                    foregroundColor: AppColors.error,
+                    icon: Icons.cancel_outlined,
+                    isOutlined: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: AppButton(
+                    label: 'Adjust',
+                    onPressed: () => _showAdjustDialog(order, provider),
+                    foregroundColor: AppColors.info,
+                    icon: Icons.edit_outlined,
+                    isOutlined: true,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildApprovedInfo(Order order) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.check_circle, color: AppColors.success),
+                const SizedBox(width: 8),
+                Text(
+                  'Order Approved',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.success,
+                  ),
+                ),
+              ],
+            ),
+            if (order.expectedDeliveryDate != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Expected Delivery: ${Formatters.dateTime(order.expectedDeliveryDate!)}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+            if (order.staffNotes != null && order.staffNotes!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Notes: ${order.staffNotes}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeclinedInfo(Order order) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.cancel, color: AppColors.error),
+                const SizedBox(width: 8),
+                Text(
+                  'Order Declined',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+            if (order.declineReason != null && order.declineReason!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Reason: ${order.declineReason}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeliveredInfo(Order order) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.local_shipping, color: AppColors.primaryGreen),
+                const SizedBox(width: 8),
+                Text(
+                  'Order Delivered',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryGreen,
+                  ),
+                ),
+              ],
+            ),
+            if (order.deliveredAt != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Delivered on ${Formatters.dateTime(order.deliveredAt!)}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showApproveDialog(Order order, OrderProvider provider) {
+    final deliveryController = TextEditingController();
+    final notesController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Approve Order'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now().add(const Duration(days: 1)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 90)),
+                  );
+                  if (date != null) {
+                    setDialogState(() {
+                      _selectedDeliveryDate = date;
+                      deliveryController.text = Formatters.date(date);
+                    });
+                  }
+                },
+                child: AppTextField(
+                  label: 'Expected Delivery Date',
+                  readOnly: true,
+                  controller: deliveryController,
+                ),
+              ),
+              const SizedBox(height: 16),
+              AppTextField(
+                label: 'Notes (optional)',
+                maxLines: 3,
+                controller: notesController,
+                onChanged: (value) => _notes = value,
+              ),
+            ],
+          ),
+          actions: [
+            AppButton(
+              label: 'Cancel',
+              onPressed: () => Navigator.pop(context),
+              isOutlined: true,
+            ),
+            AppButton(
+              label: 'Approve',
+              onPressed: () async {
+                final success = await provider.approveOrder(
+                  order.id,
+                  deliveryDate: _selectedDeliveryDate?.toIso8601String(),
+                  notes: _notes.isNotEmpty ? _notes : null,
+                );
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success ? 'Order approved' : 'Failed to approve order'),
+                    backgroundColor: success ? AppColors.success : AppColors.error,
+                  ),
+                );
+              },
+              backgroundColor: AppColors.success,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeclineDialog(Order order, OrderProvider provider) {
+    final reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Decline Order'),
+          content: AppTextField(
+            label: 'Reason for declining',
+            maxLines: 3,
+            controller: reasonController,
+            onChanged: (value) => _declineReason = value,
+          ),
+          actions: [
+            AppButton(
+              label: 'Cancel',
+              onPressed: () => Navigator.pop(context),
+              isOutlined: true,
+            ),
+            AppButton(
+              label: 'Decline',
+              onPressed: () async {
+                final success = await provider.declineOrder(order.id, _declineReason);
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success ? 'Order declined' : 'Failed to decline order'),
+                    backgroundColor: success ? AppColors.success : AppColors.error,
+                  ),
+                );
+              },
+              backgroundColor: AppColors.error,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAdjustDialog(Order order, OrderProvider provider) {
+    _adjustedQuantities = {
+      for (var item in order.items) item.productId: item.quantity.toDouble(),
+    };
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Adjust Quantities'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: order.items.map((item) {
+                  final controller = TextEditingController(
+                    text: item.quantity.toString(),
+                  );
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.productName,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 100,
+                          child: AppTextField(
+                            label: 'Qty',
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              final qty = double.tryParse(value) ?? 0;
+                              setDialogState(() {
+                                _adjustedQuantities[item.productId] = qty;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          actions: [
+            AppButton(
+              label: 'Cancel',
+              onPressed: () => Navigator.pop(context),
+              isOutlined: true,
+            ),
+            AppButton(
+              label: 'Save Adjustments',
+              onPressed: () async {
+                final itemsPayload = order.items.map((item) => {
+                  'order_item_id': int.tryParse(item.id) ?? item.id,
+                  'adjusted_quantity': _adjustedQuantities[item.productId]?.toInt() ?? item.quantity,
+                }).toList();
+                final success = await provider.adjustOrder(order.id, {'items': itemsPayload});
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success ? 'Order adjusted' : 'Failed to adjust order'),
+                    backgroundColor: success ? AppColors.success : AppColors.error,
+                  ),
+                );
+              },
+              backgroundColor: AppColors.info,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimelineStep {
+  final String label;
+  final IconData icon;
+  final bool isActive;
+
+  _TimelineStep(this.label, this.icon, this.isActive);
+}
