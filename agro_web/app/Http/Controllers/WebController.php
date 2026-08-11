@@ -24,10 +24,10 @@ use App\Models\SalesTarget;
 use App\Models\Setting;
 use App\Models\Slide;
 use App\Models\StockMovement;
-use Illuminate\Support\Facades\DB;
 use App\Models\StockReceipt;
 use App\Models\User;
 use App\Models\WarehouseInventory;
+use Illuminate\Support\Facades\DB;
 use App\Services\ActivityLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -932,6 +932,19 @@ class WebController extends Controller
             }
         }
 
+        // Create or update warehouse inventory record
+        $initialStock = (float) ($request->input('initial_stock', 0));
+        $reorderLevel = (float) ($request->input('reorder_level', 0));
+        WarehouseInventory::updateOrCreate(
+            ['product_id' => $product->id],
+            [
+                'quantity'           => $initialStock,
+                'reserved_quantity'  => 0,
+                'reorder_level'      => $reorderLevel,
+                'last_restocked_at'  => $initialStock > 0 ? now() : null,
+            ]
+        );
+
         return redirect()->route('web.admin.products')->with('success', 'Product created successfully!');
     }
 
@@ -1023,6 +1036,23 @@ class WebController extends Controller
                     }
                 }
             }
+        }
+
+        // Update warehouse inventory if admin supplied a new quantity
+        if ($request->filled('warehouse_qty')) {
+            WarehouseInventory::updateOrCreate(
+                ['product_id' => $product->id],
+                [
+                    'quantity'           => (float) $request->input('warehouse_qty'),
+                    'reorder_level'      => (float) ($request->input('reorder_level', 0)),
+                    'last_restocked_at'  => now(),
+                ]
+            );
+        } elseif ($request->filled('reorder_level')) {
+            WarehouseInventory::updateOrCreate(
+                ['product_id' => $product->id],
+                ['reorder_level' => (float) $request->input('reorder_level')]
+            );
         }
 
         return redirect()->route('web.admin.products')->with('success', 'Product updated successfully!');

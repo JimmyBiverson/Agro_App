@@ -32,6 +32,11 @@ class ProductImage extends Model
             return $this->image_path;
         }
 
-        return url('storage/' . ltrim($this->image_path, '/'));
+        $cleanPath = ltrim($this->image_path, '/');
+        if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
+        }
+
+        return url('storage/' . $cleanPath);
     }
 }

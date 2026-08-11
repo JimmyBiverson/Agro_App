@@ -167,7 +167,7 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
               crossAxisCount: columns,
               mainAxisSpacing: AppConstants.defaultPadding,
               crossAxisSpacing: AppConstants.defaultPadding,
-              childAspectRatio: 0.62,
+              childAspectRatio: 0.58,
             ),
             itemCount: provider.products.length,
             itemBuilder: (context, index) =>
@@ -189,86 +189,113 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ProductImage(
-            imageUrl: product.imageUrl,
-            productName: product.name,
-            width: double.infinity,
-            height: 130,
-            fit: BoxFit.contain,
-            backgroundColor: AppColors.backgroundLight,
-            borderRadius: 12,
+          Stack(
+            children: [
+              ProductImage(
+                imageUrl: product.imageUrl,
+                productName: product.name,
+                width: double.infinity,
+                height: 115,
+                fit: BoxFit.cover,
+                backgroundColor: AppColors.backgroundLight,
+                borderRadius: 12,
+              ),
+              if (product.priceSlabs.isNotEmpty)
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'BULK DISCOUNT',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: AppColors.textPrimary,
-                    height: 1.2,
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        product.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          color: AppColors.textPrimary,
+                          height: 1.15,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${product.categoryName} · ${product.unitOfMeasure}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${product.categoryName} · ${product.unitOfMeasure}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Text(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
                         Formatters.currency(product.standardPrice),
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 14,
+                          fontSize: 13,
                           color: AppColors.primaryGreen,
                         ),
                       ),
-                    ),
-                    if (product.priceSlabs.isNotEmpty)
-                      const Icon(
-                        Icons.info_outline,
-                        size: 14,
-                        color: AppColors.textLight,
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 32,
+                        child: cartQty > 0
+                            ? _buildStepper(product.id, cartQty)
+                            : ElevatedButton.icon(
+                                onPressed: () => _addToOrder(product),
+                                icon: const Icon(Icons.add_shopping_cart, size: 14),
+                                label: const Text(
+                                  'Add to Cart',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                  elevation: 0,
+                                  backgroundColor: AppColors.primaryGreen,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                ),
+                              ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: cartQty > 0
-                      ? Row(
-                          children: [
-                            _buildStepper(product.id, cartQty),
-                          ],
-                        )
-                      : ElevatedButton.icon(
-                          onPressed: () => _addToOrder(product),
-                          icon: const Icon(Icons.add_shopping_cart, size: 16),
-                          label: const Text(
-                            'Add to Cart',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            minimumSize: const Size(0, 36),
-                          ),
-                        ),
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -278,49 +305,56 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   Widget _buildStepper(String productId, int quantity) {
     final provider = context.read<OrderProvider>();
-    return Expanded(
-      child: Container(
-        height: 36,
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.primaryGreen),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            InkWell(
-              onTap: () => provider.updateCartQuantity(productId, quantity - 1),
-              child: const Padding(
-                padding: EdgeInsets.all(6),
-                child: Icon(
-                  Icons.remove,
-                  size: 16,
-                  color: AppColors.primaryGreen,
-                ),
+    return Container(
+      height: 32,
+      decoration: BoxDecoration(
+        color: AppColors.primaryGreen.withAlpha(15),
+        border: Border.all(color: AppColors.primaryGreen.withAlpha(100)),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          InkWell(
+            onTap: () => provider.updateCartQuantity(productId, quantity - 1),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(5),
+              bottomLeft: Radius.circular(5),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Icon(
+                Icons.remove,
+                size: 14,
+                color: AppColors.primaryGreen,
               ),
             ),
-            Expanded(
-              child: Text(
-                '$quantity',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
+          ),
+          Text(
+            '$quantity',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+          InkWell(
+            onTap: () => provider.updateCartQuantity(productId, quantity + 1),
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(5),
+              bottomRight: Radius.circular(5),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Icon(
+                Icons.add,
+                size: 14,
+                color: AppColors.primaryGreen,
               ),
             ),
-            InkWell(
-              onTap: () => provider.updateCartQuantity(productId, quantity + 1),
-              child: const Padding(
-                padding: EdgeInsets.all(6),
-                child: Icon(
-                  Icons.add,
-                  size: 16,
-                  color: AppColors.primaryGreen,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

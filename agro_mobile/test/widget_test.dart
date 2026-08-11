@@ -54,8 +54,8 @@ void main() {
       await tester.pumpWidget(buildTestApp(const FarmmantraApp()));
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      expect(find.text('Login'), findsOneWidget);
-      expect(find.text('Sign in to continue'), findsOneWidget);
+      expect(find.text('Sign In'), findsOneWidget);
+      expect(find.text('Sign in to your account'), findsOneWidget);
     });
   });
 

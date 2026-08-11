@@ -73,7 +73,12 @@ class Product extends Model
             return $this->image;
         }
 
-        return url('storage/' . ltrim($this->image, '/'));
+        $cleanPath = ltrim($this->image, '/');
+        if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
+        }
+
+        return url('storage/' . $cleanPath);
     }
 
     public function getAllImagesAttribute(): array

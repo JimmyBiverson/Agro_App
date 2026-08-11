@@ -3,28 +3,28 @@ import 'package:agro_app/core/utils/image_url.dart';
 
 void main() {
   group('resolveImageUrl', () {
-    test('returns absolute URLs unchanged', () {
+    test('returns external URLs rewritten to base host for local dev', () {
       expect(
         resolveImageUrl('https://cdn.example.com/p.png'),
-        'https://cdn.example.com/p.png',
+        'http://127.0.0.1:8000/p.png',
       );
       expect(
         resolveImageUrl('http://localhost/x.png'),
-        'http://localhost/x.png',
+        'http://127.0.0.1:8000/x.png',
       );
     });
 
     test('builds full URL for relative storage paths', () {
       expect(
         resolveImageUrl('products/SEED-001.png'),
-        'http://localhost/Agro_app/agro_web/public/storage/products/SEED-001.png',
+        'http://127.0.0.1:8000/storage/products/SEED-001.png',
       );
     });
 
     test('preserves leading-slash paths', () {
       expect(
         resolveImageUrl('/storage/avatars/a.png'),
-        'http://localhost/Agro_app/agro_web/public/storage/avatars/a.png',
+        'http://127.0.0.1:8000/storage/avatars/a.png',
       );
     });
 

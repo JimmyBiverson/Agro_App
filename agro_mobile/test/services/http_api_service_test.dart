@@ -85,6 +85,32 @@ void main() {
     });
   });
 
+  group('HttpApiService.getProducts', () {
+    test('parses products and populates image_url and imageUrls gallery', () async {
+      final api = HttpApiService(
+        client: MockClient((request) async {
+          return http.Response(
+            jsonEncode(_productsResponse),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+      api.setToken('test-token');
+      api.setUserRole('franchisePartner');
+
+      final products = await api.getProducts();
+
+      expect(products, isNotEmpty);
+      expect(products.first.id, '14');
+      expect(products.first.name, 'sample');
+      expect(products.first.imageUrl, isNotNull);
+      expect(products.first.imageUrl, contains('PJsC1onZnR0HyJFhu63feb19Rvnsq1eS3b4Z008f.jpg'));
+      expect(products.first.imageUrls.length, 5);
+      expect(products.first.imageUrls.first, contains('PJsC1onZnR0HyJFhu63feb19Rvnsq1eS3b4Z008f.jpg'));
+    });
+  });
+
   group('errorMessageOf', () {
     test('surfaces AppException message', () {
       expect(
@@ -219,6 +245,39 @@ final _inventoryResponse = {
         'is_active': true,
         'category': {'id': 1, 'name': 'Herbicides'},
       },
+    },
+  ],
+};
+
+final _productsResponse = {
+  'data': [
+    {
+      'id': 14,
+      'name': 'sample',
+      'sku': '0020',
+      'category_id': 1,
+      'unit_of_measure': 'Kgs',
+      'selling_price': '5000.00',
+      'standard_price': '5000.00',
+      'image': 'products/PJsC1onZnR0HyJFhu63feb19Rvnsq1eS3b4Z008f.jpg',
+      'image_url': 'http://localhost/storage/products/PJsC1onZnR0HyJFhu63feb19Rvnsq1eS3b4Z008f.jpg',
+      'all_images': [
+        'http://localhost/storage/products/PJsC1onZnR0HyJFhu63feb19Rvnsq1eS3b4Z008f.jpg',
+        'http://localhost/storage/products/rhjjKS043xLXoXORI2vMWQEL2kxY4V5UEdh5juB8.jpg',
+        'http://localhost/storage/products/4rsPGHj8FtIMg6mZIVQ0RzXXJOQIFsUjS5G4i7q0.jpg',
+        'http://localhost/storage/products/s77fcc2veiQzGux8O9Hu29pE6z1pqZQCrube40A0.jpg',
+        'http://localhost/storage/products/ipKQBI8SHct31RZVRqkz6BqVFDNN6Shif8kL7ewr.jpg',
+      ],
+      'images': [
+        {
+          'id': 1,
+          'product_id': 14,
+          'image_path': 'products/rhjjKS043xLXoXORI2vMWQEL2kxY4V5UEdh5juB8.jpg',
+          'image_url': 'http://localhost/storage/products/rhjjKS043xLXoXORI2vMWQEL2kxY4V5UEdh5juB8.jpg',
+        },
+      ],
+      'is_active': true,
+      'category': {'id': 1, 'name': 'Herbicides'},
     },
   ],
 };

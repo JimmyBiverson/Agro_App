@@ -82,6 +82,21 @@ class User extends Authenticatable
         return $this->role?->name === 'Franchise Partner';
     }
 
+    protected $appends = ['avatar_url'];
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (empty($this->avatar)) {
+            return null;
+        }
+
+        if (filter_var($this->avatar, FILTER_VALIDATE_URL)) {
+            return $this->avatar;
+        }
+
+        return url('storage/' . ltrim($this->avatar, '/'));
+    }
+
     public function getDisplayNameAttribute(): string
     {
         if ($this->employee_id) {

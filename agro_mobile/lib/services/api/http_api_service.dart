@@ -320,6 +320,48 @@ class HttpApiService implements ApiService {
       })).toList();
     }
 
+    // Extract gallery images from API response
+    final List<String> extractedUrls = [];
+
+    // From 'images' array (ProductImage relation with image_path)
+    if (p['images'] is List) {
+      for (final imgItem in p['images']) {
+        if (imgItem is Map) {
+          final path = imgItem['image_path'] ?? imgItem['image_url'] ?? imgItem['url'];
+          if (path != null) {
+            final resolved = resolveImageUrl(path);
+            if (resolved.isNotEmpty && !extractedUrls.contains(resolved)) {
+              extractedUrls.add(resolved);
+            }
+          }
+        } else if (imgItem is String && imgItem.isNotEmpty) {
+          final resolved = resolveImageUrl(imgItem);
+          if (resolved.isNotEmpty && !extractedUrls.contains(resolved)) {
+            extractedUrls.add(resolved);
+          }
+        }
+      }
+    }
+
+    // From 'all_images' array (combined URLs from Product model accessor)
+    if (p['all_images'] is List) {
+      for (final imgItem in p['all_images']) {
+        if (imgItem != null && imgItem.toString().isNotEmpty) {
+          final resolved = resolveImageUrl(imgItem);
+          if (resolved.isNotEmpty && !extractedUrls.contains(resolved)) {
+            extractedUrls.add(resolved);
+          }
+        }
+      }
+    }
+
+    // Resolve the primary image and ensure it is first in extractedUrls
+    final mainImg = _resolveImageUrl(p['image_url'] ?? p['image']);
+    if (mainImg.isNotEmpty) {
+      extractedUrls.remove(mainImg);
+      extractedUrls.insert(0, mainImg);
+    }
+
     return Product(
       id: p['id']?.toString() ?? '',
       name: p['name'] ?? '',
@@ -330,7 +372,8 @@ class HttpApiService implements ApiService {
       packagingDetails: p['packaging_details'],
       standardPrice: Formatters.toDouble(p['standard_price'] ?? p['selling_price']),
       priceSlabs: slabs,
-      imageUrl: _resolveImageUrl(p['image_url'] ?? p['image']),
+      imageUrl: mainImg.isNotEmpty ? mainImg : (extractedUrls.isNotEmpty ? extractedUrls.first : null),
+      imageUrls: extractedUrls,
       isActive: p['is_active'] ?? true,
     );
   }

@@ -31,11 +31,16 @@
                         @forelse($products as $p)
                         <tr class="border-b" style="border-color:var(--border-color)">
                             <td class="px-4 py-3">
-                                @if($p->image_url)
-                                <img src="{{ $p->image_url }}" alt="{{ $p->name }}" style="width:3rem;height:3rem;border-radius:0.5rem;object-fit:cover;border:1px solid var(--border-color);flex-shrink:0;display:block" loading="lazy">
-                                @else
-                                <div style="width:3rem;height:3rem;border-radius:0.5rem;display:flex;align-items:center;justify-content:center;background:var(--bg-input);color:var(--text-muted);flex-shrink:0"><i class="fas fa-flask text-xs"></i></div>
-                                @endif
+                                <div class="relative group inline-block">
+                                    @if($p->image_url)
+                                    <img src="{{ $p->image_url }}" alt="{{ $p->name }}" style="width:3.25rem;height:3.25rem;border-radius:0.6rem;object-fit:cover;border:1px solid var(--border-color);flex-shrink:0;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.15)" loading="lazy">
+                                    @if($p->images->count() > 0)
+                                    <span class="absolute -top-1.5 -right-1.5 bg-indigo-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-md border border-white/20" title="{{ $p->images->count() }} gallery images">+{{ $p->images->count() }}</span>
+                                    @endif
+                                    @else
+                                    <div style="width:3.25rem;height:3.25rem;border-radius:0.6rem;display:flex;align-items:center;justify-content:center;background:var(--bg-input);color:var(--text-muted);flex-shrink:0;border:1px dashed var(--border-color)"><i class="fas fa-image text-sm"></i></div>
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-4 py-3 text-sm font-medium" style="color:var(--accent)">{{ $p->sku }}</td>
                             <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $p->name }}</td>
@@ -47,7 +52,7 @@
                             <td class="px-4 py-3 text-center">
                                 <div class="flex items-center justify-center gap-2">
                                     <button type="button" class="btn-action" title="Edit" style="color:var(--accent); background:rgba(99,102,241,0.12)"
-                                        @click="editProduct = {{ \Illuminate\Support\Js::from(['id' => $p->id, 'name' => $p->name, 'sku' => $p->sku, 'category_id' => $p->category_id ? (string) $p->category_id : '', 'unit_of_measure' => $p->unit_of_measure, 'selling_price' => (string) $p->selling_price, 'standard_price' => (string) $p->standard_price, 'packaging_details' => (string) $p->packaging_details, 'description' => (string) $p->description, 'image_url' => $p->image_url, 'gallery_images' => $p->images->map(fn($img) => ['id' => $img->id, 'url' => $img->image_url]), 'is_active' => (bool) $p->is_active]) }}; editing = true">
+                                        @click="editProduct = {{ \Illuminate\Support\Js::from(['id' => $p->id, 'name' => $p->name, 'sku' => $p->sku, 'category_id' => $p->category_id ? (string) $p->category_id : '', 'unit_of_measure' => $p->unit_of_measure, 'selling_price' => (string) $p->selling_price, 'standard_price' => (string) $p->standard_price, 'packaging_details' => (string) $p->packaging_details, 'description' => (string) $p->description, 'image_url' => $p->image_url, 'gallery_images' => $p->images->map(fn($img) => ['id' => $img->id, 'url' => $img->image_url]), 'is_active' => (bool) $p->is_active, 'warehouse_qty' => $p->warehouseInventory ? (float) $p->warehouseInventory->quantity : 0, 'reorder_level' => $p->warehouseInventory ? (float) $p->warehouseInventory->reorder_level : 0]) }}; editing = true">
                                         <i class="fas fa-pen"></i>
                                     </button>
                                     <form action="{{ route('web.admin.products.delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete product {{ addslashes($p->name) }}?')">
@@ -230,6 +235,18 @@
                     <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Packaging Details</label>
                     <input type="text" name="packaging_details" placeholder="e.g. 1L bottle, 5kg bag">
                 </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Initial Warehouse Stock</label>
+                        <input type="number" name="initial_stock" min="0" step="0.01" placeholder="0" value="0">
+                        <p class="text-[10px] mt-1" style="color:var(--text-muted)">Units available at warehouse after creation</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Reorder Level</label>
+                        <input type="number" name="reorder_level" min="0" step="0.01" placeholder="0" value="0">
+                        <p class="text-[10px] mt-1" style="color:var(--text-muted)">Alert when stock falls below this</p>
+                    </div>
+                </div>
                 <div>
                     <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Description</label>
                     <textarea name="description" rows="3" placeholder="Product description..."></textarea>
@@ -326,6 +343,24 @@
                 <div>
                     <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Description</label>
                     <textarea name="description" rows="3" x-model="editProduct.description"></textarea>
+                </div>
+                <div class="rounded-lg p-3" style="background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.2)">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fas fa-boxes-stacking text-xs" style="color:var(--accent)"></i>
+                        <span class="text-xs font-bold" style="color:var(--text-primary)">Warehouse Stock Adjustment</span>
+                        <span class="text-[10px] ml-auto" style="color:var(--text-muted)">Current: <span x-text="editProduct.warehouse_qty ?? '—'"></span> units</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">New Quantity</label>
+                            <input type="number" name="warehouse_qty" min="0" step="0.01" :placeholder="editProduct.warehouse_qty ?? '0'" x-model="editProduct.new_warehouse_qty">
+                            <p class="text-[10px] mt-1" style="color:var(--text-muted)">Leave blank to keep current</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Reorder Level</label>
+                            <input type="number" name="reorder_level" min="0" step="0.01" :placeholder="editProduct.reorder_level ?? '0'" x-model="editProduct.new_reorder_level">
+                        </div>
+                    </div>
                 </div>
                 <div class="flex items-center justify-between pt-2 border-t" style="border-color:var(--border-color)">
                     <label class="flex items-center gap-2 text-sm cursor-pointer" style="color:var(--text-secondary)">

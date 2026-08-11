@@ -26,7 +26,7 @@ void main() {
       expect(user.role, UserRole.franchisePartner);
       expect(user.franchiseId, 'F001');
       expect(user.franchiseName, 'Kampala');
-      expect(user.avatarUrl, 'https://img.test/a.png');
+      expect(user.avatarUrl, 'http://127.0.0.1:8000/a.png');
       expect(user.createdAt, isNotNull);
       expect(user.isActive, true);
     });

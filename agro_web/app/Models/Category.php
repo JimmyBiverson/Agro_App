@@ -13,6 +13,21 @@ class Category extends Model
 
     protected $casts = ['is_active' => 'boolean'];
 
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if (empty($this->image)) {
+            return null;
+        }
+
+        if (filter_var($this->image, FILTER_VALIDATE_URL)) {
+            return $this->image;
+        }
+
+        return url('storage/' . ltrim($this->image, '/'));
+    }
+
     public function products()
     {
         return $this->hasMany(Product::class);

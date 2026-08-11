@@ -12,6 +12,8 @@ import '../../widgets/common/section_header.dart';
 import '../../widgets/common/status_badge.dart';
 import '../../widgets/common/loading_view.dart';
 import 'franchise_shell.dart';
+import 'orders/create_order_screen.dart';
+import 'sales/create_sale_screen.dart';
 
 class FranchiseDashboard extends StatefulWidget {
   const FranchiseDashboard({super.key});
@@ -90,34 +92,166 @@ class _FranchiseDashboardState extends State<FranchiseDashboard> {
 
   Widget _buildWelcomeHeader() {
     final user = context.watch<AuthProvider>().user;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Welcome, ${user?.name ?? 'Partner'}',
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryGreenDark,
+            AppColors.primaryGreen,
+            Color(0xFF388E3C),
+          ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          Formatters.dateTime(DateTime.now()),
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryGreen.withAlpha(50),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(38),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.agriculture_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome back, ${user?.name ?? 'Partner'}! 👋',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user?.franchiseName ?? 'Farmmantra Franchise Partner',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white24, height: 1),
+          const SizedBox(height: 14),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                _buildQuickActionButton(
+                  icon: Icons.add_shopping_cart,
+                  label: 'New Order',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const CreateOrderScreen()),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+                _buildQuickActionButton(
+                  icon: Icons.storefront_outlined,
+                  label: 'Products',
+                  onTap: () {
+                    FranchiseTabScope.of(context)?.onSwitchTab(2);
+                  },
+                ),
+                const SizedBox(width: 8),
+                _buildQuickActionButton(
+                  icon: Icons.point_of_sale_outlined,
+                  label: 'New Sale',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const CreateSaleScreen()),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+                _buildQuickActionButton(
+                  icon: Icons.inventory_2_outlined,
+                  label: 'Stock Alerts',
+                  onTap: () {
+                    FranchiseTabScope.of(context)?.onSwitchTab(3);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(28),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withAlpha(40)),
         ),
-      ],
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildStatsGrid(BuildContext context) {
-    final pendingCount = context.read<OrderProvider>().orders
-        .where((o) => o.statusEnum.name == 'pending').length;
+    final pendingCount = context
+        .read<OrderProvider>()
+        .orders
+        .where((o) => o.statusEnum.name == 'pending')
+        .length;
     final inventory = context.read<InventoryProvider>().items;
-    final totalInventoryValue = inventory.fold(0.0, (sum, i) => sum + i.totalValue);
+    final totalInventoryValue = inventory.fold(
+      0.0,
+      (sum, i) => sum + i.totalValue,
+    );
 
     final stats = [
       StatCard(
@@ -140,16 +274,15 @@ class _FranchiseDashboardState extends State<FranchiseDashboard> {
       ),
       StatCard(
         title: 'Low Stock',
-        value: '${inventory.where((i) => i.isLowStock || i.isOutOfStock).length}',
+        value:
+            '${inventory.where((i) => i.isLowStock || i.isOutOfStock).length}',
         icon: Icons.warning_amber_outlined,
         iconColor: AppColors.error,
       ),
     ];
 
     if (Responsive.isDesktop(context)) {
-      return Row(
-        children: stats.map((s) => Expanded(child: s)).toList(),
-      );
+      return Row(children: stats.map((s) => Expanded(child: s)).toList());
     }
 
     return GridView.count(
@@ -171,7 +304,10 @@ class _FranchiseDashboardState extends State<FranchiseDashboard> {
         child: Center(
           child: Padding(
             padding: EdgeInsets.all(24),
-            child: Text('No orders yet', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(
+              'No orders yet',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
         ),
       );
@@ -188,7 +324,11 @@ class _FranchiseDashboardState extends State<FranchiseDashboard> {
                   color: AppColors.primaryGreen.withAlpha(26),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.shopping_bag_outlined, color: AppColors.primaryGreen, size: 20),
+                child: const Icon(
+                  Icons.shopping_bag_outlined,
+                  color: AppColors.primaryGreen,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -197,12 +337,18 @@ class _FranchiseDashboardState extends State<FranchiseDashboard> {
                   children: [
                     Text(
                       order.orderNumber ?? order.id,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       Formatters.date(order.createdAt),
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -212,7 +358,10 @@ class _FranchiseDashboardState extends State<FranchiseDashboard> {
                 children: [
                   Text(
                     Formatters.currency(order.totalAmount),
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   StatusBadge.fromOrderStatus(order.status),
@@ -226,7 +375,9 @@ class _FranchiseDashboardState extends State<FranchiseDashboard> {
   }
 
   Widget _buildInventoryAlerts() {
-    final inventory = context.read<InventoryProvider>().items
+    final inventory = context
+        .read<InventoryProvider>()
+        .items
         .where((i) => i.isLowStock || i.isOutOfStock)
         .take(5)
         .toList();
@@ -236,7 +387,10 @@ class _FranchiseDashboardState extends State<FranchiseDashboard> {
         child: Center(
           child: Padding(
             padding: EdgeInsets.all(24),
-            child: Text('No inventory alerts', style: TextStyle(color: AppColors.success)),
+            child: Text(
+              'No inventory alerts',
+              style: TextStyle(color: AppColors.success),
+            ),
           ),
         ),
       );
@@ -260,7 +414,11 @@ class _FranchiseDashboardState extends State<FranchiseDashboard> {
     );
   }
 
-  Widget _buildAlertItem(String name, String detail, InventoryAlertLevel level) {
+  Widget _buildAlertItem(
+    String name,
+    String detail,
+    InventoryAlertLevel level,
+  ) {
     Color color;
     IconData icon;
     switch (level) {
@@ -288,7 +446,13 @@ class _FranchiseDashboardState extends State<FranchiseDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
                 Text(detail, style: TextStyle(fontSize: 12, color: color)),
               ],
             ),

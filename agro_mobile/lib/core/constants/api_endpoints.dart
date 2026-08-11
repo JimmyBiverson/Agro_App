@@ -10,7 +10,7 @@ class ApiEndpoints {
   // from the command line when building.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost/Agro_app/agro_web/public/api',
+    defaultValue: 'http://192.168.1.8:8000/api',
   );
 
   // Auth
