@@ -6,7 +6,9 @@ import '../../../core/enums/app_enums.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/validators.dart';
+import '../../../models/order.dart';
 import '../../../models/payment.dart';
+import '../../../providers/order_provider.dart';
 import '../../../providers/payment_provider.dart';
 import '../../../widgets/common/app_button.dart';
 import '../../../widgets/common/app_card.dart';
@@ -16,7 +18,9 @@ import '../../../widgets/common/loading_view.dart';
 import '../../../widgets/common/status_badge.dart';
 
 class PaymentScreen extends StatefulWidget {
-  const PaymentScreen({super.key});
+  final List<String>? preSelectedOrderIds;
+
+  const PaymentScreen({super.key, this.preSelectedOrderIds});
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -32,6 +36,7 @@ class _PaymentScreenState extends State<PaymentScreen>
   String? _selectedMethod;
   XFile? _proofFile;
   bool _isSubmitting = false;
+  final Set<String> _selectedOrderIds = {};
 
   static const _banks = [
     'Stanbic Bank',
@@ -44,8 +49,12 @@ class _PaymentScreenState extends State<PaymentScreen>
     'Other',
   ];
 
-  static const _methods = ['bank_transfer', 'mobile_money'];
-  static const _methodLabels = {'bank_transfer': 'Bank Transfer', 'mobile_money': 'Mobile Money'};
+  static const _methods = ['bank_transfer', 'mobile_money', 'cash'];
+  static const _methodLabels = {
+    'bank_transfer': 'Bank Transfer',
+    'mobile_money': 'Mobile Money',
+    'cash': 'Cash',
+  };
 
   @override
   void initState() {
@@ -54,6 +63,13 @@ class _PaymentScreenState extends State<PaymentScreen>
     final provider = context.read<PaymentProvider>();
     provider.loadPayments(silent: provider.payments.isNotEmpty);
     provider.loadAccountSummary(silent: provider.accountSummary != null);
+    context.read<OrderProvider>().loadOrders(
+      status: 'approved',
+      silent: context.read<OrderProvider>().orders.isNotEmpty,
+    );
+    if (widget.preSelectedOrderIds != null) {
+      _selectedOrderIds.addAll(widget.preSelectedOrderIds!);
+    }
   }
 
   @override
@@ -82,10 +98,7 @@ class _PaymentScreenState extends State<PaymentScreen>
         Expanded(
           child: TabBarView(
             controller: _tabController,
-            children: [
-              _buildSubmitPaymentTab(),
-              _buildPaymentHistoryTab(),
-            ],
+            children: [_buildSubmitPaymentTab(), _buildPaymentHistoryTab()],
           ),
         ),
       ],
@@ -112,17 +125,16 @@ class _PaymentScreenState extends State<PaymentScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+            borderRadius: BorderRadius.circular(
+              AppConstants.defaultBorderRadius,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
                 'Account Summary',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
               const SizedBox(height: 8),
               Row(
@@ -133,10 +145,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                       children: [
                         const Text(
                           'Outstanding',
-                          style: TextStyle(
-                            color: Colors.white60,
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: Colors.white60, fontSize: 11),
                         ),
                         Text(
                           Formatters.currency(summary.outstandingBalance),
@@ -155,10 +164,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                       children: [
                         const Text(
                           'Credit Limit',
-                          style: TextStyle(
-                            color: Colors.white60,
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: Colors.white60, fontSize: 11),
                         ),
                         Text(
                           Formatters.currency(summary.creditLimit),
@@ -188,6 +194,8 @@ class _PaymentScreenState extends State<PaymentScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildApprovedOrdersSection(),
+            const SizedBox(height: 16),
             const Text(
               'Payment Details',
               style: TextStyle(
@@ -205,12 +213,19 @@ class _PaymentScreenState extends State<PaymentScreen>
               keyboardType: TextInputType.number,
               validator: (v) => Validators.positiveNumber(v, 'Amount'),
             ),
+            if (_selectedOrderIds.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _buildOrderTotalsBreakdown(),
+            ],
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _selectedBank,
               decoration: const InputDecoration(
                 labelText: 'Bank Name',
-                prefixIcon: Icon(Icons.account_balance, color: AppColors.textLight),
+                prefixIcon: Icon(
+                  Icons.account_balance,
+                  color: AppColors.textLight,
+                ),
               ),
               items: _banks
                   .map((b) => DropdownMenuItem(value: b, child: Text(b)))
@@ -226,7 +241,12 @@ class _PaymentScreenState extends State<PaymentScreen>
                 prefixIcon: Icon(Icons.payment, color: AppColors.textLight),
               ),
               items: _methods
-                  .map((m) => DropdownMenuItem(value: m, child: Text(_methodLabels[m] ?? m)))
+                  .map(
+                    (m) => DropdownMenuItem(
+                      value: m,
+                      child: Text(_methodLabels[m] ?? m),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _selectedMethod = v),
               validator: (v) => Validators.required(v, 'Payment method'),
@@ -257,6 +277,240 @@ class _PaymentScreenState extends State<PaymentScreen>
     );
   }
 
+  List<Order> get _approvedOrders {
+    return context
+        .read<OrderProvider>()
+        .orders
+        .where((o) => o.statusEnum == OrderStatus.approved)
+        .toList();
+  }
+
+  List<Order> get _selectedOrders => _approvedOrders
+      .where((o) => _selectedOrderIds.contains(o.id))
+      .toList();
+
+  double get _selectedOrdersTotal =>
+      _selectedOrders.fold(0.0, (sum, o) => sum + o.displayedAmount);
+
+  double get _selectedOrdersTax =>
+      _selectedOrders.fold(0.0, (sum, o) => sum + o.taxAmount);
+
+  Widget _buildApprovedOrdersSection() {
+    final orders = _approvedOrders;
+    if (orders.isEmpty) {
+      return AppCard(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, color: AppColors.info, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'You have no approved orders awaiting payment. '
+                  'You can still submit a custom payment below.',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Pay for Approved Orders',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Select the orders this payment covers. The amount is filled '
+              'in automatically and can still be edited.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            ...orders.map(_buildOrderSelectionChip),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Selected total',
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+                Text(
+                  Formatters.currency(_selectedOrdersTotal),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryGreen,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderSelectionChip(Order order) {
+    final selected = _selectedOrderIds.contains(order.id);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () => _onOrderSelected(order),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primaryGreen.withAlpha(18)
+                : AppColors.surfaceWhite,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selected
+                  ? AppColors.primaryGreen
+                  : AppColors.divider,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                selected
+                    ? Icons.check_circle
+                    : Icons.radio_button_unchecked,
+                color: selected
+                    ? AppColors.primaryGreen
+                    : AppColors.textLight,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      order.displayOrderNumber,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${order.items.length} item(s) · ${Formatters.date(order.createdAt)}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    Formatters.currency(order.displayedAmount),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (order.taxAmount > 0)
+                    Text(
+                      'Tax ${Formatters.currency(order.taxAmount)}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textLight,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onOrderSelected(Order order) {
+    setState(() {
+      if (_selectedOrderIds.contains(order.id)) {
+        _selectedOrderIds.remove(order.id);
+      } else {
+        _selectedOrderIds.add(order.id);
+      }
+    });
+    if (_selectedOrders.isNotEmpty) {
+      _amountController.text =
+          _selectedOrdersTotal.toStringAsFixed(0);
+    }
+  }
+
+  Widget _buildOrderTotalsBreakdown() {
+    final subtotal = _selectedOrdersTotal - _selectedOrdersTax;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primaryGreen.withAlpha(10),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          _breakdownRow('Subtotal (excl. tax)', subtotal),
+          const SizedBox(height: 4),
+          _breakdownRow('Tax (${_selectedOrders.length} order(s))', _selectedOrdersTax),
+          const Divider(height: 16),
+          _breakdownRow(
+            'Outstanding total',
+            _selectedOrdersTotal,
+            emphasize: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _breakdownRow(String label, double value, {bool emphasize = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: emphasize ? 13 : 12,
+            fontWeight: emphasize ? FontWeight.w700 : FontWeight.normal,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        Text(
+          Formatters.currency(value),
+          style: TextStyle(
+            fontSize: emphasize ? 14 : 12,
+            fontWeight: emphasize ? FontWeight.w700 : FontWeight.w600,
+            color: emphasize ? AppColors.primaryGreen : AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildUploadProof() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,7 +534,11 @@ class _PaymentScreenState extends State<PaymentScreen>
             ),
             child: Row(
               children: [
-                const Icon(Icons.image, color: AppColors.primaryGreen, size: 20),
+                const Icon(
+                  Icons.image,
+                  color: AppColors.primaryGreen,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
@@ -370,7 +628,9 @@ class _PaymentScreenState extends State<PaymentScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  payment.id,
+                  (payment.paymentNumber?.isNotEmpty ?? false)
+                      ? payment.paymentNumber!
+                      : 'PAY-${payment.id}',
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -444,13 +704,15 @@ class _PaymentScreenState extends State<PaymentScreen>
     setState(() => _isSubmitting = true);
 
     try {
+      final orderIds = _selectedOrders.map((o) => o.id).toList();
       final success = await context.read<PaymentProvider>().submitPayment({
-            'amount': double.parse(_amountController.text),
-            'bank_name': _selectedBank!,
-            'payment_method': _selectedMethod!,
-            'transaction_reference': _referenceController.text.trim(),
-            if (_proofFile != null) 'proof_file_path': _proofFile!.path,
-          });
+        'amount': double.parse(_amountController.text),
+        'bank_name': _selectedBank,
+        'payment_method': _selectedMethod ?? 'bank_transfer',
+        'transaction_reference': _referenceController.text.trim(),
+        if (orderIds.isNotEmpty) 'order_ids': orderIds,
+        if (_proofFile != null) 'proof_file_path': _proofFile!.path,
+      });
 
       if (!mounted) return;
 
@@ -461,6 +723,7 @@ class _PaymentScreenState extends State<PaymentScreen>
           _selectedBank = null;
           _selectedMethod = null;
           _proofFile = null;
+          _selectedOrderIds.clear();
         });
 
         _tabController.animateTo(1);
@@ -494,9 +757,7 @@ class _PaymentScreenState extends State<PaymentScreen>
           content: Text('Failed to submit payment: $e'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     } finally {
@@ -552,11 +813,35 @@ class _PaymentDetailSheet extends StatelessWidget {
               _buildDetailRow('Payment Method', payment.paymentMethod ?? 'N/A'),
               _buildDetailRow('Bank', payment.bankName ?? 'N/A'),
               _buildDetailRow('Reference', payment.transactionReference),
-              _buildDetailRow('Submitted', Formatters.dateTime(payment.submittedAt)),
+              _buildDetailRow(
+                'Submitted',
+                Formatters.dateTime(payment.submittedAt),
+              ),
               if (payment.verifiedAt != null)
-                _buildDetailRow('Verified', Formatters.dateTime(payment.verifiedAt)),
+                _buildDetailRow(
+                  'Verified',
+                  Formatters.dateTime(payment.verifiedAt),
+                ),
               if (payment.verifiedBy != null)
                 _buildDetailRow('Verified By', payment.verifiedBy!),
+              if (payment.orders.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Linked Orders',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ...payment.orders.map(
+                  (o) => _buildDetailRow(
+                    o.orderNumber ?? o.id,
+                    Formatters.currency(o.totalAmount),
+                  ),
+                ),
+              ],
               if (payment.rejectionReason != null) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -567,7 +852,11 @@ class _PaymentDetailSheet extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, color: AppColors.error, size: 18),
+                      const Icon(
+                        Icons.info_outline,
+                        color: AppColors.error,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -576,6 +865,62 @@ class _PaymentDetailSheet extends StatelessWidget {
                             color: AppColors.error,
                             fontSize: 13,
                           ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (payment.statusEnum == PaymentStatus.infoRequested ||
+                  payment.infoRequestNote != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withAlpha(18),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.help_outline,
+                        color: AppColors.warning,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Finance requested more information',
+                              style: TextStyle(
+                                color: AppColors.warning,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            if (payment.infoRequestNote != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                payment.infoRequestNote!,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                            if (payment.infoRequestedBy != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Requested by: ${payment.infoRequestedBy}',
+                                style: const TextStyle(
+                                  color: AppColors.textLight,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                     ],
@@ -621,10 +966,7 @@ class _PaymentDetailSheet extends StatelessWidget {
           ),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -632,7 +974,8 @@ class _PaymentDetailSheet extends StatelessWidget {
   }
 
   Widget _buildStatusTimeline() {
-    final steps = [
+    final isInfoRequested = payment.statusEnum == PaymentStatus.infoRequested;
+    final steps = <_TimelineStepData>[
       _TimelineStepData(
         title: 'Payment Submitted',
         subtitle: Formatters.dateTime(payment.submittedAt),
@@ -640,30 +983,52 @@ class _PaymentDetailSheet extends StatelessWidget {
       ),
       _TimelineStepData(
         title: 'Under Review',
-        subtitle: payment.statusEnum.index >= PaymentStatus.verified.index
-            ? 'Review complete'
-            : 'Pending review',
-        isCompleted: payment.statusEnum.index >= PaymentStatus.verified.index,
+        subtitle: isInfoRequested
+            ? 'Additional information requested'
+            : payment.statusEnum.index >= PaymentStatus.verified.index
+                ? 'Review complete'
+                : 'Pending review',
+        isCompleted:
+            isInfoRequested || payment.statusEnum.index >= PaymentStatus.verified.index,
       ),
-      _TimelineStepData(
+    ];
+
+    if (isInfoRequested) {
+      steps.add(_TimelineStepData(
+        title: 'More Info Needed',
+        subtitle: payment.infoRequestNote,
+        isCompleted: true,
+      ));
+      steps.add(_TimelineStepData(
+        title: 'Re-submission',
+        subtitle: 'Upload updated proof after addressing the request',
+        isCompleted: false,
+      ));
+    } else {
+      steps.add(_TimelineStepData(
         title: payment.statusEnum == PaymentStatus.rejected
             ? 'Payment Rejected'
             : 'Payment Accepted',
         subtitle: payment.statusEnum == PaymentStatus.rejected
             ? payment.rejectionReason
             : payment.verifiedAt != null
-                ? Formatters.dateTime(payment.verifiedAt)
-                : 'Pending',
-        isCompleted: payment.statusEnum == PaymentStatus.accepted ||
+            ? Formatters.dateTime(payment.verifiedAt)
+            : 'Pending',
+        isCompleted:
+            payment.statusEnum == PaymentStatus.accepted ||
             payment.statusEnum == PaymentStatus.rejected,
-      ),
-    ];
+      ));
+    }
 
     return Column(
       children: List.generate(steps.length, (index) {
         final step = steps[index];
         final isLast = index == steps.length - 1;
-        final color = step.isCompleted ? AppColors.primaryGreen : AppColors.textLight;
+        final color = step.isCompleted
+            ? (isInfoRequested && index == 2
+                ? AppColors.warning
+                : AppColors.primaryGreen)
+            : AppColors.textLight;
 
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -675,7 +1040,7 @@ class _PaymentDetailSheet extends StatelessWidget {
                   height: 24,
                   decoration: BoxDecoration(
                     color: step.isCompleted
-                        ? AppColors.primaryGreen.withAlpha(26)
+                        ? color.withAlpha(26)
                         : AppColors.backgroundLight,
                     shape: BoxShape.circle,
                     border: Border.all(color: color, width: 2),
@@ -690,7 +1055,9 @@ class _PaymentDetailSheet extends StatelessWidget {
                   Container(
                     width: 2,
                     height: 24,
-                    color: step.isCompleted ? AppColors.primaryGreen : AppColors.border,
+                    color: step.isCompleted
+                        ? color
+                        : AppColors.border,
                   ),
               ],
             ),

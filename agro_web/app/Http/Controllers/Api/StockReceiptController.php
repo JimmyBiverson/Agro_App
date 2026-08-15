@@ -18,9 +18,9 @@ class StockReceiptController extends Controller
         $receipts = StockReceipt::where('franchise_id', $user->franchise_id)
             ->with(['order', 'items.product'])
             ->latest()
-            ->paginate(20);
+            ->get();
 
-        return response()->json($receipts);
+        return response()->json(['data' => $receipts]);
     }
 
     public function show(StockReceipt $stockReceipt): JsonResponse

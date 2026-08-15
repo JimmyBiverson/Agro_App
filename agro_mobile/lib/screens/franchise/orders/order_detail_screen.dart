@@ -12,6 +12,7 @@ import '../../../widgets/common/error_view.dart';
 import '../../../widgets/common/loading_view.dart';
 import '../../../widgets/common/product_image.dart';
 import '../../../widgets/common/status_badge.dart';
+import '../payments/payment_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final String orderId;
@@ -78,6 +79,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     const SizedBox(height: 16),
                     _buildDeliveryInfo(order),
                   ],
+                  if (order.statusEnum == OrderStatus.approved) ...[
+                    const SizedBox(height: 16),
+                    _buildPaymentStatus(order),
+                  ],
+                  if (order.statusEnum == OrderStatus.approved &&
+                      order.isPaymentReady) ...[
+                    const SizedBox(height: 16),
+                    _buildReadyForDeliveryInfo(order),
+                  ],
                   if (order.statusEnum == OrderStatus.declined &&
                       order.declineReason != null) ...[
                     const SizedBox(height: 16),
@@ -117,7 +127,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              StatusBadge.fromOrderStatus(order.status),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  StatusBadge.fromOrderStatus(order.status),
+                  if (order.statusEnum == OrderStatus.approved) ...[
+                    const SizedBox(height: 4),
+                    StatusBadge.fromDeliveryStatus(order.deliveryStatusEnum),
+                  ],
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -375,6 +394,48 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             const SizedBox(height: 4),
           ],
+          if (order.taxAmount > 0) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Subtotal (excl. tax)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  Formatters.currency(order.totalWithoutTax),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Tax',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                Text(
+                  Formatters.currency(order.taxAmount),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 16),
+          ],
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -397,6 +458,154 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentStatus(Order order) {
+    final needsPayment = !order.isPaymentReady &&
+        !order.isOutForDelivery &&
+        order.statusEnum != OrderStatus.delivered;
+
+    if (!needsPayment) {
+      return AppCard(
+        color: AppColors.success.withAlpha(13),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Icon(Icons.verified, color: AppColors.success, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Payment Verified',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
+                    ),
+                    if (order.financeVerifiedAt != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Verified on ${Formatters.dateTime(order.financeVerifiedAt)}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return AppCard(
+      color: AppColors.warning.withAlpha(13),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.payments_outlined,
+                    color: AppColors.warning, size: 22),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Payment Required',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.warning,
+                    ),
+                  ),
+                ),
+                StatusBadge.fromDeliveryStatus(order.deliveryStatusEnum),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'This order is approved. Submit a payment to get it verified '
+              'by Finance and ready for delivery.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => _continueToPayment(order),
+                icon: const Icon(Icons.account_balance_wallet_outlined),
+                label: const Text('Continue to Payment'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryGreen,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReadyForDeliveryInfo(Order order) {
+    return AppCard(
+      color: AppColors.primaryGreen.withAlpha(13),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.verified_outlined,
+                    color: AppColors.primaryGreen, size: 22),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Ready for Delivery',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ),
+                ),
+                StatusBadge.fromDeliveryStatus(order.deliveryStatusEnum),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              order.isOutForDelivery
+                  ? 'Your order is out for delivery. Please be ready to receive it.'
+                  : 'Your payment was accepted. The order will be dispatched shortly.',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _continueToPayment(Order order) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('Pay for Order')),
+          body: PaymentScreen(preSelectedOrderIds: [order.id]),
+        ),
       ),
     );
   }
@@ -597,6 +806,26 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         'isActive': order.statusEnum.index >= OrderStatus.approved.index,
       });
 
+      steps.add({
+        'title': 'Payment',
+        'subtitle': order.isPaymentReady
+            ? 'Payment verified'
+            : 'Awaiting payment verification',
+        'icon': Icons.account_balance_wallet_outlined,
+        'isActive': order.isPaymentReady,
+      });
+
+      steps.add({
+        'title': 'Dispatch',
+        'subtitle': order.isOutForDelivery
+            ? 'Out for delivery'
+            : order.isPaymentReady
+            ? 'Ready for dispatch'
+            : 'Pending',
+        'icon': Icons.local_shipping_outlined,
+        'isActive': order.isOutForDelivery,
+      });
+
       if (order.statusEnum == OrderStatus.adjusted) {
         steps.add({
           'title': 'Adjusted',
@@ -611,7 +840,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         'subtitle': order.deliveredAt != null
             ? Formatters.date(order.deliveredAt)
             : 'Pending delivery',
-        'icon': Icons.local_shipping_outlined,
+        'icon': Icons.check_circle_outline,
         'isActive': order.statusEnum == OrderStatus.delivered,
       });
     }

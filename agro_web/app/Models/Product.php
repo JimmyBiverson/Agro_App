@@ -13,15 +13,21 @@ class Product extends Model
         'name', 'sku', 'category_id', 'unit_of_measure',
         'packaging_details', 'description', 'selling_price',
         'standard_price', 'image', 'is_active',
+        'tax_enabled', 'tax_type', 'tax_rate', 'tax_amount', 'base_price', 'final_price',
     ];
 
     protected $casts = [
         'selling_price' => 'decimal:2',
         'standard_price' => 'decimal:2',
+        'tax_enabled' => 'boolean',
+        'tax_rate' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'base_price' => 'decimal:2',
+        'final_price' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
-    protected $appends = ['image_url', 'all_images'];
+    protected $appends = ['image_url', 'all_images', 'effective_price'];
 
     public function category()
     {
@@ -97,5 +103,45 @@ class Product extends Model
         }
 
         return $urls;
+    }
+
+    public function getEffectivePriceAttribute(): float
+    {
+        if ($this->tax_enabled && $this->final_price > 0) {
+            return (float) $this->final_price;
+        }
+        return (float) $this->standard_price;
+    }
+
+    public function calculateTaxPrice(?float $basePrice = null): array
+    {
+        $base = $basePrice ?? (float) $this->standard_price;
+        if (!$this->tax_enabled) {
+            return [
+                'base_price' => $base,
+                'tax_enabled' => false,
+                'tax_type' => 'percentage',
+                'tax_rate' => 0.00,
+                'tax_amount' => 0.00,
+                'final_price' => $base,
+            ];
+        }
+
+        $taxAmount = 0.00;
+        if ($this->tax_type === 'percentage') {
+            $taxAmount = round(($base * ((float) $this->tax_rate / 100)), 2);
+        } else {
+            $taxAmount = (float) $this->tax_rate;
+        }
+        $finalPrice = round($base + $taxAmount, 2);
+
+        return [
+            'base_price' => $base,
+            'tax_enabled' => true,
+            'tax_type' => $this->tax_type,
+            'tax_rate' => (float) $this->tax_rate,
+            'tax_amount' => $taxAmount,
+            'final_price' => $finalPrice,
+        ];
     }
 }

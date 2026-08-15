@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\OrderStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Franchise;
+use App\Models\Order;
 use App\Models\PaymentSubmission;
+use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,7 +18,7 @@ class FinanceController extends Controller
     public function pendingPayments(): JsonResponse
     {
         $payments = PaymentSubmission::where('status', 'pending')
-            ->with('franchise')
+            ->with(['franchise', 'orders:id,order_number,total_amount,tax_amount,status,delivery_status'])
             ->latest('submitted_at')
             ->paginate(20);
 
@@ -23,7 +27,14 @@ class FinanceController extends Controller
 
     public function showPayment(PaymentSubmission $paymentSubmission): JsonResponse
     {
-        $paymentSubmission->load('franchise');
+        $paymentSubmission->load([
+            'franchise',
+            'orders' => fn ($q) => $q->with('items.product.category'),
+            'verifier:id,name',
+            'acceptor:id,name',
+            'rejector:id,name',
+            'infoRequestedBy:id,name',
+        ]);
 
         return response()->json(['data' => $paymentSubmission]);
     }
@@ -49,7 +60,22 @@ class FinanceController extends Controller
 
         ActivityLogger::paymentVerified($paymentSubmission, $request->user()->id);
 
-        return response()->json(['message' => 'Payment verified.', 'data' => $paymentSubmission->fresh('franchise')]);
+        $franchiseUser = User::where('franchise_id', $paymentSubmission->franchise_id)
+            ->whereHas('role', fn ($q) => $q->where('name', 'Franchise Partner'))
+            ->pluck('id')
+            ->all();
+
+        NotificationService::send(
+            $franchiseUser,
+            'Payment Verified — '.$paymentSubmission->payment_number,
+            'Your payment of '.number_format((float) $paymentSubmission->verified_amount, 0).' UGX was verified and is pending final acceptance.',
+            'payment_verified',
+            PaymentSubmission::class,
+            $paymentSubmission->id,
+            'franchise/payments/detail',
+        );
+
+        return response()->json(['message' => 'Payment verified.', 'data' => $paymentSubmission->fresh(['franchise', 'orders'])]);
     }
 
     public function accept(Request $request, PaymentSubmission $paymentSubmission): JsonResponse
@@ -70,10 +96,51 @@ class FinanceController extends Controller
 
         ActivityLogger::paymentAccepted($paymentSubmission, $request->user()->id);
 
+        // Advance any linked orders into the Ready-for-Delivery stage.
+        $linkedOrders = $paymentSubmission->orders()->get();
+        foreach ($linkedOrders as $order) {
+            $order->update([
+                'delivery_status' => 'ready_for_delivery',
+                'status' => 'approved',
+                'finance_verified_by' => $request->user()->id,
+                'finance_verified_at' => now(),
+            ]);
+
+            event(new OrderStatusChanged($order, 'approved', 'ready_for_delivery'));
+
+            $franchiseUser = User::where('franchise_id', $order->franchise_id)
+                ->whereHas('role', fn ($q) => $q->where('name', 'Franchise Partner'))
+                ->pluck('id')
+                ->all();
+
+            NotificationService::send(
+                $franchiseUser,
+                'Ready for Delivery — '.$order->order_number,
+                'Your payment was accepted. Order '.$order->order_number.' is ready for delivery. Please review the delivery details.',
+                'delivery',
+                Order::class,
+                $order->id,
+                'franchise/orders/detail',
+            );
+        }
+
+        $staffIds = User::staffOnly()->pluck('id')->all();
+        if (! empty($linkedOrders)) {
+            NotificationService::send(
+                $staffIds,
+                'Payment Verified — Ready for Delivery',
+                'Payment '.$paymentSubmission->payment_number.' was accepted. Orders are ready for delivery verification.',
+                'payment_verified',
+                PaymentSubmission::class,
+                $paymentSubmission->id,
+                'staff/orders/detail',
+            );
+        }
+
         return response()->json([
-            'message' => 'Payment accepted. Franchise balance updated.',
+            'message' => 'Payment accepted. Franchise balance updated and orders marked ready for delivery.',
             'data' => [
-                'payment' => $paymentSubmission->fresh('franchise'),
+                'payment' => $paymentSubmission->fresh(['franchise', 'orders']),
                 'new_balance' => $franchise->fresh()->account_balance,
             ],
         ]);
@@ -96,12 +163,63 @@ class FinanceController extends Controller
 
         ActivityLogger::paymentRejected($paymentSubmission, $request->user()->id, $request->rejection_reason);
 
+        $franchiseUser = User::where('franchise_id', $paymentSubmission->franchise_id)
+            ->whereHas('role', fn ($q) => $q->where('name', 'Franchise Partner'))
+            ->pluck('id')
+            ->all();
+
+        NotificationService::send(
+            $franchiseUser,
+            'Payment Rejected — '.$paymentSubmission->payment_number,
+            'Your payment was rejected: '.$request->rejection_reason.'. Please review and re-submit.',
+            'payment_rejected',
+            PaymentSubmission::class,
+            $paymentSubmission->id,
+            'franchise/payments/detail',
+        );
+
         return response()->json(['message' => 'Payment rejected.', 'data' => $paymentSubmission->fresh('franchise')]);
+    }
+
+    public function requestInfo(Request $request, PaymentSubmission $paymentSubmission): JsonResponse
+    {
+        $request->validate(['info_request_note' => 'required|string']);
+
+        if (! in_array($paymentSubmission->status, ['pending', 'verified'])) {
+            return response()->json(['message' => 'Payment cannot be requested for information in its current status.'], 422);
+        }
+
+        $paymentSubmission->update([
+            'status' => 'info_requested',
+            'info_requested_by' => $request->user()->id,
+            'info_requested_at' => now(),
+            'info_request_note' => $request->info_request_note,
+        ]);
+
+        $franchiseUser = User::where('franchise_id', $paymentSubmission->franchise_id)
+            ->whereHas('role', fn ($q) => $q->where('name', 'Franchise Partner'))
+            ->pluck('id')
+            ->all();
+
+        NotificationService::send(
+            $franchiseUser,
+            'More Info Needed — '.$paymentSubmission->payment_number,
+            'Finance requested more information for your payment: '.$request->info_request_note,
+            'payment',
+            PaymentSubmission::class,
+            $paymentSubmission->id,
+            'franchise/payments/detail',
+        );
+
+        return response()->json([
+            'message' => 'Information requested from the franchise partner.',
+            'data' => $paymentSubmission->fresh('franchise'),
+        ]);
     }
 
     public function allPayments(Request $request): JsonResponse
     {
-        $query = PaymentSubmission::with('franchise');
+        $query = PaymentSubmission::with(['franchise', 'orders:id,order_number']);
 
         if ($request->has('status')) {
             $query->where('status', $request->status);

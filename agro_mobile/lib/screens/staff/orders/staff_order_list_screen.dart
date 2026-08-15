@@ -104,7 +104,8 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
   }
 
   Widget _buildFilterChips() {
-    return Padding(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
@@ -113,6 +114,8 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
           _buildChip('Pending', OrderStatus.pending),
           const SizedBox(width: 8),
           _buildChip('Approved', OrderStatus.approved),
+          const SizedBox(width: 8),
+          _buildChip('Rejected', OrderStatus.declined),
         ],
       ),
     );
@@ -183,16 +186,21 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
 
   Widget _buildOrderCard(Order order) {
     final isPending = order.statusEnum == OrderStatus.pending;
+    final isDeclined = order.statusEnum == OrderStatus.declined;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: AppCard(
         onTap: () => Navigator.pushNamed(
           context,
-          '/staff/orders/detail',
+          '/staff/order-detail',
           arguments: order.id,
         ),
-        color: isPending ? AppColors.warning.withValues(alpha: 0.05) : null,
+        color: isPending
+            ? AppColors.warning.withValues(alpha: 0.05)
+            : isDeclined
+                ? AppColors.error.withValues(alpha: 0.05)
+                : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -246,6 +254,38 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
                   color: AppColors.primaryGreen,
                 ),
               ),
+              if (isDeclined &&
+                  order.declineReason != null &&
+                  order.declineReason!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.report_problem_outlined,
+                          size: 16, color: AppColors.error),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          order.declineReason!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textPrimary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),

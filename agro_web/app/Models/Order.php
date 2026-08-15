@@ -11,16 +11,21 @@ class Order extends Model
 
     protected $fillable = [
         'order_number', 'franchise_id', 'ordered_by', 'status',
+        'delivery_status', 'delivery_declined_reason',
         'received_at', 'served_at', 'completed_at', 'notes',
         'expected_delivery_date', 'approved_by', 'approved_at',
-        'declined_by', 'declined_at', 'decline_reason', 'total_amount',
+        'declined_by', 'declined_at', 'decline_reason',
+        'finance_verified_by', 'finance_verified_at',
+        'total_amount', 'tax_amount',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
         'expected_delivery_date' => 'datetime',
         'approved_at' => 'datetime',
         'declined_at' => 'datetime',
+        'finance_verified_at' => 'datetime',
         'received_at' => 'datetime',
         'served_at' => 'datetime',
         'completed_at' => 'datetime',
@@ -46,6 +51,28 @@ class Order extends Model
         return $this->belongsTo(User::class, 'declined_by');
     }
 
+    public function financeVerifiedByUser()
+    {
+        return $this->belongsTo(User::class, 'finance_verified_by');
+    }
+
+    public function paymentSubmissions()
+    {
+        return $this->hasMany(PaymentSubmission::class, 'order_id');
+    }
+
+    public function payments()
+    {
+        return $this->belongsToMany(PaymentSubmission::class, 'payment_order')
+            ->withPivot('allocated_amount')
+            ->withTimestamps();
+    }
+
+    public function acceptedPayments()
+    {
+        return $this->payments()->where('payment_submissions.status', 'accepted');
+    }
+
     public function items()
     {
         return $this->hasMany(OrderItem::class);
@@ -64,6 +91,23 @@ class Order extends Model
     public function scopeForFranchise($query, $franchiseId)
     {
         return $query->where('franchise_id', $franchiseId);
+    }
+
+    /**
+     * Base order value (excluding tax).
+     */
+    public function getSubtotalAmountAttribute(): float
+    {
+        return round((float) $this->total_amount - (float) $this->tax_amount, 2);
+    }
+
+    /**
+     * True when finance has accepted an accepted payment for this order.
+     */
+    public function getPaymentVerifiedAttribute(): bool
+    {
+        return $this->acceptedPayments()->exists()
+            || ($this->finance_verified_by !== null && $this->delivery_status !== 'pending');
     }
 
     public static function generateOrderNumber(): string

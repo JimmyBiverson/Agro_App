@@ -203,7 +203,11 @@ class AdminController extends Controller
             'packaging_details' => 'nullable|string',
             'standard_price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
+            'tax_enabled' => 'nullable|boolean',
+            'tax_type' => 'nullable|string|in:percentage,fixed',
+            'tax_rate' => 'nullable|numeric|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         $data = $request->only([
@@ -211,11 +215,26 @@ class AdminController extends Controller
             'packaging_details', 'standard_price', 'description',
         ]);
 
+        $data = array_merge($data, $this->applyTaxFields($request, $request->input('standard_price')));
+
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
         $product = Product::create($data);
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $idx => $file) {
+                if ($file && $file->isValid()) {
+                    $path = $file->store('products', 'public');
+                    if (empty($product->image) && $idx === 0) {
+                        $product->update(['image' => $path]);
+                    } else {
+                        $product->images()->create(['image_path' => $path]);
+                    }
+                }
+            }
+        }
 
         WarehouseInventory::create(['product_id' => $product->id, 'quantity' => 0]);
 
@@ -232,13 +251,19 @@ class AdminController extends Controller
             'standard_price' => 'sometimes|numeric|min:0',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'tax_enabled' => 'nullable|boolean',
+            'tax_type' => 'nullable|string|in:percentage,fixed',
+            'tax_rate' => 'nullable|numeric|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         $data = $request->only([
             'name', 'category_id', 'unit_of_measure',
             'packaging_details', 'standard_price', 'description', 'is_active',
         ]);
+
+        $data = array_merge($data, $this->applyTaxFields($request, $product->standard_price));
 
         if ($request->hasFile('image')) {
             if ($product->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($product->image)) {
@@ -247,9 +272,50 @@ class AdminController extends Controller
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                if ($file && $file->isValid()) {
+                    $product->images()->create(['image_path' => $file->store('products', 'public')]);
+                }
+            }
+        }
+
         $product->update($data);
 
         return response()->json(['message' => 'Product updated.', 'data' => $product->fresh('category')]);
+    }
+
+    /**
+     * Server-side tax calculation. The client preview is cosmetic; the
+     * authoritative values are always recomputed here.
+     */
+    private function applyTaxFields(Request $request, ?float $existingStandardPrice = null): array
+    {
+        if (! $request->hasAny(['tax_enabled', 'tax_type', 'tax_rate'])) {
+            return [];
+        }
+
+        $taxEnabled = $request->boolean('tax_enabled');
+        $taxType = $request->input('tax_type', 'percentage');
+        $taxRate = (float) $request->input('tax_rate', 0);
+        $standardPrice = $request->has('standard_price')
+            ? (float) $request->input('standard_price')
+            : (float) ($existingStandardPrice ?? 0);
+
+        $taxAmount = 0.00;
+        if ($taxEnabled) {
+            $taxAmount = ($taxType === 'percentage') ? round($standardPrice * ($taxRate / 100), 2) : $taxRate;
+        }
+        $finalPrice = round($standardPrice + $taxAmount, 2);
+
+        return [
+            'tax_enabled' => $taxEnabled,
+            'tax_type' => $taxType,
+            'tax_rate' => $taxRate,
+            'tax_amount' => $taxAmount,
+            'base_price' => $standardPrice,
+            'final_price' => $finalPrice,
+        ];
     }
 
     public function storePriceSlab(Request $request, Product $product): JsonResponse

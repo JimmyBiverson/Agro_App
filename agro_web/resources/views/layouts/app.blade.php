@@ -532,23 +532,87 @@
         }, 60000);
         @endif
 
-        // Toast notification system
-        function showToast(message, type) {
+        // ── Web Audio chime (no external file needed) ──────────────────────
+        function playNotificationChime() {
+            try {
+                var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                var gain = ctx.createGain();
+                gain.connect(ctx.destination);
+                [0, 0.22].forEach(function(delay, idx) {
+                    var osc = ctx.createOscillator();
+                    var g = ctx.createGain();
+                    osc.connect(g); g.connect(ctx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(idx === 0 ? 880 : 1108, ctx.currentTime + delay);
+                    g.gain.setValueAtTime(0, ctx.currentTime + delay);
+                    g.gain.linearRampToValueAtTime(0.28, ctx.currentTime + delay + 0.04);
+                    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.55);
+                    osc.start(ctx.currentTime + delay);
+                    osc.stop(ctx.currentTime + delay + 0.6);
+                });
+            } catch(e) { /* Browser blocked audio */ }
+        }
+
+        // ── Toast notification system ──────────────────────────────────────
+        function showToast(message, type, title) {
             type = type || 'info';
             var colors = { success: 'var(--success)', warning: 'var(--warning)', danger: 'var(--danger)', info: 'var(--accent)' };
-            var icons = { success: 'fa-check-circle', warning: 'fa-exclamation-triangle', danger: 'fa-circle-xmark', info: 'fa-circle-info' };
+            var icons = { success: 'fa-check-circle', warning: 'fa-exclamation-triangle', danger: 'fa-circle-xmark', info: 'fa-circle-info', order: 'fa-clipboard-list' };
+            var container = document.getElementById('toast-container') || (function() {
+                var c = document.createElement('div');
+                c.id = 'toast-container';
+                c.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:360px;';
+                document.body.appendChild(c);
+                return c;
+            })();
+
             var toast = document.createElement('div');
-            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;align-items:center;gap:12px;padding:14px 20px;border-radius:16px;color:white;font-size:14px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,0.3);transform:translateY(20px);opacity:0;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);backdrop-filter:blur(20px);background:rgba(30,41,59,0.95);border:1px solid rgba(255,255,255,0.1);';
-            toast.innerHTML = '<i class="fas ' + (icons[type] || icons.info) + '" style="color:' + (colors[type] || colors.info) + '"></i><span>' + message + '</span>';
-            document.body.appendChild(toast);
-            requestAnimationFrame(function() { toast.style.transform = 'translateY(0)'; toast.style.opacity = '1'; });
-            setTimeout(function() { toast.style.transform = 'translateY(20px)'; toast.style.opacity = '0'; setTimeout(function() { toast.remove(); }, 300); }, 4000);
+            toast.style.cssText = 'display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:16px;color:white;font-size:13.5px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,0.35);transform:translateX(120%);opacity:0;transition:all 0.35s cubic-bezier(0.16,1,0.3,1);backdrop-filter:blur(20px);background:rgba(15,23,42,0.97);border:1px solid rgba(255,255,255,0.1);cursor:pointer;min-width:280px;';
+            toast.innerHTML = '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:8px;flex-shrink:0;"><i class="fas ' + (icons[type] || icons.info) + '" style="color:' + (colors[type] || colors.info) + ';font-size:16px;"></i></div>' +
+                '<div style="flex:1;min-width:0;">' +
+                (title ? '<p style="font-weight:700;font-size:13px;margin:0 0 2px;">' + title + '</p>' : '') +
+                '<p style="margin:0;color:rgba(255,255,255,0.82);font-size:12.5px;line-height:1.4;">' + message + '</p></div>' +
+                '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;padding:0;flex-shrink:0;font-size:14px;">✕</button>';
+
+            toast.addEventListener('click', function() { toast.remove(); });
+            container.appendChild(toast);
+            requestAnimationFrame(function() { toast.style.transform = 'translateX(0)'; toast.style.opacity = '1'; });
+            setTimeout(function() { toast.style.transform = 'translateX(120%)'; toast.style.opacity = '0'; setTimeout(function() { toast.remove(); }, 400); }, 6000);
         }
 
         // Show session toast notifications if enabled
         @if(($notif['notif_inapp_toasts'] ?? '1') === '1')
             @if(session('success')) showToast(@json(session('success')), 'success'); @endif
             @if(session('error')) showToast(@json(session('error')), 'danger'); @endif
+        @endif
+
+        // ── Auto-popup notification banner when there are pending items ───
+        @if($bellCount > 0)
+        (function() {
+            var sessionKey = 'fma_notif_shown_' + '{{ date("Y-m-d-H") }}';
+            if (!sessionStorage.getItem(sessionKey)) {
+                sessionStorage.setItem(sessionKey, '1');
+                setTimeout(function() {
+                    playNotificationChime();
+                    @if($role === 'System Administrator' || $role === 'Farmmantra Staff')
+                        @if(isset($nOrders) && $nOrders > 0)
+                            showToast('{{ $nOrders }} pending order{{ $nOrders > 1 ? "s" : "" }} need{{ $nOrders == 1 ? "s" : "" }} review', 'warning', '⚡ Action Required');
+                        @endif
+                        @if(isset($nPayments) && $nPayments > 0)
+                            setTimeout(function() { showToast('{{ $nPayments }} payment{{ $nPayments > 1 ? "s" : "" }} pending verification', 'info', '💳 Payments'); }, 800);
+                        @endif
+                    @elseif($role === 'Finance Department')
+                        @if(isset($nPayments) && $nPayments > 0)
+                            showToast('{{ $nPayments }} payment{{ $nPayments > 1 ? "s" : "" }} awaiting your verification', 'warning', '💳 Finance Action');
+                        @endif
+                    @elseif($role === 'Franchise Partner')
+                        @if(isset($nMyOrders) && $nMyOrders > 0)
+                            showToast('{{ $nMyOrders }} of your order{{ $nMyOrders > 1 ? "s" : "" }} awaiting approval', 'info', '📦 Order Update');
+                        @endif
+                    @endif
+                }, 1500);
+            }
+        })();
         @endif
     </script>
 </body>

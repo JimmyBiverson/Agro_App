@@ -14,10 +14,24 @@ enum PaymentStatus {
   pending('Pending'),
   verified('Verified'),
   accepted('Accepted'),
-  rejected('Rejected');
+  rejected('Rejected'),
+  infoRequested('Info Requested');
 
   final String displayName;
   const PaymentStatus(this.displayName);
+}
+
+enum DeliveryStatus {
+  pending('Pending'),
+  paymentVerified('Payment Verified'),
+  readyForDelivery('Ready for Delivery'),
+  outForDelivery('Out for Delivery'),
+  delivered('Delivered'),
+  confirmed('Confirmed'),
+  declined('Delivery Declined');
+
+  final String displayName;
+  const DeliveryStatus(this.displayName);
 }
 
 enum InventoryAlertLevel {

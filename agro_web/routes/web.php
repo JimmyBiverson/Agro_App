@@ -73,6 +73,11 @@ Route::middleware(AuthenticateWeb::class)->group(function () {
     // Report Exports
     Route::get('/admin/reports/export', [WebController::class, 'adminReportExport'])->name('web.admin.reports.export');
 
+    // Admin Chat
+    Route::get('/admin/chat', [WebController::class, 'adminChat'])->name('web.admin.chat');
+    Route::get('/admin/chat/{id}/messages', [WebController::class, 'adminChatMessages'])->name('web.admin.chat.messages');
+    Route::post('/admin/chat/{id}/send', [WebController::class, 'adminChatSend'])->name('web.admin.chat.send');
+
     // Admin Password Reset
     Route::post('/admin/users/reset-password', [WebController::class, 'adminResetPassword'])->name('web.admin.users.resetPassword');
 

@@ -1,13 +1,224 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/user.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/common/app_card.dart';
+import '../../../widgets/common/logout_dialog.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isUploadingAvatar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      auth.refreshProfile();
+      auth.registerDeviceToken('flutter-device');
+    });
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final auth = context.read<AuthProvider>();
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+    if (file == null || !mounted) return;
+
+    setState(() => _isUploadingAvatar = true);
+    final bytes = await file.readAsBytes();
+    final success = await auth.uploadAvatar(bytes, file.name);
+    if (!mounted) return;
+    setState(() => _isUploadingAvatar = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? 'Profile photo updated' : auth.error ?? 'Upload failed'),
+        backgroundColor: success ? AppColors.primaryGreen : AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showEditInfoDialog(User user) {
+    final nameController = TextEditingController(text: user.name);
+    final phoneController = TextEditingController(text: user.phone);
+    final addressController = TextEditingController(text: user.address ?? '');
+    final formKey = GlobalKey<FormState>();
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Full Name'),
+                  textInputAction: TextInputAction.next,
+                  validator: (value) =>
+                      (value == null || value.trim().isEmpty) ? 'Name is required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: addressController,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                  textInputAction: TextInputAction.done,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final auth = context.read<AuthProvider>();
+              final success = await auth.updateProfile({
+                'name': nameController.text.trim(),
+                'phone': phoneController.text.trim(),
+                'address': addressController.text.trim(),
+              });
+              if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success ? 'Profile updated' : auth.error ?? 'Update failed'),
+                    backgroundColor: success ? AppColors.primaryGreen : AppColors.error,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog() {
+    final currentController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Change Password'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: currentController,
+                  decoration: const InputDecoration(labelText: 'Current Password'),
+                  obscureText: true,
+                  textInputAction: TextInputAction.next,
+                  validator: (value) =>
+                      (value == null || value.isEmpty) ? 'Enter current password' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: newController,
+                  decoration: const InputDecoration(labelText: 'New Password'),
+                  obscureText: true,
+                  textInputAction: TextInputAction.next,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Enter new password';
+                    if (value.length < 6) return 'At least 6 characters';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: confirmController,
+                  decoration: const InputDecoration(labelText: 'Confirm New Password'),
+                  obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  validator: (value) => value != newController.text
+                      ? 'Passwords do not match'
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final auth = context.read<AuthProvider>();
+              final success = await auth.changePassword(
+                currentController.text,
+                newController.text,
+              );
+              if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      success ? 'Password changed' : auth.error ?? 'Change failed',
+                    ),
+                    backgroundColor: success ? AppColors.primaryGreen : AppColors.error,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _togglePreference(
+    AuthProvider auth,
+    User user,
+    String key,
+    bool value,
+  ) async {
+    final prefs = Map<String, dynamic>.from(user.notificationPreferences);
+    prefs[key] = value;
+    await auth.updateProfile({'notification_preferences': prefs});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +232,8 @@ class ProfileScreen extends StatelessWidget {
             _buildHeader(user),
             const SizedBox(height: 16),
             _buildContactCard(user),
+            const SizedBox(height: 16),
+            _buildNotificationPreferences(user),
             const SizedBox(height: 16),
             _buildFranchiseCard(user),
             const SizedBox(height: 16),
@@ -66,22 +279,40 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
               ),
-              if (user?.isActive ?? true)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: GestureDetector(
+                  onTap: _isUploadingAvatar ? null : _pickAndUploadAvatar,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.success,
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.fromBorderSide(
-                        BorderSide(color: Colors.white, width: 2),
-                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(38),
+                          blurRadius: 4,
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.check, size: 12, color: Colors.white),
+                    child: _isUploadingAvatar
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primaryGreen,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.photo_camera,
+                            size: 16,
+                            color: AppColors.primaryGreen,
+                          ),
                   ),
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -137,16 +368,125 @@ class ProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Contact Information',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Contact Information',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              if (user != null)
+                IconButton(
+                  onPressed: () => _showEditInfoDialog(user),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  color: AppColors.primaryGreen,
+                  tooltip: 'Edit profile',
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           ...rows,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationPreferences(User? user) {
+    if (user == null) return const SizedBox.shrink();
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.notifications_outlined,
+                  size: 18, color: AppColors.primaryGreen),
+              SizedBox(width: 8),
+              Text(
+                'Notification Preferences',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: const Text(
+              'Enable notifications',
+              style: TextStyle(fontSize: 13),
+            ),
+            value: user.isNotificationEnabled,
+            activeTrackColor: AppColors.primaryGreen,
+            onChanged: (value) => _togglePreference(
+              context.read<AuthProvider>(),
+              user,
+              'notifications_enabled',
+              value,
+            ),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: const Text(
+              'Order updates',
+              style: TextStyle(fontSize: 13),
+            ),
+            value: user.wantsOrderNotifications && user.isNotificationEnabled,
+            activeTrackColor: AppColors.primaryGreen,
+            onChanged: user.isNotificationEnabled
+                ? (value) => _togglePreference(
+                      context.read<AuthProvider>(),
+                      user,
+                      'orders',
+                      value,
+                    )
+                : null,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: const Text(
+              'Payment updates',
+              style: TextStyle(fontSize: 13),
+            ),
+            value: user.wantsPaymentNotifications && user.isNotificationEnabled,
+            activeTrackColor: AppColors.primaryGreen,
+            onChanged: user.isNotificationEnabled
+                ? (value) => _togglePreference(
+                      context.read<AuthProvider>(),
+                      user,
+                      'payments',
+                      value,
+                    )
+                : null,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: const Text(
+              'Delivery updates',
+              style: TextStyle(fontSize: 13),
+            ),
+            value: user.wantsDeliveryNotifications && user.isNotificationEnabled,
+            activeTrackColor: AppColors.primaryGreen,
+            onChanged: user.isNotificationEnabled
+                ? (value) => _togglePreference(
+                      context.read<AuthProvider>(),
+                      user,
+                      'deliveries',
+                      value,
+                    )
+                : null,
+          ),
         ],
       ),
     );
@@ -229,7 +569,7 @@ class ProfileScreen extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () async {
+            onPressed: () {
               context.read<AuthProvider>().refreshProfile();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -256,7 +596,25 @@ class ProfileScreen extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () {
+            onPressed: _showChangePasswordDialog,
+            icon: const Icon(Icons.lock_outline, color: AppColors.primaryGreen),
+            label: const Text(
+              'Change Password',
+              style: TextStyle(color: AppColors.primaryGreen),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.primaryGreen),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              final confirmed = await confirmLogout(context);
+              if (!confirmed || !context.mounted) return;
               context.read<AuthProvider>().logout();
               Navigator.of(context).pushReplacementNamed('/login');
             },

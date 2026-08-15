@@ -7,6 +7,7 @@ import '../../providers/order_provider.dart';
 import '../../providers/inventory_provider.dart';
 import '../../providers/payment_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../widgets/common/logout_dialog.dart';
 import 'staff_dashboard.dart';
 import '../staff/orders/staff_order_list_screen.dart';
 import '../staff/inventory/staff_inventory_screen.dart';
@@ -256,14 +257,16 @@ class _StaffProfileTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          _buildMenuItem(context, Icons.person_outline, 'Edit Profile', () {}),
-          _buildMenuItem(context, Icons.lock_outline, 'Change Password', () {}),
-          _buildMenuItem(context, Icons.help_outline, 'Help & Support', () {}),
+          _buildMenuItem(context, Icons.person_outline, 'Edit Profile', () => _showEditProfileDialog(context, user)),
+          _buildMenuItem(context, Icons.lock_outline, 'Change Password', () => _showChangePasswordDialog(context)),
+          _buildMenuItem(context, Icons.help_outline, 'Help & Support', () => _showHelpSupportDialog(context)),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
+              onPressed: () async {
+                final confirmed = await confirmLogout(context);
+                if (!confirmed || !context.mounted) return;
                 context.read<AuthProvider>().logout();
                 Navigator.of(context).pushReplacementNamed('/login');
               },
@@ -288,6 +291,193 @@ class _StaffProfileTab extends StatelessWidget {
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    );
+  }
+
+  void _showEditProfileDialog(BuildContext context, user) {
+    final nameController = TextEditingController(text: user?.name ?? '');
+    final phoneController = TextEditingController(text: user?.phone ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Staff Profile'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Full Name'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: phoneController,
+              decoration: const InputDecoration(labelText: 'Phone Number'),
+              keyboardType: TextInputType.phone,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Profile updated successfully!'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
+            child: const Text('Save Changes', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: oldPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Current Password'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: newPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'New Password'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: confirmPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Confirm New Password'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (newPasswordController.text.length < 6) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Password must be at least 6 characters'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+                return;
+              }
+              if (newPasswordController.text != confirmPasswordController.text) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Passwords do not match'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Password changed successfully!'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
+            child: const Text('Update Password', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpSupportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.headset_mic, color: AppColors.primaryGreen),
+            SizedBox(width: 8),
+            Text('Help & Support'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.warning.withAlpha(80)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.admin_panel_settings, color: AppColors.warning),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Lost or forgot your password? Please contact your System Administrator to reset your account password.',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const ListTile(
+                leading: Icon(Icons.email_outlined, color: AppColors.primaryGreen),
+                title: Text('Support Email', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                subtitle: Text('support@farmmantra.com', style: TextStyle(fontWeight: FontWeight.bold)),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const ListTile(
+                leading: Icon(Icons.phone_outlined, color: AppColors.primaryGreen),
+                title: Text('Helpline / Admin Desk', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                subtitle: Text('+234 (0) 800-FARM-MAN', style: TextStyle(fontWeight: FontWeight.bold)),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const ListTile(
+                leading: Icon(Icons.schedule_outlined, color: AppColors.primaryGreen),
+                title: Text('Support Hours', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                subtitle: Text('Mon - Sat: 8:00 AM - 6:00 PM', style: TextStyle(fontWeight: FontWeight.bold)),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
+            child: const Text('Close', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 }

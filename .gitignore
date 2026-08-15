@@ -1,0 +1,10 @@
+# Temporary / debug artifacts (do not commit)
+*.sql
+analyze_result.txt
+full_analyze_result.txt
+check_images.php
+create_test_product.php
+test_api_products.php
+images_out.txt
+product_images_dump.txt
+Thumbs.db

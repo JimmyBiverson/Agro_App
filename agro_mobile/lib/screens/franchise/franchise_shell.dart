@@ -18,6 +18,7 @@ import '../franchise/payments/payment_screen.dart';
 import '../franchise/customers/customer_list_screen.dart';
 import '../franchise/sales/create_sale_screen.dart';
 import '../shared/notifications/notification_screen.dart';
+import '../../widgets/common/logout_dialog.dart';
 import '../shared/profile/profile_screen.dart';
 import '../shared/support/chat_screen.dart';
 
@@ -397,7 +398,12 @@ class _MoreTab extends StatelessWidget {
           }),
           _buildMenuItem(context, Icons.people_outline, 'Customers', () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CustomerListScreen()),
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(title: const Text('Customer Directory')),
+                  body: const CustomerListScreen(),
+                ),
+              ),
             );
           }),
           _buildMenuItem(context, Icons.point_of_sale_outlined, 'Sales', () {
@@ -407,7 +413,12 @@ class _MoreTab extends StatelessWidget {
           }),
           _buildMenuItem(context, Icons.account_balance_wallet_outlined, 'Payments', () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const PaymentScreen()),
+              MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(title: const Text('Payments & Transactions')),
+                  body: const PaymentScreen(),
+                ),
+              ),
             );
           }),
           _buildMenuItem(context, Icons.notifications_outlined, 'Notifications', () {
@@ -424,7 +435,9 @@ class _MoreTab extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
+              onPressed: () async {
+                final confirmed = await confirmLogout(context);
+                if (!confirmed || !context.mounted) return;
                 context.read<AuthProvider>().logout();
                 Navigator.of(context).pushReplacementNamed('/login');
               },

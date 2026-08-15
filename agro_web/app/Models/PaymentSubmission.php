@@ -10,11 +10,12 @@ class PaymentSubmission extends Model
     use HasFactory;
 
     protected $fillable = [
-        'payment_number', 'franchise_id', 'amount',
+        'payment_number', 'franchise_id', 'order_id', 'amount',
         'payment_method', 'transaction_reference', 'bank_name',
         'proof_of_payment_path', 'status', 'submitted_at',
         'verified_by', 'verified_at', 'accepted_by', 'accepted_at',
         'rejected_by', 'rejected_at', 'rejection_reason', 'finance_notes', 'verified_amount',
+        'info_requested_by', 'info_requested_at', 'info_request_note',
     ];
 
     protected $casts = [
@@ -24,11 +25,24 @@ class PaymentSubmission extends Model
         'verified_at' => 'datetime',
         'accepted_at' => 'datetime',
         'rejected_at' => 'datetime',
+        'info_requested_at' => 'datetime',
     ];
 
     public function franchise()
     {
         return $this->belongsTo(Franchise::class);
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function orders()
+    {
+        return $this->belongsToMany(Order::class, 'payment_order')
+            ->withPivot('allocated_amount')
+            ->withTimestamps();
     }
 
     public function verifier()
@@ -44,6 +58,24 @@ class PaymentSubmission extends Model
     public function rejector()
     {
         return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    public function infoRequestedBy()
+    {
+        return $this->belongsTo(User::class, 'info_requested_by');
+    }
+
+    public function getProofUrlAttribute(): ?string
+    {
+        if (empty($this->proof_of_payment_path)) {
+            return null;
+        }
+
+        if (filter_var($this->proof_of_payment_path, FILTER_VALIDATE_URL)) {
+            return $this->proof_of_payment_path;
+        }
+
+        return url('storage/'.ltrim($this->proof_of_payment_path, '/'));
     }
 
     public static function generatePaymentNumber(): string

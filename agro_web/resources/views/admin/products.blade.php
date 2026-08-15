@@ -3,7 +3,7 @@
 @section('page-title', 'Product Management')
 
 @section('content')
-<div x-data="{ open: false, openSlab: false, openTarget: false, editing: false, editProduct: {}, editingSlab: false, editSlab: {}, editingTarget: false, editTarget: {} }">
+<div x-data="{ open: false, openSlab: false, openTarget: false, editing: false, editProduct: {}, editingSlab: false, editSlab: {}, editingTarget: false, editTarget: {}, taxEnabled: false, editTaxEnabled: false, taxPreview: null, editTaxPreview: null }" x-init="$watch('editProduct', v => { editTaxEnabled = !!v.tax_enabled; editTaxPreview = null; })">
     <div class="card-full">
         <div class="card-header">
             <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Products ({{ $products->total() }})</h3>
@@ -46,13 +46,22 @@
                             <td class="px-4 py-3 text-sm font-medium" style="color:var(--text-primary)">{{ $p->name }}</td>
                             <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $p->category?->name }}</td>
                             <td class="px-4 py-3 text-sm" style="color:var(--text-secondary)">{{ $p->unit_of_measure }}</td>
-                            <td class="px-4 py-3 text-sm text-right font-semibold" style="color:var(--text-primary)">UGX {{ number_format($p->standard_price) }}</td>
+                            <td class="px-4 py-3 text-sm text-right" style="color:var(--text-primary)">
+                                @if($p->tax_enabled)
+                                <div class="flex flex-col items-end">
+                                    <span class="text-xs font-bold">UGX {{ number_format($p->final_price ?? $p->standard_price) }}</span>
+                                    <span class="text-[10px] mt-0.5 px-1.5 py-0.5 rounded-full font-semibold" style="background:rgba(245,158,11,0.12);color:#d97706">+{{ $p->tax_rate }}% tax</span>
+                                </div>
+                                @else
+                                <span class="font-semibold">UGX {{ number_format($p->standard_price) }}</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-sm text-right" style="color:var(--text-primary)">{{ number_format($p->warehouseInventory->quantity ?? 0) }}</td>
                             <td class="px-4 py-3 text-sm text-right" style="color:var(--text-muted)">{{ $p->priceSlabs->count() }} slabs</td>
                             <td class="px-4 py-3 text-center">
                                 <div class="flex items-center justify-center gap-2">
                                     <button type="button" class="btn-action" title="Edit" style="color:var(--accent); background:rgba(99,102,241,0.12)"
-                                        @click="editProduct = {{ \Illuminate\Support\Js::from(['id' => $p->id, 'name' => $p->name, 'sku' => $p->sku, 'category_id' => $p->category_id ? (string) $p->category_id : '', 'unit_of_measure' => $p->unit_of_measure, 'selling_price' => (string) $p->selling_price, 'standard_price' => (string) $p->standard_price, 'packaging_details' => (string) $p->packaging_details, 'description' => (string) $p->description, 'image_url' => $p->image_url, 'gallery_images' => $p->images->map(fn($img) => ['id' => $img->id, 'url' => $img->image_url]), 'is_active' => (bool) $p->is_active, 'warehouse_qty' => $p->warehouseInventory ? (float) $p->warehouseInventory->quantity : 0, 'reorder_level' => $p->warehouseInventory ? (float) $p->warehouseInventory->reorder_level : 0]) }}; editing = true">
+                                        @click="editProduct = {{ \Illuminate\Support\Js::from(['id' => $p->id, 'name' => $p->name, 'sku' => $p->sku, 'category_id' => $p->category_id ? (string) $p->category_id : '', 'unit_of_measure' => $p->unit_of_measure, 'selling_price' => (string) $p->selling_price, 'standard_price' => (string) $p->standard_price, 'packaging_details' => (string) $p->packaging_details, 'description' => (string) $p->description, 'image_url' => $p->image_url, 'gallery_images' => $p->images->map(fn($img) => ['id' => $img->id, 'url' => $img->image_url]), 'is_active' => (bool) $p->is_active, 'warehouse_qty' => $p->warehouseInventory ? (float) $p->warehouseInventory->quantity : 0, 'reorder_level' => $p->warehouseInventory ? (float) $p->warehouseInventory->reorder_level : 0, 'tax_enabled' => (bool) $p->tax_enabled, 'tax_type' => $p->tax_type ?? 'percentage', 'tax_rate' => (float) $p->tax_rate, 'tax_amount' => (float) $p->tax_amount, 'final_price' => (float) ($p->final_price ?? $p->standard_price)]) }}; editing = true">
                                         <i class="fas fa-pen"></i>
                                     </button>
                                     <form action="{{ route('web.admin.products.delete') }}" method="POST" class="inline" onsubmit="return confirm('Delete product {{ addslashes($p->name) }}?')">
@@ -251,6 +260,47 @@
                     <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Description</label>
                     <textarea name="description" rows="3" placeholder="Product description..."></textarea>
                 </div>
+                {{-- Tax Configuration --}}
+                <div class="rounded-xl p-4" style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25)">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-percent text-amber-500 text-sm"></i>
+                            <span class="text-sm font-bold" style="color:var(--text-primary)">Tax Configuration</span>
+                        </div>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="hidden" name="tax_enabled" value="0">
+                            <input type="checkbox" name="tax_enabled" value="1" x-model="taxEnabled" class="w-4 h-4 rounded accent-amber-500">
+                            <span class="text-xs font-semibold" style="color:var(--text-secondary)">Enable Tax</span>
+                        </label>
+                    </div>
+                    <div x-show="taxEnabled" x-transition class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Tax Type</label>
+                                <select name="tax_type" id="add_tax_type" class="w-full rounded-lg border px-3 py-2 text-sm" style="background:var(--bg-input);border-color:var(--border-color);color:var(--text-primary)" @change="taxPreview = null">
+                                    <option value="percentage">Percentage (%)</option>
+                                    <option value="fixed">Fixed Amount (UGX)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Tax Rate / Amount</label>
+                                <input type="number" name="tax_rate" id="add_tax_rate" min="0" step="0.01" placeholder="e.g. 18" class="w-full rounded-lg border px-3 py-2 text-sm" style="background:var(--bg-input);border-color:var(--border-color);color:var(--text-primary)" @input="
+                                    const base = parseFloat(document.querySelector('[name=standard_price]')?.value || 0);
+                                    const t = document.getElementById('add_tax_type').value;
+                                    const r = parseFloat($event.target.value || 0);
+                                    const amt = t === 'percentage' ? Math.round(base * r / 100 * 100) / 100 : r;
+                                    taxPreview = { tax: amt, final: Math.round((base + amt) * 100) / 100 };
+                                ">
+                            </div>
+                        </div>
+                        <template x-if="taxPreview">
+                            <div class="rounded-lg p-3 text-xs space-y-1" style="background:rgba(245,158,11,0.12)">
+                                <div class="flex justify-between"><span style="color:var(--text-muted)">Tax Amount:</span> <span class="font-bold text-amber-600">UGX <span x-text="taxPreview.tax?.toLocaleString()"></span></span></div>
+                                <div class="flex justify-between"><span style="color:var(--text-muted)">Final Selling Price:</span> <span class="font-bold" style="color:var(--text-primary)">UGX <span x-text="taxPreview.final?.toLocaleString()"></span></span></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
                 <div class="flex justify-end gap-3 pt-2 border-t" style="border-color:var(--border-color)">
                     <button type="button" @click="open = false" class="px-5 py-2.5 rounded-lg text-sm font-medium border transition hover:opacity-80" style="border-color:var(--border-color); color:var(--text-secondary)">Cancel</button>
                     <button type="submit" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/25"><i class="fas fa-save mr-1.5"></i> Save Product</button>
@@ -343,6 +393,47 @@
                 <div>
                     <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Description</label>
                     <textarea name="description" rows="3" x-model="editProduct.description"></textarea>
+                </div>
+                {{-- Tax Configuration Edit --}}
+                <div class="rounded-xl p-4" style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25)">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-percent text-amber-500 text-sm"></i>
+                            <span class="text-sm font-bold" style="color:var(--text-primary)">Tax Configuration</span>
+                        </div>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="hidden" name="tax_enabled" value="0">
+                            <input type="checkbox" name="tax_enabled" value="1" x-model="editTaxEnabled" class="w-4 h-4 rounded accent-amber-500">
+                            <span class="text-xs font-semibold" style="color:var(--text-secondary)">Enable Tax</span>
+                        </label>
+                    </div>
+                    <div x-show="editTaxEnabled" x-transition class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Tax Type</label>
+                                <select name="tax_type" id="edit_tax_type" class="w-full rounded-lg border px-3 py-2 text-sm" style="background:var(--bg-input);border-color:var(--border-color);color:var(--text-primary)" @change="editTaxPreview = null">
+                                    <option value="percentage" :selected="editProduct.tax_type === 'percentage'">Percentage (%)</option>
+                                    <option value="fixed" :selected="editProduct.tax_type === 'fixed'">Fixed Amount (UGX)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Tax Rate / Amount</label>
+                                <input type="number" name="tax_rate" id="edit_tax_rate" min="0" step="0.01" :placeholder="editProduct.tax_rate ?? '0'" :value="editProduct.tax_rate" @input="
+                                    const base = parseFloat(document.querySelector('#editProduct [name=standard_price]')?.value || editProduct.standard_price || 0);
+                                    const t = document.getElementById('edit_tax_type').value;
+                                    const r = parseFloat($event.target.value || 0);
+                                    const amt = t === 'percentage' ? Math.round(base * r / 100 * 100) / 100 : r;
+                                    editTaxPreview = { tax: amt, final: Math.round((base + amt) * 100) / 100 };
+                                " class="w-full rounded-lg border px-3 py-2 text-sm" style="background:var(--bg-input);border-color:var(--border-color);color:var(--text-primary)">
+                            </div>
+                        </div>
+                        <template x-if="editTaxPreview || editProduct.tax_amount">
+                            <div class="rounded-lg p-3 text-xs space-y-1" style="background:rgba(245,158,11,0.12)">
+                                <div class="flex justify-between"><span style="color:var(--text-muted)">Tax Amount:</span> <span class="font-bold text-amber-600">UGX <span x-text="(editTaxPreview?.tax ?? editProduct.tax_amount)?.toLocaleString()"></span></span></div>
+                                <div class="flex justify-between"><span style="color:var(--text-muted)">Final Selling Price:</span> <span class="font-bold" style="color:var(--text-primary)">UGX <span x-text="(editTaxPreview?.final ?? editProduct.final_price)?.toLocaleString()"></span></span></div>
+                            </div>
+                        </template>
+                    </div>
                 </div>
                 <div class="rounded-lg p-3" style="background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.2)">
                     <div class="flex items-center gap-2 mb-2">

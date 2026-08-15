@@ -14,7 +14,7 @@ class CustomerController extends Controller
         $user = $request->user();
         $query = Customer::forFranchise($user->franchise_id)->active();
 
-        if ($request->has('search')) {
+        if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -22,9 +22,9 @@ class CustomerController extends Controller
             });
         }
 
-        $customers = $query->latest()->paginate(20);
+        $customers = $query->latest()->get();
 
-        return response()->json($customers);
+        return response()->json(['data' => $customers]);
     }
 
     public function store(Request $request): JsonResponse
@@ -34,13 +34,20 @@ class CustomerController extends Controller
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email',
             'address' => 'nullable|string',
+            'location' => 'nullable|string',
             'is_wholesale' => 'boolean',
         ]);
 
         $user = $request->user();
 
+        $address = $request->input('address') ?? $request->input('location');
+
         $customer = Customer::create([
-            ...$request->only(['name', 'phone', 'email', 'address', 'is_wholesale']),
+            'name' => $request->name,
+            'phone' => $request->phone ?? '',
+            'email' => $request->email,
+            'address' => $address,
+            'is_wholesale' => $request->boolean('is_wholesale', false),
             'franchise_id' => $user->franchise_id,
         ]);
 

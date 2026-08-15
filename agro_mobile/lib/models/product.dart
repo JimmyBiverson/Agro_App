@@ -47,10 +47,16 @@ class Product {
   final String unitOfMeasure;
   final String? packagingDetails;
   final double standardPrice;
+  final bool taxEnabled;
+  final String? taxType;
+  final double taxRate;
+  final double basePrice;
+  final double finalPrice;
   final List<PriceSlab> priceSlabs;
   final String? imageUrl;
   final List<String> imageUrls;
   final bool isActive;
+  final DateTime? createdAt;
 
   const Product({
     required this.id,
@@ -61,10 +67,16 @@ class Product {
     required this.unitOfMeasure,
     this.packagingDetails,
     required this.standardPrice,
+    this.taxEnabled = false,
+    this.taxType,
+    this.taxRate = 0,
+    this.basePrice = 0,
+    this.finalPrice = 0,
     this.priceSlabs = const [],
     this.imageUrl,
     this.imageUrls = const [],
     this.isActive = true,
+    this.createdAt,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -122,6 +134,11 @@ class Product {
       unitOfMeasure: json['unit_of_measure'] ?? '',
       packagingDetails: json['packaging_details'],
       standardPrice: _toDouble(json['standard_price'] ?? json['selling_price']),
+      taxEnabled: json['tax_enabled'] ?? false,
+      taxType: json['tax_type'],
+      taxRate: _toDouble(json['tax_rate']),
+      basePrice: _toDouble(json['base_price'] ?? json['standard_price']),
+      finalPrice: _toDouble(json['final_price'] ?? json['effective_price'] ?? json['standard_price']),
       priceSlabs: (json['price_slabs'] as List<dynamic>?)
               ?.map((s) => PriceSlab.fromJson(s))
               .toList() ??
@@ -129,6 +146,9 @@ class Product {
       imageUrl: mainImg ?? (extractedUrls.isNotEmpty ? extractedUrls.first : null),
       imageUrls: extractedUrls,
       isActive: json['is_active'] ?? true,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
     );
   }
 

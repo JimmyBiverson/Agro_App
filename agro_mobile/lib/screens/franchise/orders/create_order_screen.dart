@@ -10,6 +10,7 @@ import '../../../widgets/common/app_card.dart';
 import '../../../widgets/common/error_view.dart';
 import '../../../widgets/common/loading_view.dart';
 import '../../../widgets/common/product_image.dart';
+import '../../../services/notification_service.dart';
 import 'order_detail_screen.dart';
 
 class CreateOrderScreen extends StatefulWidget {
@@ -326,14 +327,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       if (success) {
         final created = provider.lastCreatedOrder;
         final navigator = Navigator.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Order submitted successfully'),
-            backgroundColor: AppColors.primaryGreen,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            duration: const Duration(seconds: 2),
-          ),
+        AppNotify.orderUpdate(
+          context,
+          'Order placed! We\u2019ll review and confirm it shortly.',
         );
         navigator.pop();
         if (created != null) {
@@ -344,24 +340,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
           );
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(provider.error ?? 'Failed to submit order'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
+        AppNotify.error(
+          context,
+          'Order Failed',
+          provider.error ?? 'Failed to submit order. Please try again.',
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to submit order: $e'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
+      AppNotify.error(
+        context,
+        'Order Error',
+        'Something went wrong: ${e.toString().replaceFirst('Exception: ', '')}',
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

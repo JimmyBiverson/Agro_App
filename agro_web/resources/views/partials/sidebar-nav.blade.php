@@ -50,6 +50,11 @@
                 <i class="fas fa-users w-5 text-center text-sm"></i> Users
             </a>
         </li>
+        <li>
+            <a href="{{ route('web.admin.chat') }}" class="sidebar-link {{ str_starts_with($current, 'web.admin.chat') ? 'active' : '' }}">
+                <i class="fas fa-comments w-5 text-center text-sm"></i> Support Chat
+            </a>
+        </li>
 
         {{-- Products & Inventory --}}
         <li><div class="sidebar-section">Products & Inventory</div></li>

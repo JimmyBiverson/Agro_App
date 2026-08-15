@@ -34,6 +34,9 @@ use Illuminate\Support\Facades\Route;
 // ─── Public ──────────────────────────────────────────────────────
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/settings/public', [SettingsController::class, 'public']);
+Route::get('/slides', [\App\Http\Controllers\Api\NewsController::class, 'slides']);
+Route::get('/news', [\App\Http\Controllers\Api\NewsController::class, 'news']);
+Route::get('/news/{news}', [\App\Http\Controllers\Api\NewsController::class, 'showNews']);
 
 // ─── Authenticated ───────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -42,6 +45,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/profile/avatar', [AuthController::class, 'uploadAvatar']);
+    Route::post('/device-token', [AuthController::class, 'updateDeviceToken']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     // ── Notifications (all authenticated) ────────────────────
@@ -59,11 +64,17 @@ Route::middleware('auth:sanctum')->group(function () {
     // ── Stock Movements (all authenticated) ──────────────────
     Route::get('/stock-movements', [StockMovementController::class, 'index']);
 
-    // ── Chat (all authenticated) ─────────────────────────────
+    // ── Chat & Support Tickets (all authenticated) ────────────
     Route::get('/conversations', [ChatController::class, 'index']);
     Route::post('/conversations', [ChatController::class, 'store']);
     Route::get('/conversations/{conversation}', [ChatController::class, 'show']);
     Route::post('/conversations/{conversation}/messages', [ChatController::class, 'send']);
+    Route::post('/conversations/{conversation}/read', [ChatController::class, 'markRead']);
+    Route::get('/conversations/{conversation}/messages/since/{afterId?}', [ChatController::class, 'messagesSince']);
+
+    Route::get('/support-tickets', [\App\Http\Controllers\Api\SupportTicketController::class, 'index']);
+    Route::post('/support-tickets', [\App\Http\Controllers\Api\SupportTicketController::class, 'store']);
+    Route::get('/support-tickets/{ticket}', [\App\Http\Controllers\Api\SupportTicketController::class, 'show']);
 
     // ── Reports (admin + finance) ────────────────────────────
     Route::middleware('api.role:System Administrator,Finance Department')->group(function () {
@@ -91,6 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/orders', [FranchiseOrderController::class, 'index']);
         Route::post('/orders', [FranchiseOrderController::class, 'store']);
         Route::get('/orders/{order}', [FranchiseOrderController::class, 'show']);
+        Route::post('/orders/{order}/confirm-delivery', [FranchiseOrderController::class, 'confirmDelivery']);
 
         Route::get('/stock-receipts', [StockReceiptController::class, 'index']);
         Route::get('/stock-receipts/{stockReceipt}', [StockReceiptController::class, 'show']);
@@ -125,6 +137,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/orders/{order}/approve', [StaffOrderController::class, 'approve']);
         Route::post('/orders/{order}/decline', [StaffOrderController::class, 'decline']);
         Route::post('/orders/{order}/adjust', [StaffOrderController::class, 'adjust']);
+        Route::post('/orders/{order}/dispatch', [StaffOrderController::class, 'dispatch']);
+        Route::post('/orders/{order}/mark-delivered', [StaffOrderController::class, 'markDelivered']);
+        Route::post('/orders/{order}/decline-delivery', [StaffOrderController::class, 'declineDelivery']);
 
         Route::get('/warehouse-stock', [StaffInventoryController::class, 'warehouseStock']);
         Route::get('/franchise-stock', [StaffInventoryController::class, 'franchiseStock']);
@@ -144,6 +159,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/payments/{paymentSubmission}/verify', [FinanceController::class, 'verify']);
         Route::post('/payments/{paymentSubmission}/accept', [FinanceController::class, 'accept']);
         Route::post('/payments/{paymentSubmission}/reject', [FinanceController::class, 'reject']);
+        Route::post('/payments/{paymentSubmission}/request-info', [FinanceController::class, 'requestInfo']);
     });
 
     // ══════════════════════════════════════════════════════════

@@ -55,6 +55,8 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
             if (_isLoading)
               const SizedBox(height: 200, child: Center(child: LoadingView()))
             else ...[
+              _buildOperationsBanner(),
+              const SizedBox(height: 8),
               _buildSummaryCards(),
               const SizedBox(height: 8),
               SectionHeader(
@@ -105,6 +107,102 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
         ),
       ],
     );
+  }
+
+  Widget _buildOperationsBanner() {
+    final dashboard = context.read<PaymentProvider>().financeDashboard;
+    final summary = dashboard['summary'] ?? {};
+    final payments = context.read<PaymentProvider>().payments;
+    final infoRequests = payments
+        .where((p) => p.statusEnum == PaymentStatus.infoRequested)
+        .length;
+    final pendingTotal = Formatters.currency(
+      double.tryParse(summary['pending_payments_total']?.toString() ?? '0') ?? 0,
+    );
+
+    if (infoRequests == 0 && pendingTotal == 'UGX 0') {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primaryGreenDark, AppColors.primaryGreen],
+        ),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.insights, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Approval Queue',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildBannerItem(
+                  Icons.account_balance_wallet_outlined,
+                  pendingTotal,
+                  'Pending payments\nvalue',
+                ),
+              ),
+              _buildBannerDivider(),
+              Expanded(
+                child: _buildBannerItem(
+                  Icons.help_outline,
+                  '$infoRequests',
+                  'Awaiting info\nrequests',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBannerItem(IconData icon, String count, String label) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white, size: 22),
+        const SizedBox(height: 6),
+        Text(
+          count,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.2),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBannerDivider() {
+    return Container(width: 1, height: 48, color: Colors.white24);
   }
 
   Widget _buildSummaryCards() {

@@ -91,6 +91,61 @@ class StatusBadge extends StatelessWidget {
           label: 'Rejected',
           backgroundColor: AppColors.paymentRejected,
         );
+      case PaymentStatus.infoRequested:
+        return StatusBadge(
+          label: 'Info Requested',
+          backgroundColor: AppColors.warning,
+        );
+    }
+  }
+
+  factory StatusBadge.fromDeliveryStatus(dynamic status) {
+    DeliveryStatus statusEnum;
+    if (status is DeliveryStatus) {
+      statusEnum = status;
+    } else {
+      statusEnum = DeliveryStatus.values.firstWhere(
+        (s) => s.name == status?.toString(),
+        orElse: () => DeliveryStatus.pending,
+      );
+    }
+
+    switch (statusEnum) {
+      case DeliveryStatus.pending:
+        return StatusBadge(
+          label: 'Pending',
+          backgroundColor: AppColors.statusPending,
+        );
+      case DeliveryStatus.paymentVerified:
+        return StatusBadge(
+          label: 'Payment Verified',
+          backgroundColor: AppColors.paymentVerified,
+        );
+      case DeliveryStatus.readyForDelivery:
+        return StatusBadge(
+          label: 'Ready for Delivery',
+          backgroundColor: AppColors.statusApproved,
+        );
+      case DeliveryStatus.outForDelivery:
+        return StatusBadge(
+          label: 'Out for Delivery',
+          backgroundColor: AppColors.info,
+        );
+      case DeliveryStatus.delivered:
+        return StatusBadge(
+          label: 'Delivered',
+          backgroundColor: AppColors.statusDelivered,
+        );
+      case DeliveryStatus.confirmed:
+        return StatusBadge(
+          label: 'Confirmed',
+          backgroundColor: AppColors.success,
+        );
+      case DeliveryStatus.declined:
+        return StatusBadge(
+          label: 'Delivery Declined',
+          backgroundColor: AppColors.statusDeclined,
+        );
     }
   }
 

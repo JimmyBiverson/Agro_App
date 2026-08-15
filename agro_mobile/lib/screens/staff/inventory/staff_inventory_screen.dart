@@ -88,10 +88,12 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen>
         .toList();
   }
 
-  List<InventoryItem> _getFranchiseItems(InventoryProvider provider, String franchiseId) {
-    return provider.items
-        .where((item) => item.franchiseId == franchiseId)
-        .toList();
+  List<InventoryItem> _getFranchiseItems(InventoryProvider provider, String? franchiseId) {
+    final allFranchiseItems = provider.items.where((item) => item.franchiseId != null).toList();
+    if (franchiseId == null || franchiseId == 'ALL') {
+      return allFranchiseItems;
+    }
+    return allFranchiseItems.where((item) => item.franchiseId == franchiseId).toList();
   }
 
   Widget _buildWarehouseTab(InventoryProvider provider) {
@@ -137,54 +139,90 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen>
 
   Widget _buildFranchiseTab(InventoryProvider provider) {
     final franchiseIds = _getFranchiseIds(provider);
-    final franchiseItems = _selectedFranchiseId != null
-        ? _getFranchiseItems(provider, _selectedFranchiseId!)
-        : <InventoryItem>[];
+    final activeFranchiseId = _selectedFranchiseId ?? 'ALL';
+    final franchiseItems = _getFranchiseItems(provider, activeFranchiseId);
+
+    final lowStockCount = franchiseItems
+        .where((item) => item.alertLevel == InventoryAlertLevel.low)
+        .length;
+    final outOfStockCount = franchiseItems
+        .where((item) => item.alertLevel == InventoryAlertLevel.outOfStock)
+        .length;
+    final totalValue = franchiseItems.fold<double>(
+      0,
+      (sum, item) => sum + item.totalValue,
+    );
 
     return RefreshIndicator(
       onRefresh: () => provider.loadInventory(),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: DropdownButtonFormField<String>(
-              initialValue: _selectedFranchiseId,
-              decoration: const InputDecoration(
-                labelText: 'Select Franchise',
-                border: OutlineInputBorder(),
-              ),
-              items: franchiseIds.map((franchiseId) {
-                final item = provider.items.firstWhere(
-                  (i) => i.franchiseId == franchiseId,
-                );
-                return DropdownMenuItem(
-                  value: franchiseId,
-                  child: Text(item.franchiseName ?? franchiseId),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedFranchiseId = value);
-              },
-            ),
+          _buildSummaryCards(
+            totalValue: totalValue,
+            lowStockCount: lowStockCount,
+            outOfStockCount: outOfStockCount,
           ),
+          if (franchiseIds.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: DropdownButtonFormField<String>(
+                value: activeFranchiseId,
+                decoration: const InputDecoration(
+                  labelText: 'Filter Franchise',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                items: [
+                  const DropdownMenuItem(
+                    value: 'ALL',
+                    child: Text('All Franchises Stock'),
+                  ),
+                  ...franchiseIds.map((franchiseId) {
+                    final item = provider.items.firstWhere(
+                      (i) => i.franchiseId == franchiseId,
+                    );
+                    return DropdownMenuItem(
+                      value: franchiseId,
+                      child: Text(item.franchiseName ?? 'Franchise #$franchiseId'),
+                    );
+                  }),
+                ],
+                onChanged: (value) {
+                  setState(() => _selectedFranchiseId = value);
+                },
+              ),
+            ),
           Expanded(
-            child: _selectedFranchiseId == null
+            child: franchiseItems.isEmpty
                 ? const EmptyView(
-                    message: 'Select a franchise to view stock levels',
+                    message: 'No franchise stock items found',
                     icon: Icons.store_outlined,
                   )
-                : franchiseItems.isEmpty
-                    ? const EmptyView(
-                        message: 'No stock items for this franchise',
-                        icon: Icons.inventory_2_outlined,
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: franchiseItems.length,
-                        itemBuilder: (context, index) {
-                          return _buildInventoryItem(franchiseItems[index]);
-                        },
-                      ),
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: franchiseItems.length,
+                    itemBuilder: (context, index) {
+                      final item = franchiseItems[index];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (item.franchiseName != null && activeFranchiseId == 'ALL')
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4, bottom: 2, left: 4),
+                              child: Text(
+                                item.franchiseName!,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryGreen,
+                                ),
+                              ),
+                            ),
+                          _buildInventoryItem(item),
+                        ],
+                      );
+                    },
+                  ),
           ),
         ],
       ),

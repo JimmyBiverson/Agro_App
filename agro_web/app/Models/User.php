@@ -28,6 +28,8 @@ class User extends Authenticatable
         'address',
         'gender',
         'date_of_birth',
+        'fcm_token',
+        'notification_preferences',
     ];
 
     protected $hidden = [
@@ -44,6 +46,7 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
             'date_of_birth' => 'date',
+            'notification_preferences' => 'array',
         ];
     }
 
@@ -83,6 +86,20 @@ class User extends Authenticatable
     }
 
     protected $appends = ['avatar_url'];
+
+    public function scopeStaffAndAdmin($query)
+    {
+        return $query->whereHas('role', function ($q) {
+            $q->whereIn('name', ['System Administrator', 'Farmmantra Staff', 'Finance Department']);
+        });
+    }
+
+    public function scopeStaffOnly($query)
+    {
+        return $query->whereHas('role', function ($q) {
+            $q->where('name', 'Farmmantra Staff');
+        });
+    }
 
     public function getAvatarUrlAttribute(): ?string
     {

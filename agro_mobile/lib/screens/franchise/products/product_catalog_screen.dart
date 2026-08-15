@@ -13,6 +13,7 @@ import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/error_view.dart';
 import '../../../widgets/common/loading_view.dart';
 import '../../../widgets/common/product_image.dart';
+import '../../../services/notification_service.dart';
 import '../orders/create_order_screen.dart';
 
 class ProductCatalogScreen extends StatefulWidget {
@@ -161,13 +162,13 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
               AppConstants.defaultPadding,
               0,
               AppConstants.defaultPadding,
-              AppConstants.defaultPadding,
+              AppConstants.defaultPadding + 80,
             ),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: columns,
-              mainAxisSpacing: AppConstants.defaultPadding,
-              crossAxisSpacing: AppConstants.defaultPadding,
-              childAspectRatio: 0.58,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.62,
             ),
             itemCount: provider.products.length,
             itemBuilder: (context, index) =>
@@ -179,178 +180,295 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   }
 
   Widget _buildProductCard(Product product) {
-    final cartQty = context
-        .read<OrderProvider>()
-        .cartItems[product.id] ?? 0;
+    return Consumer<OrderProvider>(
+      builder: (context, orderProv, _) {
+        final cartQty = orderProv.cartItems[product.id] ?? 0;
+        final hasBulkDiscount = product.priceSlabs.length > 1;
+        final cheapestSlab = hasBulkDiscount
+            ? product.priceSlabs.reduce((a, b) =>
+                a.pricePerUnit < b.pricePerUnit ? a : b)
+            : null;
+        final savingPct = cheapestSlab != null && product.standardPrice > 0
+            ? ((product.standardPrice - cheapestSlab.pricePerUnit) /
+                    product.standardPrice *
+                    100)
+                .round()
+            : 0;
 
-    return AppCard(
-      padding: EdgeInsets.zero,
-      onTap: () => _showPriceSlabSheet(product),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              ProductImage(
-                imageUrl: product.imageUrl,
-                productName: product.name,
-                width: double.infinity,
-                height: 115,
-                fit: BoxFit.cover,
-                backgroundColor: AppColors.backgroundLight,
-                borderRadius: 12,
-              ),
-              if (product.priceSlabs.isNotEmpty)
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryGreen,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'BULK DISCOUNT',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+        return GestureDetector(
+          onTap: () => _showPriceSlabSheet(product),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(14),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
-            ],
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Image Area ──────────────────────────────────────
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(14)),
+                  child: Stack(
                     children: [
-                      Text(
-                        product.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          color: AppColors.textPrimary,
-                          height: 1.15,
+                      ProductImage(
+                        imageUrl: product.imageUrl,
+                        productName: product.name,
+                        width: double.infinity,
+                        height: 130,
+                        fit: BoxFit.cover,
+                        backgroundColor: const Color(0xFFF0F4F0),
+                        borderRadius: 0,
+                      ),
+                      // Gradient overlay
+                      Positioned(
+                        bottom: 0, left: 0, right: 0,
+                        child: Container(
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Color(0x33000000)],
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${product.categoryName} · ${product.unitOfMeasure}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textSecondary,
+                      // Bulk discount badge
+                      if (hasBulkDiscount && savingPct > 0)
+                        Positioned(
+                          top: 8, left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFE65100), Color(0xFFF57C00)],
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '$savingPct% OFF',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      // Cart quantity badge
+                      if (cartQty > 0)
+                        Positioned(
+                          top: 8, right: 8,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primaryGreen,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '$cartQty',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        Formatters.currency(product.standardPrice),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: AppColors.primaryGreen,
+                ),
+                // ── Content Area ─────────────────────────────────────
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Category chip
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryGreen.withAlpha(22),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            product.categoryName,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryGreen,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 32,
-                        child: cartQty > 0
-                            ? _buildStepper(product.id, cartQty)
-                            : ElevatedButton.icon(
-                                onPressed: () => _addToOrder(product),
-                                icon: const Icon(Icons.add_shopping_cart, size: 14),
-                                label: const Text(
-                                  'Add to Cart',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        const SizedBox(height: 4),
+                        // Product name
+                        Text(
+                          product.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                            color: AppColors.textPrimary,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        // Unit of measure
+                        Text(
+                          'per ${product.unitOfMeasure}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const Spacer(),
+                        // Price row
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              Formatters.currency(product.standardPrice),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13.5,
+                                color: AppColors.primaryGreen,
+                              ),
+                            ),
+                            if (hasBulkDiscount && cheapestSlab != null) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                Formatters.currency(cheapestSlab.pricePerUnit),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey.shade500,
+                                  decoration: TextDecoration.lineThrough,
                                 ),
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                                  elevation: 0,
-                                  backgroundColor: AppColors.primaryGreen,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        // Add to Cart / Stepper
+                        cartQty > 0
+                            ? _buildStepper(product.id, cartQty)
+                            : SizedBox(
+                                width: double.infinity,
+                                height: 34,
+                                child: ElevatedButton(
+                                  onPressed: () => _addToOrder(product),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    elevation: 0,
+                                    backgroundColor: AppColors.primaryGreen,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.add_shopping_cart_rounded,
+                                          size: 14),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        'Add to Cart',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildStepper(String productId, int quantity) {
     final provider = context.read<OrderProvider>();
     return Container(
-      height: 32,
+      height: 34,
       decoration: BoxDecoration(
-        color: AppColors.primaryGreen.withAlpha(15),
-        border: Border.all(color: AppColors.primaryGreen.withAlpha(100)),
-        borderRadius: BorderRadius.circular(6),
+        color: AppColors.primaryGreen.withAlpha(18),
+        border: Border.all(color: AppColors.primaryGreen.withAlpha(80)),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            onTap: () => provider.updateCartQuantity(productId, quantity - 1),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(5),
-              bottomLeft: Radius.circular(5),
+          // Minus button
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => provider.updateCartQuantity(productId, quantity - 1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(7),
+                bottomLeft: Radius.circular(7),
+              ),
+              child: const SizedBox(
+                width: 36,
+                height: 34,
+                child: Icon(Icons.remove_rounded,
+                    size: 16, color: AppColors.primaryGreen),
+              ),
             ),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Icon(
-                Icons.remove,
-                size: 14,
+          ),
+          // Quantity display
+          Expanded(
+            child: Text(
+              '$quantity',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
                 color: AppColors.primaryGreen,
               ),
             ),
           ),
-          Text(
-            '$quantity',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-              color: AppColors.primaryGreen,
-            ),
-          ),
-          InkWell(
-            onTap: () => provider.updateCartQuantity(productId, quantity + 1),
+          // Plus button
+          Material(
+            color: AppColors.primaryGreen,
             borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(5),
-              bottomRight: Radius.circular(5),
+              topRight: Radius.circular(7),
+              bottomRight: Radius.circular(7),
             ),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Icon(
-                Icons.add,
-                size: 14,
-                color: AppColors.primaryGreen,
+            child: InkWell(
+              onTap: () => provider.updateCartQuantity(productId, quantity + 1),
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(7),
+                bottomRight: Radius.circular(7),
+              ),
+              child: const SizedBox(
+                width: 36,
+                height: 34,
+                child: Icon(Icons.add_rounded, size: 16, color: Colors.white),
               ),
             ),
           ),
@@ -442,19 +560,11 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
   void _addToOrder(Product product) {
     context.read<OrderProvider>().addToCart(product.id, 1);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${product.name} added to cart'),
-        backgroundColor: AppColors.primaryGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        duration: const Duration(seconds: 2),
-        action: SnackBarAction(
-          label: 'View Cart',
-          textColor: Colors.white,
-          onPressed: _openCart,
-        ),
-      ),
+    AppNotify.success(
+      context,
+      '${product.name} added',
+      'Item added to cart. Tap to view cart.',
+      onTap: _openCart,
     );
   }
 

@@ -227,6 +227,40 @@ class HttpApiService implements ApiService {
     return User.fromJson(user);
   }
 
+  @override
+  Future<User> uploadAvatar(List<int> fileBytes, String fileName) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${ApiEndpoints.baseUrl}/profile/avatar'),
+    );
+    request.headers.addAll({
+      'Accept': 'application/json',
+      if (_token != null) 'Authorization': 'Bearer $_token',
+    });
+    request.files.add(http.MultipartFile.fromBytes(
+      'avatar',
+      fileBytes,
+      filename: fileName,
+    ));
+
+    final streamedResponse = await _client.send(request);
+    final response = await http.Response.fromStream(streamedResponse);
+    final body = _handleResponse(response);
+    final user = _normalizeUser(
+        body['user'] as Map<String, dynamic>? ?? body['data'] as Map<String, dynamic>? ?? {});
+    return User.fromJson(user);
+  }
+
+  @override
+  Future<void> updateDeviceToken(String token) async {
+    if (token.isEmpty) return;
+    try {
+      await _post('/device-token', body: {'fcm_token': token});
+    } catch (_) {
+      // Silently ignore token registration failures
+    }
+  }
+
   /// Normalize user data from Laravel format to Flutter model format
   Map<String, dynamic> _normalizeUser(Map<String, dynamic> user) {
     return {
@@ -240,9 +274,12 @@ class HttpApiService implements ApiService {
       'franchise_id': user['franchise_id']?.toString(),
       'franchise_name': user['franchise_name'],
       'franchise_code': user['franchise_code'],
-      'avatar_url': user['avatar'],
+      'avatar_url': user['avatar_url'] ?? user['avatar'],
       'created_at': user['created_at'],
       'is_active': user['is_active'] ?? true,
+      'notification_preferences': user['notification_preferences'] is Map
+          ? user['notification_preferences']
+          : const <String, dynamic>{},
     };
   }
 
@@ -371,6 +408,12 @@ class HttpApiService implements ApiService {
       unitOfMeasure: p['unit_of_measure'] ?? '',
       packagingDetails: p['packaging_details'],
       standardPrice: Formatters.toDouble(p['standard_price'] ?? p['selling_price']),
+      taxEnabled: p['tax_enabled'] ?? false,
+      taxType: p['tax_type'],
+      taxRate: Formatters.toDouble(p['tax_rate']),
+      basePrice: Formatters.toDouble(p['base_price'] ?? p['standard_price']),
+      finalPrice: Formatters.toDouble(
+          p['final_price'] ?? p['effective_price'] ?? p['standard_price']),
       priceSlabs: slabs,
       imageUrl: mainImg.isNotEmpty ? mainImg : (extractedUrls.isNotEmpty ? extractedUrls.first : null),
       imageUrls: extractedUrls,
@@ -399,10 +442,11 @@ class HttpApiService implements ApiService {
   // ══════════════════════════════════════════════════════════════
 
   @override
-  Future<List<Order>> getOrders({String? status, String? franchiseId}) async {
+  Future<List<Order>> getOrders({String? status, String? franchiseId, String? deliveryStatus}) async {
     final params = <String, String>{};
     if (status != null) params['status'] = status;
     if (franchiseId != null) params['franchise_id'] = franchiseId;
+    if (deliveryStatus != null) params['delivery_status'] = deliveryStatus;
 
     String endpoint;
     if (_userRole == 'farmmantraStaff') {
@@ -434,8 +478,11 @@ class HttpApiService implements ApiService {
       items = (o['items'] as List).map((i) {
         String productName = '';
         String categoryName = '';
+        String? imageUrl;
         if (i['product'] is Map) {
           productName = i['product']['name'] ?? '';
+          imageUrl = resolveImageUrl(
+              i['product']['image_url'] ?? i['product']['image']);
           if (i['product']['category'] is Map) {
             categoryName = i['product']['category']['name'] ?? '';
           }
@@ -445,8 +492,15 @@ class HttpApiService implements ApiService {
           productId: i['product_id']?.toString() ?? '',
           productName: productName.isNotEmpty ? productName : (i['product_name'] ?? ''),
           categoryName: categoryName.isNotEmpty ? categoryName : (i['category_name'] ?? ''),
+          imageUrl: imageUrl != null && imageUrl.isNotEmpty
+              ? imageUrl
+              : (i['image_url'] != null ? resolveImageUrl(i['image_url']) : null),
           quantity: Formatters.toInt(i['quantity']),
           unitPrice: Formatters.toDouble(i['unit_price']),
+          baseUnitPrice: Formatters.toDouble(
+              i['base_unit_price'] ?? i['unit_price']),
+          taxRate: Formatters.toDouble(i['tax_rate']),
+          taxAmount: Formatters.toDouble(i['tax_amount']),
           totalPrice: Formatters.toDouble(i['subtotal'] ?? i['total_price']),
           adjustedQuantity: i['adjusted_quantity'] == null
               ? null
@@ -469,14 +523,25 @@ class HttpApiService implements ApiService {
       adjustedAmount: o['adjusted_amount'] == null
           ? null
           : Formatters.toDouble(o['adjusted_amount']),
+      taxAmount: Formatters.toDouble(o['tax_amount']),
       status: statusStr,
+      deliveryStatus: o['delivery_status'] ?? 'pending',
       declineReason: o['decline_reason'],
+      deliveryDeclinedReason:
+          o['delivery_declined_reason'] ?? o['declined_reason'],
       adjustmentNotes: o['adjustment_notes'],
       expectedDeliveryDate: _parseDate(o['expected_delivery_date']),
       deliveredAt: _parseDate(o['delivered_at'] ?? o['completed_at'] ?? o['received_at']),
       createdAt: _parseDate(o['created_at'] ?? ''),
       updatedAt: _parseDate(o['updated_at'] ?? ''),
       staffNotes: o['notes'],
+      financeVerifiedBy: o['finance_verified_by']?.toString(),
+      financeVerifiedAt: _parseDate(o['finance_verified_at']),
+      approvedBy: o['approved_by']?.toString(),
+      approvedAt: _parseDate(o['approved_at']),
+      paymentVerifiedCount: o['payment_accepted_count'] is bool
+          ? ((o['payment_accepted_count'] as bool) ? 1 : 0)
+          : Formatters.toInt(o['payment_accepted_count'] ?? o['payment_verified'] ?? 0),
     );
   }
 
@@ -572,18 +637,55 @@ class HttpApiService implements ApiService {
     return getOrder(id);
   }
 
+  @override
+  Future<Order> dispatchOrder(String id) async {
+    final response = await _post('/staff/orders/$id/dispatch');
+    return _normalizeOrder(_extractOne(response));
+  }
+
+  @override
+  Future<Order> markOrderDelivered(String id) async {
+    final response = await _post('/staff/orders/$id/mark-delivered');
+    return _normalizeOrder(_extractOne(response));
+  }
+
+  @override
+  Future<Order> declineDelivery(String id, String reason) async {
+    final response = await _post('/staff/orders/$id/decline-delivery', body: {
+      'reason': reason,
+    });
+    return _normalizeOrder(_extractOne(response));
+  }
+
   // ══════════════════════════════════════════════════════════════
   // INVENTORY
   // ══════════════════════════════════════════════════════════════
 
   @override
   Future<List<InventoryItem>> getInventory({String? franchiseId}) async {
+    if (_userRole == 'farmmantraStaff') {
+      final List<InventoryItem> items = [];
+      try {
+        final warehouseRes = await _get('/staff/warehouse-stock');
+        final warehouseList = _extractList(warehouseRes);
+        items.addAll(warehouseList.map((i) => _normalizeInventoryItem(i, isWarehouse: true)));
+      } catch (_) {}
+
+      try {
+        final franchiseRes = await _get('/staff/franchise-stock');
+        final franchiseList = _extractList(franchiseRes);
+        items.addAll(franchiseList.map((i) => _normalizeInventoryItem(i, isWarehouse: false)));
+      } catch (_) {}
+
+      return items;
+    }
+
     final response = await _get('/franchise/inventory');
     final list = _extractList(response);
     return list.map((i) => _normalizeInventoryItem(i)).toList();
   }
 
-  InventoryItem _normalizeInventoryItem(Map<String, dynamic> i) {
+  InventoryItem _normalizeInventoryItem(Map<String, dynamic> i, {bool isWarehouse = false}) {
     String productName = '';
     String categoryName = '';
     String unitOfMeasure = '';
@@ -604,6 +706,10 @@ class HttpApiService implements ApiService {
       alertLevel = InventoryAlertLevel.low;
     }
 
+    final unitCost = Formatters.toDouble(i['product']?['standard_price'] ?? i['product']?['selling_price']);
+    final rawTotalVal = Formatters.toDouble(i['total_value']);
+    final totalVal = rawTotalVal > 0 ? rawTotalVal : (qty * unitCost);
+
     return InventoryItem(
       id: i['id']?.toString() ?? '',
       productId: i['product_id']?.toString() ?? '',
@@ -611,10 +717,10 @@ class HttpApiService implements ApiService {
       categoryName: categoryName,
       quantity: qty,
       unitOfMeasure: unitOfMeasure,
-      unitCost: Formatters.toDouble(i['product']?['standard_price']),
-      totalValue: Formatters.toDouble(i['total_value']),
-      franchiseId: i['franchise_id']?.toString(),
-      franchiseName: i['franchise']?['name'],
+      unitCost: unitCost,
+      totalValue: totalVal,
+      franchiseId: isWarehouse ? null : i['franchise_id']?.toString(),
+      franchiseName: isWarehouse ? null : (i['franchise'] is Map ? i['franchise']['name'] : i['franchise_name']),
       reorderLevel: reorder,
       alertLevel: alertLevel,
       lastUpdated: i['updated_at'] ?? DateTime.now().toIso8601String(),
@@ -767,16 +873,29 @@ class HttpApiService implements ApiService {
       franchiseId: franchiseId,
       franchiseName: franchiseName,
       amount: Formatters.toDouble(p['amount']),
+      verifiedAmount: p['verified_amount'] == null
+          ? null
+          : Formatters.toDouble(p['verified_amount']),
       transactionReference: p['transaction_reference'] ?? '',
       bankName: p['bank_name'],
       paymentMethod: p['payment_method'],
       status: p['status'] ?? 'pending',
-      proofUrl: p['proof_of_payment_path'],
+      proofUrl: p['proof_of_payment_path'] != null
+          ? resolveImageUrl(p['proof_of_payment_path'])
+          : null,
       rejectionReason: p['rejection_reason'],
+      infoRequestNote: p['info_request_note'],
+      infoRequestedBy: p['info_requested_by']?.toString(),
+      infoRequestedAt: p['info_requested_at'],
+      financeNotes: p['finance_notes'],
       verifiedBy: p['verified_by']?.toString(),
       verifiedAt: p['verified_at'],
       submittedAt: p['submitted_at'] ?? p['created_at'] ?? '',
       updatedAt: p['updated_at'] ?? '',
+      orders: (p['orders'] as List<dynamic>?)
+              ?.map((o) => LinkedOrder.fromJson(o as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
@@ -801,6 +920,14 @@ class HttpApiService implements ApiService {
     }
     if (paymentData['notes'] != null) {
       fields['notes'] = paymentData['notes'];
+    }
+    final orderIds = paymentData['order_ids'];
+    if (orderIds is List && orderIds.isNotEmpty) {
+      for (final id in orderIds) {
+        fields['order_ids[]'] = id.toString();
+      }
+    } else if (paymentData['order_id'] != null) {
+      fields['order_id'] = paymentData['order_id'].toString();
     }
 
     // Handle file upload
@@ -876,6 +1003,14 @@ class HttpApiService implements ApiService {
     return _normalizePayment(_extractOne(response));
   }
 
+  @override
+  Future<Payment> requestPaymentInfo(String id, String note) async {
+    final response = await _post('/finance/payments/$id/request-info', body: {
+      'info_request_note': note,
+    });
+    return _normalizePayment(_extractOne(response));
+  }
+
   // ══════════════════════════════════════════════════════════════
   // FINANCE PAYMENTS
   // ══════════════════════════════════════════════════════════════
@@ -908,6 +1043,15 @@ class HttpApiService implements ApiService {
   @override
   Future<Map<String, dynamic>> getFinanceDashboardStats() async {
     final response = await _get('/finance/dashboard');
+    final data = response['data'] is Map<String, dynamic>
+        ? response['data'] as Map<String, dynamic>
+        : response;
+    return data;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getStaffDashboardStats() async {
+    final response = await _get('/staff/dashboard');
     final data = response['data'] is Map<String, dynamic>
         ? response['data'] as Map<String, dynamic>
         : response;
@@ -1003,10 +1147,15 @@ class HttpApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> createConversation(String subject, String initialMessage) async {
+  Future<Map<String, dynamic>> createConversation(
+    String subject,
+    String initialMessage, {
+    String? priority,
+  }) async {
     final response = await _post('/conversations', body: {
       'subject': subject,
       'message': initialMessage,
+      'priority': ?priority,
     });
     return _extractOne(response);
   }
@@ -1023,6 +1172,23 @@ class HttpApiService implements ApiService {
       'message': message,
     });
     return _extractOne(response);
+  }
+
+  @override
+  Future<void> markConversationRead(String conversationId) async {
+    try {
+      await _post('/conversations/$conversationId/read');
+    } catch (_) {}
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getMessagesSince(String conversationId, {int? afterId}) async {
+    final path = afterId != null
+        ? '/conversations/$conversationId/messages/since/$afterId'
+        : '/conversations/$conversationId/messages/since';
+    final response = await _get(path);
+    final list = _extractList(response);
+    return list.map((m) => m as Map<String, dynamic>).toList();
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -1047,6 +1213,7 @@ class HttpApiService implements ApiService {
         'created_at': n['created_at'],
         'reference_id': n['reference_id']?.toString(),
         'reference_type': n['reference_type'],
+        'route': n['route'],
       })).toList();
     } catch (_) {
       return [];

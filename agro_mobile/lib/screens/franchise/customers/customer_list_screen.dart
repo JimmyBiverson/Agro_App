@@ -305,9 +305,12 @@ class _AddCustomerSheetState extends State<_AddCustomerSheet> {
     setState(() => _isSaving = true);
 
     try {
-      await context.read<CustomerProvider>().createCustomer({
+      final success = await context.read<CustomerProvider>().createCustomer({
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
+        'address': _locationController.text.trim().isEmpty
+            ? null
+            : _locationController.text.trim(),
         'location': _locationController.text.trim().isEmpty
             ? null
             : _locationController.text.trim(),
@@ -317,17 +320,30 @@ class _AddCustomerSheetState extends State<_AddCustomerSheet> {
       });
       if (!mounted) return;
 
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Customer added successfully'),
-          backgroundColor: AppColors.primaryGreen,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+      if (success) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Customer added successfully'),
+            backgroundColor: AppColors.primaryGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to add customer. Please try again.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

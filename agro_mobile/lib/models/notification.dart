@@ -7,6 +7,7 @@ class NotificationItem {
   final DateTime createdAt;
   final String? referenceId;
   final String? referenceType;
+  final String? route;
 
   const NotificationItem({
     required this.id,
@@ -17,6 +18,7 @@ class NotificationItem {
     required this.createdAt,
     this.referenceId,
     this.referenceType,
+    this.route,
   });
 
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,7 @@ class NotificationItem {
           DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
       referenceId: json['reference_id']?.toString(),
       referenceType: json['reference_type'],
+      route: json['route'],
     );
   }
 
@@ -43,6 +46,7 @@ class NotificationItem {
       createdAt: createdAt,
       referenceId: referenceId,
       referenceType: referenceType,
+      route: route,
     );
   }
 }

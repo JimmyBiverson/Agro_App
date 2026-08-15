@@ -8,6 +8,7 @@ use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -33,6 +34,10 @@ class AuthController extends Controller
 
         if ($user->franchise_id && ! $user->franchise?->is_active) {
             return response()->json(['message' => 'Your franchise account has been deactivated.'], 403);
+        }
+
+        if ($request->filled('fcm_token')) {
+            $user->update(['fcm_token' => $request->fcm_token]);
         }
 
         $user->update(['last_login_at' => now()]);
@@ -69,7 +74,14 @@ class AuthController extends Controller
             'name' => 'sometimes|string|max:255',
             'phone' => 'sometimes|nullable|string|max:20',
             'address' => 'sometimes|nullable|string',
+            'gender' => 'sometimes|nullable|string|max:20',
+            'email' => ['sometimes', 'email', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => 'sometimes|string|min:8|confirmed',
+            'notification_preferences' => 'sometimes|array',
+            'notification_preferences.orders' => 'sometimes|boolean',
+            'notification_preferences.payments' => 'sometimes|boolean',
+            'notification_preferences.chat' => 'sometimes|boolean',
+            'notification_preferences.inventory' => 'sometimes|boolean',
         ]);
 
         if (isset($validated['password'])) {
@@ -82,6 +94,31 @@ class AuthController extends Controller
             'message' => 'Profile updated successfully.',
             'user' => $this->formatUser($user->fresh()),
         ]);
+    }
+
+    public function uploadAvatar(Request $request): JsonResponse
+    {
+        $request->validate([
+            'avatar' => 'required|file|image|max:3072',
+        ]);
+
+        $user = $request->user();
+        $path = $request->file('avatar')->store('avatars', 'public');
+        $user->update(['avatar' => $path]);
+
+        return response()->json([
+            'message' => 'Profile photo updated.',
+            'user' => $this->formatUser($user->fresh()),
+        ]);
+    }
+
+    public function updateDeviceToken(Request $request): JsonResponse
+    {
+        $request->validate(['fcm_token' => 'required|string']);
+
+        $request->user()->update(['fcm_token' => $request->fcm_token]);
+
+        return response()->json(['message' => 'Device token updated.']);
     }
 
     public function changePassword(Request $request): JsonResponse
@@ -112,11 +149,13 @@ class AuthController extends Controller
             'address' => $user->address,
             'gender' => $user->gender,
             'avatar' => $user->avatar,
+            'avatar_url' => $user->avatar_url,
             'role' => $user->role?->name,
             'franchise_id' => $user->franchise_id,
             'franchise_name' => $user->franchise?->name,
             'franchise_code' => $user->franchise?->code,
             'is_active' => $user->is_active,
+            'notification_preferences' => $user->notification_preferences ?? [],
         ];
     }
 }

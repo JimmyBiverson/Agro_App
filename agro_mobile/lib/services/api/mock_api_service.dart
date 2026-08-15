@@ -129,10 +129,26 @@ class MockApiService implements ApiService {
   @override
   Future<User> updateProfile(Map<String, dynamic> data) async {
     await _simulateDelay();
+    final prefs = data['notification_preferences'] is Map
+        ? Map<String, dynamic>.from(data['notification_preferences'])
+        : null;
     return _currentUser!.copyWith(
       name: data['name'] ?? _currentUser!.name,
       phone: data['phone'] ?? _currentUser!.phone,
+      address: data['address'] ?? _currentUser!.address,
+      notificationPreferences: prefs,
     );
+  }
+
+  @override
+  Future<User> uploadAvatar(List<int> fileBytes, String fileName) async {
+    await _simulateDelay();
+    return _currentUser!.copyWith(avatarUrl: 'mock-avatar-$fileName');
+  }
+
+  @override
+  Future<void> updateDeviceToken(String token) async {
+    await _simulateDelay();
   }
 
   @override
@@ -269,7 +285,11 @@ class MockApiService implements ApiService {
   }
 
   @override
-  Future<List<Order>> getOrders({String? status, String? franchiseId}) async {
+  Future<List<Order>> getOrders({
+    String? status,
+    String? franchiseId,
+    String? deliveryStatus,
+  }) async {
     await _simulateDelay();
     final now = DateTime.now();
     final orders = [
@@ -332,7 +352,69 @@ class MockApiService implements ApiService {
           .where((o) => o.status == status)
           .toList();
     }
+    if (deliveryStatus != null) {
+      filtered = filtered
+          .where((o) => o.deliveryStatus == deliveryStatus)
+          .toList();
+    }
     return filtered;
+  }
+
+  @override
+  Future<Order> dispatchOrder(String id) async {
+    await _simulateDelay();
+    final order = await getOrder(id);
+    return Order(
+      id: order.id,
+      franchiseId: order.franchiseId,
+      franchiseName: order.franchiseName,
+      items: order.items,
+      totalAmount: order.totalAmount,
+      taxAmount: order.taxAmount,
+      status: 'approved',
+      deliveryStatus: 'out_for_delivery',
+      expectedDeliveryDate: order.expectedDeliveryDate,
+      createdAt: order.createdAt,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<Order> markOrderDelivered(String id) async {
+    await _simulateDelay();
+    final order = await getOrder(id);
+    return Order(
+      id: order.id,
+      franchiseId: order.franchiseId,
+      franchiseName: order.franchiseName,
+      items: order.items,
+      totalAmount: order.totalAmount,
+      taxAmount: order.taxAmount,
+      status: 'delivered',
+      deliveryStatus: 'delivered',
+      deliveredAt: DateTime.now(),
+      createdAt: order.createdAt,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<Order> declineDelivery(String id, String reason) async {
+    await _simulateDelay();
+    final order = await getOrder(id);
+    return Order(
+      id: order.id,
+      franchiseId: order.franchiseId,
+      franchiseName: order.franchiseName,
+      items: order.items,
+      totalAmount: order.totalAmount,
+      taxAmount: order.taxAmount,
+      status: 'approved',
+      deliveryStatus: 'declined',
+      deliveryDeclinedReason: reason,
+      createdAt: order.createdAt,
+      updatedAt: DateTime.now(),
+    );
   }
 
   @override
@@ -654,6 +736,19 @@ class MockApiService implements ApiService {
   }
 
   @override
+  Future<Payment> requestPaymentInfo(String id, String note) async {
+    await _simulateDelay();
+    final payment = await getPayment(id);
+    return Payment(
+      id: payment.id, franchiseId: payment.franchiseId,
+      franchiseName: payment.franchiseName, amount: payment.amount,
+      transactionReference: payment.transactionReference,
+      status: 'info_requested', infoRequestNote: note,
+      submittedAt: payment.submittedAt, updatedAt: DateTime.now(),
+    );
+  }
+
+  @override
   Future<List<Payment>> getFinancePayments({String? status, String? franchiseId}) async {
     await _simulateDelay();
     return await getPayments(status: status);
@@ -670,6 +765,28 @@ class MockApiService implements ApiService {
     await _simulateDelay();
     final payments = await getPayments();
     return payments.where((p) => p.status == 'pending').toList();
+  }
+
+  @override
+  Future<Map<String, dynamic>> getStaffDashboardStats() async {
+    await _simulateDelay();
+    return {
+      'summary': {
+        'pending_orders': 4,
+        'awaiting_payment_orders': 3,
+        'deliveries_today': 2,
+        'approved_orders_today': 5,
+        'pending_payments_count': 2,
+        'low_stock_products': 1,
+        'new_support_messages': 1,
+      },
+      'banner': {
+        'pending_orders_today': 2,
+        'awaiting_payment': 3,
+        'deliveries_today': 2,
+        'new_support_messages': 1,
+      },
+    };
   }
 
   @override
@@ -798,12 +915,16 @@ class MockApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> createConversation(String subject, String initialMessage) async {
+  Future<Map<String, dynamic>> createConversation(
+    String subject,
+    String initialMessage, {
+    String? priority,
+  }) async {
     await _simulateDelay();
     return {
       'id': 'conv_new',
       'subject': subject,
-      'priority': 'normal',
+      'priority': priority ?? 'normal',
       'status': 'open',
       'created_at': DateTime.now().toIso8601String(),
       'messages': [
@@ -847,6 +968,20 @@ class MockApiService implements ApiService {
       'message': message,
       'created_at': DateTime.now().toIso8601String(),
     };
+  }
+
+  @override
+  Future<void> markConversationRead(String conversationId) async {
+    await _simulateDelay();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getMessagesSince(
+    String conversationId, {
+    int? afterId,
+  }) async {
+    await _simulateDelay();
+    return [];
   }
 
   void _generateMockNotifications() {

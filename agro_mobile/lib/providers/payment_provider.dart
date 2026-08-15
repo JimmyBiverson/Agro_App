@@ -234,6 +234,27 @@ class PaymentProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> requestInfoById(String id, String note) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final payment = await _apiService.requestPaymentInfo(id, note);
+      final index = _payments.indexWhere((p) => p.id == id);
+      if (index != -1) _payments[index] = payment;
+      _pendingFinancePayments.removeWhere((p) => p.id == id);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _error = errorMessageOf(e, 'Failed to request payment information');
+      notifyListeners();
+      return false;
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

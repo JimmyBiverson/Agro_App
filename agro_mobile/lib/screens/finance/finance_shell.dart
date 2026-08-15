@@ -5,6 +5,7 @@ import '../../core/refresh/auto_refresh_mixin.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/payment_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../widgets/common/logout_dialog.dart';
 import 'finance_dashboard.dart';
 import 'payments/payment_list_screen.dart';
 import '../shared/notifications/notification_screen.dart';
@@ -262,7 +263,9 @@ class _FinanceProfileTab extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
+              onPressed: () async {
+                final confirmed = await confirmLogout(context);
+                if (!confirmed || !context.mounted) return;
                 context.read<AuthProvider>().logout();
                 Navigator.of(context).pushReplacementNamed('/login');
               },

@@ -16,6 +16,7 @@ class OrderProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   final Map<String, int> _cartItems = {};
+  Map<String, dynamic> _staffDashboard = {};
 
   List<Order> get orders => _orders;
   Order? get selectedOrder => _selectedOrder;
@@ -24,6 +25,17 @@ class OrderProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isEmpty => _orders.isEmpty && !_isLoading && _error == null;
   Map<String, int> get cartItems => Map.unmodifiable(_cartItems);
+  Map<String, dynamic> get staffDashboard => _staffDashboard;
+
+  Future<void> loadStaffDashboard({bool silent = false}) async {
+    try {
+      _staffDashboard = await _apiService.getStaffDashboardStats();
+      if (!silent) notifyListeners();
+    } catch (e) {
+      if (!silent) _error = errorMessageOf(e, 'Failed to load staff dashboard');
+      notifyListeners();
+    }
+  }
 
   Future<void> loadOrders({String? status, String? franchiseId, bool silent = false}) async {
     if (!silent) {
@@ -158,6 +170,66 @@ class OrderProvider extends ChangeNotifier {
     } catch (e) {
       _isLoading = false;
       _error = errorMessageOf(e, 'Failed to confirm delivery');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> dispatchOrder(String id) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final updated = await _apiService.dispatchOrder(id);
+      _replaceOrder(updated);
+      if (_selectedOrder?.id == id) _selectedOrder = updated;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _error = errorMessageOf(e, 'Failed to dispatch order');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> markDelivered(String id) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final updated = await _apiService.markOrderDelivered(id);
+      _replaceOrder(updated);
+      if (_selectedOrder?.id == id) _selectedOrder = updated;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _error = errorMessageOf(e, 'Failed to mark order as delivered');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> declineDelivery(String id, String reason) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final updated = await _apiService.declineDelivery(id, reason);
+      _replaceOrder(updated);
+      if (_selectedOrder?.id == id) _selectedOrder = updated;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _error = errorMessageOf(e, 'Failed to decline delivery');
       notifyListeners();
       return false;
     }

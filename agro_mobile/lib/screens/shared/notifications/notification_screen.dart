@@ -215,7 +215,37 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   void _navigateToReference(NotificationItem notification) {
-    if (notification.referenceId == null || notification.referenceType == null) {
+    final route = notification.route?.trim();
+    final referenceId = notification.referenceId;
+
+    if (route != null && route.isNotEmpty) {
+      switch (route) {
+        case 'staff/orders/detail':
+        case 'staff/order-detail':
+        case 'franchise/orders/detail':
+        case 'franchise/order-detail':
+          if (referenceId == null) return;
+          Navigator.pushNamed(
+            context,
+            '/staff/orders/detail',
+            arguments: referenceId,
+          );
+          return;
+        case 'finance/payments/detail':
+        case 'finance/payment-detail':
+          if (referenceId == null) return;
+          Navigator.pushNamed(
+            context,
+            '/finance/payment-detail',
+            arguments: referenceId,
+          );
+          return;
+        default:
+          break;
+      }
+    }
+
+    if (referenceId == null) {
       return;
     }
 
@@ -224,14 +254,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
         Navigator.pushNamed(
           context,
           '/staff/orders/detail',
-          arguments: notification.referenceId,
+          arguments: referenceId,
         );
         break;
       case 'payment':
         Navigator.pushNamed(
           context,
-          '/payments/detail',
-          arguments: notification.referenceId,
+          '/finance/payment-detail',
+          arguments: referenceId,
         );
         break;
       default:

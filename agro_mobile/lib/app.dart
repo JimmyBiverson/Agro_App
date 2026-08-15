@@ -75,6 +75,7 @@ class FarmmantraApp extends StatelessWidget {
               ),
             );
           case '/staff/order-detail':
+          case '/staff/orders/detail':
             final orderId = settings.arguments as String?;
             return MaterialPageRoute(
               builder: (_) => _requireAuth(

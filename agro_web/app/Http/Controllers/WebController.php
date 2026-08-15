@@ -180,8 +180,10 @@ class WebController extends Controller
     public function adminUsers()
     {
         $users = User::with(['role', 'franchise'])->latest()->paginate(20);
+        $roles = Role::orderBy('name')->get();
+        $franchises = Franchise::orderBy('name')->get();
 
-        return view('admin.users', compact('users'));
+        return view('admin.users', compact('users', 'roles', 'franchises'));
     }
 
     public function adminProducts()
@@ -905,10 +907,30 @@ class WebController extends Controller
             'standard_price' => 'required|numeric|min:0',
             'packaging_details' => 'nullable|string|max:255',
             'description' => 'nullable|string',
+            'tax_enabled' => 'nullable|boolean',
+            'tax_type' => 'nullable|string|in:percentage,fixed',
+            'tax_rate' => 'nullable|numeric|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
         $data = $request->only('name', 'sku', 'category_id', 'unit_of_measure', 'selling_price', 'standard_price', 'packaging_details', 'description');
+        
+        $taxEnabled = $request->boolean('tax_enabled');
+        $taxType = $request->input('tax_type', 'percentage');
+        $taxRate = (float) $request->input('tax_rate', 0);
+        $standardPrice = (float) $request->input('standard_price', 0);
+        $taxAmount = 0.00;
+        if ($taxEnabled) {
+            $taxAmount = ($taxType === 'percentage') ? round($standardPrice * ($taxRate / 100), 2) : $taxRate;
+        }
+        $finalPrice = round($standardPrice + $taxAmount, 2);
+
+        $data['tax_enabled'] = $taxEnabled;
+        $data['tax_type'] = $taxType;
+        $data['tax_rate'] = $taxRate;
+        $data['tax_amount'] = $taxAmount;
+        $data['base_price'] = $standardPrice;
+        $data['final_price'] = $finalPrice;
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
@@ -989,6 +1011,9 @@ class WebController extends Controller
             'standard_price' => 'required|numeric|min:0',
             'packaging_details' => 'nullable|string|max:255',
             'description' => 'nullable|string',
+            'tax_enabled' => 'nullable|boolean',
+            'tax_type' => 'nullable|string|in:percentage,fixed',
+            'tax_rate' => 'nullable|numeric|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active' => 'nullable|boolean',
@@ -998,6 +1023,23 @@ class WebController extends Controller
         $product = Product::findOrFail($request->id);
         $data = $request->only('name', 'sku', 'category_id', 'unit_of_measure', 'selling_price', 'standard_price', 'packaging_details', 'description');
         $data['is_active'] = $request->has('is_active') ? (bool) $request->is_active : $product->is_active;
+
+        $taxEnabled = $request->boolean('tax_enabled');
+        $taxType = $request->input('tax_type', 'percentage');
+        $taxRate = (float) $request->input('tax_rate', 0);
+        $standardPrice = (float) $request->input('standard_price', $product->standard_price);
+        $taxAmount = 0.00;
+        if ($taxEnabled) {
+            $taxAmount = ($taxType === 'percentage') ? round($standardPrice * ($taxRate / 100), 2) : $taxRate;
+        }
+        $finalPrice = round($standardPrice + $taxAmount, 2);
+
+        $data['tax_enabled'] = $taxEnabled;
+        $data['tax_type'] = $taxType;
+        $data['tax_rate'] = $taxRate;
+        $data['tax_amount'] = $taxAmount;
+        $data['base_price'] = $standardPrice;
+        $data['final_price'] = $finalPrice;
 
         if ($request->hasFile('image')) {
             if ($product->image) {
@@ -1890,5 +1932,86 @@ class WebController extends Controller
         ]);
 
         return back()->with('success', 'Conversation started!');
+    }
+
+    // ── Admin Chat System ──────────────────────────────────
+    public function adminChat(Request $request)
+    {
+        $conversations = Conversation::with(['creator:id,name,email', 'franchise:id,name,code', 'latestMessage.sender:id,name'])
+            ->latest('updated_at')
+            ->get();
+
+        $activeConversation = null;
+        $activeId = $request->query('conversation_id');
+
+        if ($activeId) {
+            $activeConversation = Conversation::with(['creator:id,name,email', 'franchise:id,name', 'messages.sender:id,name'])
+                ->find($activeId);
+        } elseif ($conversations->isNotEmpty()) {
+            $activeConversation = Conversation::with(['creator:id,name,email', 'franchise:id,name', 'messages.sender:id,name'])
+                ->find($conversations->first()->id);
+        }
+
+        return view('admin.chat', compact('conversations', 'activeConversation'));
+    }
+
+    public function adminChatMessages($id)
+    {
+        $conversation = Conversation::with(['messages.sender:id,name', 'creator:id,name'])->findOrFail($id);
+
+        return response()->json([
+            'status' => 'success',
+            'conversation' => [
+                'id' => $conversation->id,
+                'subject' => $conversation->subject,
+                'status' => $conversation->status,
+                'creator_name' => $conversation->creator?->name ?? 'User',
+            ],
+            'messages' => $conversation->messages->map(function ($msg) {
+                return [
+                    'id' => $msg->id,
+                    'sender_id' => $msg->sender_id,
+                    'sender_name' => $msg->sender?->name ?? 'System',
+                    'is_admin' => $msg->sender_id === auth()->id() || $msg->sender?->role?->name === 'System Administrator',
+                    'message' => $msg->message,
+                    'created_at' => $msg->created_at->format('d M Y, h:i A'),
+                    'time_ago' => $msg->created_at->diffForHumans(),
+                ];
+            }),
+        ]);
+    }
+
+    public function adminChatSend(Request $request, $id)
+    {
+        $request->validate([
+            'message' => 'required|string|max:2000',
+        ]);
+
+        $conversation = Conversation::findOrFail($id);
+        $user = auth()->user();
+
+        $message = $conversation->messages()->create([
+            'sender_id' => $user->id,
+            'message' => $request->message,
+        ]);
+
+        $conversation->touch(); // update updated_at
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => [
+                    'id' => $message->id,
+                    'sender_id' => $user->id,
+                    'sender_name' => $user->name,
+                    'is_admin' => true,
+                    'message' => $message->message,
+                    'created_at' => $message->created_at->format('d M Y, h:i A'),
+                    'time_ago' => $message->created_at->diffForHumans(),
+                ],
+            ]);
+        }
+
+        return back()->with('success', 'Message sent successfully!');
     }
 }

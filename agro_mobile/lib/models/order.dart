@@ -8,14 +8,22 @@ class Order {
   final List<OrderItem> items;
   final double totalAmount;
   final double? adjustedAmount;
+  final double taxAmount;
   final String status;
+  final String deliveryStatus;
   final String? declineReason;
+  final String? deliveryDeclinedReason;
   final String? adjustmentNotes;
   final DateTime? expectedDeliveryDate;
   final DateTime? deliveredAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? staffNotes;
+  final String? financeVerifiedBy;
+  final DateTime? financeVerifiedAt;
+  final String? approvedBy;
+  final DateTime? approvedAt;
+  final int paymentVerifiedCount;
 
   const Order({
     required this.id,
@@ -25,15 +33,47 @@ class Order {
     required this.items,
     required this.totalAmount,
     this.adjustedAmount,
+    this.taxAmount = 0,
     required this.status,
+    this.deliveryStatus = 'pending',
     this.declineReason,
+    this.deliveryDeclinedReason,
     this.adjustmentNotes,
     this.expectedDeliveryDate,
     this.deliveredAt,
     this.createdAt,
     this.updatedAt,
     this.staffNotes,
+    this.financeVerifiedBy,
+    this.financeVerifiedAt,
+    this.approvedBy,
+    this.approvedAt,
+    this.paymentVerifiedCount = 0,
   });
+
+  DeliveryStatus get deliveryStatusEnum {
+    switch (deliveryStatus) {
+      case 'payment_verified':
+        return DeliveryStatus.paymentVerified;
+      case 'ready_for_delivery':
+        return DeliveryStatus.readyForDelivery;
+      case 'out_for_delivery':
+        return DeliveryStatus.outForDelivery;
+      case 'delivered':
+        return DeliveryStatus.delivered;
+      case 'confirmed':
+        return DeliveryStatus.confirmed;
+      case 'delivery_declined':
+        return DeliveryStatus.declined;
+      default:
+        return DeliveryStatus.pending;
+    }
+  }
+
+  bool get isPaymentReady => deliveryStatusEnum == DeliveryStatus.paymentVerified ||
+      deliveryStatusEnum == DeliveryStatus.readyForDelivery;
+
+  bool get isOutForDelivery => deliveryStatusEnum == DeliveryStatus.outForDelivery;
 
   OrderStatus get statusEnum {
     switch (status) {
@@ -68,6 +108,7 @@ class Order {
   }
 
   static int _toInt(dynamic value) {
+    if (value is bool) return value ? 1 : 0;
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
@@ -92,18 +133,44 @@ class Order {
       adjustedAmount: json['adjusted_amount'] == null
           ? null
           : _toDouble(json['adjusted_amount']),
+      taxAmount: _toDouble(json['tax_amount']),
       status: json['status'] ?? 'pending',
+      deliveryStatus: json['delivery_status'] ?? 'pending',
       declineReason: json['decline_reason'],
+      deliveryDeclinedReason:
+          json['delivery_declined_reason'] ?? json['declined_reason'],
       adjustmentNotes: json['adjustment_notes'],
       expectedDeliveryDate: _parseDate(json['expected_delivery_date']),
       deliveredAt: _parseDate(json['delivered_at'] ?? json['completed_at'] ?? json['received_at']),
       createdAt: _parseDate(json['created_at']) ?? DateTime.now(),
       updatedAt: _parseDate(json['updated_at']) ?? DateTime.now(),
       staffNotes: json['notes'] ?? json['staff_notes'],
+      financeVerifiedBy: json['finance_verified_by']?.toString(),
+      financeVerifiedAt: _parseDate(json['finance_verified_at']),
+      approvedBy: json['approved_by']?.toString(),
+      approvedAt: _parseDate(json['approved_at']),
+      paymentVerifiedCount: _toInt(
+        json['payment_accepted_count'] ?? json['payment_verified'] ?? 0,
+      ),
     );
   }
 
+  /// True when Finance has fully ACCEPTED (approved) a payment for this order.
+  bool get financeApproved => paymentVerifiedCount > 0 || isPaymentReady;
+
+  /// Payment status summary for this order.
+  String get paymentStatusLabel {
+    if (financeApproved) return 'Approved by Finance';
+    if (deliveryStatusEnum == DeliveryStatus.pending) return 'Awaiting Finance Approval';
+    return deliveryStatusEnum.displayName;
+  }
+
   int get totalItems => items.fold(0, (sum, item) => sum + item.quantity);
+
+  double get totalWithoutTax =>
+      taxAmount > 0 ? totalAmount - taxAmount : totalAmount;
+
+  double get displayedAmount => adjustedAmount ?? totalAmount;
 
   String get displayOrderNumber => orderNumber ?? id;
 }
@@ -113,8 +180,12 @@ class OrderItem {
   final String productId;
   final String productName;
   final String categoryName;
+  final String? imageUrl;
   final int quantity;
   final double unitPrice;
+  final double baseUnitPrice;
+  final double taxRate;
+  final double taxAmount;
   final double totalPrice;
   final int? adjustedQuantity;
   final String? notes;
@@ -124,8 +195,12 @@ class OrderItem {
     required this.productId,
     required this.productName,
     required this.categoryName,
+    this.imageUrl,
     required this.quantity,
     required this.unitPrice,
+    this.baseUnitPrice = 0,
+    this.taxRate = 0,
+    this.taxAmount = 0,
     required this.totalPrice,
     this.adjustedQuantity,
     this.notes,
@@ -142,8 +217,14 @@ class OrderItem {
       categoryName: product is Map && product['category'] is Map
           ? (product['category']['name'] ?? '')
           : (json['category_name'] ?? ''),
+      imageUrl: product is Map
+          ? (product['image_url'] ?? product['image'] ?? json['image_url'])
+          : json['image_url'],
       quantity: Order._toInt(json['quantity']),
       unitPrice: Order._toDouble(json['unit_price']),
+      baseUnitPrice: Order._toDouble(json['base_unit_price'] ?? json['unit_price']),
+      taxRate: Order._toDouble(json['tax_rate']),
+      taxAmount: Order._toDouble(json['tax_amount']),
       totalPrice: Order._toDouble(json['subtotal'] ?? json['total_price']),
       adjustedQuantity: json['adjusted_quantity'] == null
           ? null

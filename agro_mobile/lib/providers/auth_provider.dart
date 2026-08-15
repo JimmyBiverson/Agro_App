@@ -148,6 +148,68 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateProfile(Map<String, dynamic> data) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _user = await _apiService.updateProfile(data);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _error = errorMessageOf(e, 'Failed to update profile');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> uploadAvatar(List<int> bytes, String fileName) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _user = await _apiService.uploadAvatar(bytes, fileName);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _error = errorMessageOf(e, 'Failed to upload avatar');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _apiService.changePassword(currentPassword, newPassword);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _error = errorMessageOf(e, 'Failed to change password');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> registerDeviceToken(String token) async {
+    try {
+      await _apiService.updateDeviceToken(token);
+    } catch (_) {
+      // Silently ignore registration failures
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

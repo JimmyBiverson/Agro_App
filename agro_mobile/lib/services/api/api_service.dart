@@ -25,6 +25,8 @@ abstract class ApiService {
   // Profile
   Future<User> getProfile();
   Future<User> updateProfile(Map<String, dynamic> data);
+  Future<User> uploadAvatar(List<int> fileBytes, String fileName);
+  Future<void> updateDeviceToken(String token);
 
   // Products
   Future<List<ProductCategory>> getCategories();
@@ -33,13 +35,16 @@ abstract class ApiService {
   Future<List<PriceSlab>> getPriceSlabs(String productId);
 
   // Orders
-  Future<List<Order>> getOrders({String? status, String? franchiseId});
+  Future<List<Order>> getOrders({String? status, String? franchiseId, String? deliveryStatus});
   Future<Order> getOrder(String id);
   Future<Order> createOrder(Map<String, dynamic> orderData);
   Future<Order> approveOrder(String id, {String? deliveryDate, String? notes});
   Future<Order> declineOrder(String id, String reason);
   Future<Order> adjustOrder(String id, Map<String, dynamic> adjustments);
   Future<Order> confirmDelivery(String id, {String? notes});
+  Future<Order> dispatchOrder(String id);
+  Future<Order> markOrderDelivered(String id);
+  Future<Order> declineDelivery(String id, String reason);
 
   // Inventory
   Future<List<InventoryItem>> getInventory({String? franchiseId});
@@ -66,19 +71,27 @@ abstract class ApiService {
   Future<Payment> verifyPayment(String id, {double? verifiedAmount, String? notes});
   Future<Payment> acceptPayment(String id, {String? notes});
   Future<Payment> rejectPayment(String id, String reason);
+  Future<Payment> requestPaymentInfo(String id, String note);
   Future<List<Payment>> getPendingFinancePayments();
 
   // Dashboard
   Future<Map<String, dynamic>> getDashboardStats();
+  Future<Map<String, dynamic>> getStaffDashboardStats();
   Future<Map<String, dynamic>> getFinanceDashboardStats();
   Future<List<Map<String, dynamic>>> getSalesAnalytics({String? period});
   Future<AccountSummary> getAccountSummary();
 
   // Chat
   Future<List<Map<String, dynamic>>> getConversations();
-  Future<Map<String, dynamic>> createConversation(String subject, String initialMessage);
+  Future<Map<String, dynamic>> createConversation(
+    String subject,
+    String initialMessage, {
+    String? priority,
+  });
   Future<Map<String, dynamic>> getConversation(String id);
   Future<Map<String, dynamic>> sendMessage(String conversationId, String message);
+  Future<void> markConversationRead(String conversationId);
+  Future<List<Map<String, dynamic>>> getMessagesSince(String conversationId, {int? afterId});
 
   // Notifications
   Future<List<NotificationItem>> getNotifications({bool? unreadOnly});

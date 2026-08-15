@@ -34,6 +34,7 @@ class NotificationController extends Controller
                 'created_at' => $n->created_at,
                 'reference_id' => $data['reference_id'] ?? null,
                 'reference_type' => $data['reference_type'] ?? null,
+                'route' => $data['route'] ?? null,
             ];
         });
 

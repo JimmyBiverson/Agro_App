@@ -15,6 +15,7 @@ class User {
   final String? avatarUrl;
   final DateTime? createdAt;
   final bool isActive;
+  final Map<String, dynamic> notificationPreferences;
 
   const User({
     required this.id,
@@ -30,6 +31,7 @@ class User {
     this.avatarUrl,
     this.createdAt,
     this.isActive = true,
+    this.notificationPreferences = const {},
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -54,6 +56,9 @@ class User {
           ? DateTime.tryParse(json['created_at'])
           : null,
       isActive: json['is_active'] ?? true,
+      notificationPreferences: json['notification_preferences'] is Map
+          ? Map<String, dynamic>.from(json['notification_preferences'])
+          : const {},
     );
   }
 
@@ -83,6 +88,7 @@ class User {
     String? gender,
     String? avatarUrl,
     bool? isActive,
+    Map<String, dynamic>? notificationPreferences,
   }) {
     return User(
       id: id,
@@ -98,8 +104,22 @@ class User {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       createdAt: createdAt,
       isActive: isActive ?? this.isActive,
+      notificationPreferences:
+          notificationPreferences ?? this.notificationPreferences,
     );
   }
+
+  bool get isNotificationEnabled =>
+      notificationPreferences['notifications_enabled'] != false;
+
+  bool get wantsOrderNotifications =>
+      notificationPreferences['orders'] != false;
+
+  bool get wantsPaymentNotifications =>
+      notificationPreferences['payments'] != false;
+
+  bool get wantsDeliveryNotifications =>
+      notificationPreferences['deliveries'] != false;
 
   String get initials {
     final parts = name.split(' ');

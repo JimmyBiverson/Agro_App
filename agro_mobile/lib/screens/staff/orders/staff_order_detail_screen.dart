@@ -13,6 +13,8 @@ import '../../../widgets/common/status_badge.dart';
 import '../../../widgets/common/error_view.dart';
 import '../../../widgets/common/loading_view.dart';
 
+import '../../../widgets/common/product_image.dart';
+
 class StaffOrderDetailScreen extends StatefulWidget {
   final String orderId;
 
@@ -23,9 +25,6 @@ class StaffOrderDetailScreen extends StatefulWidget {
 }
 
 class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
-  DateTime? _selectedDeliveryDate;
-  String _notes = '';
-  String _declineReason = '';
   Map<String, double> _adjustedQuantities = {};
 
   @override
@@ -96,7 +95,16 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                StatusBadge.fromOrderStatus(order.status),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    StatusBadge.fromOrderStatus(order.status),
+                    if (order.statusEnum == OrderStatus.approved) ...[
+                      const SizedBox(height: 4),
+                      StatusBadge.fromDeliveryStatus(order.deliveryStatusEnum),
+                    ],
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -153,8 +161,15 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              ProductImage(
+                imageUrl: item.imageUrl,
+                productName: item.productName,
+                width: 52,
+                height: 52,
+                borderRadius: 8,
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,7 +177,7 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                     Text(
                       item.productName,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -172,6 +187,37 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                         color: AppColors.textSecondary,
                       ),
                     ),
+                    if (item.taxRate > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Base ${Formatters.currency(item.baseUnitPrice)} + '
+                        '${Formatters.currency(item.unitPrice - item.baseUnitPrice)} tax '
+                        '(${Formatters.toDouble(item.taxRate)}%)',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textLight,
+                        ),
+                      ),
+                    ],
+                    if (item.adjustedQuantity != null) ...[
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.warning.withAlpha(30),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          item.adjustedQuantity! == 0
+                              ? 'Out of Stock / Rejected'
+                              : 'Adjusted: ${item.adjustedQuantity} qty',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: item.adjustedQuantity! == 0 ? AppColors.error : AppColors.warning,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -193,21 +239,59 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
     return AppCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
           children: [
-            Text(
-              'Total Amount',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+            if (order.taxAmount > 0) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Subtotal',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    Formatters.currency(order.totalWithoutTax),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
               ),
-            ),
-            Text(
-              Formatters.currency(order.totalAmount),
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryGreen,
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tax',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    Formatters.currency(order.taxAmount),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
               ),
+              const Divider(height: 16),
+            ],
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Total Amount',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  Formatters.currency(order.displayedAmount),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryGreen,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -216,14 +300,27 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
   }
 
   Widget _buildStatusTimeline(Order order) {
+    final isDeliveryDeclined =
+        order.deliveryStatusEnum == DeliveryStatus.declined;
     final steps = [
       _TimelineStep('Placed', Icons.shopping_cart, true),
       _TimelineStep('Approved', Icons.check_circle, order.statusEnum != OrderStatus.pending),
-      _TimelineStep('Delivered', Icons.local_shipping, order.statusEnum == OrderStatus.delivered),
+      _TimelineStep('Payment Accepted', Icons.verified, order.financeApproved),
+      _TimelineStep(
+        'Out for Delivery',
+        Icons.local_shipping,
+        order.isOutForDelivery || order.statusEnum == OrderStatus.delivered,
+      ),
+      _TimelineStep('Delivered', Icons.assignment_turned_in,
+          order.statusEnum == OrderStatus.delivered),
     ];
 
     if (order.statusEnum == OrderStatus.declined) {
       steps[1] = _TimelineStep('Declined', Icons.cancel, true);
+    }
+
+    if (isDeliveryDeclined) {
+      steps[3] = _TimelineStep('Declined', Icons.cancel, true);
     }
 
     return AppCard(
@@ -239,23 +336,11 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: List.generate(steps.length * 2 - 1, (index) {
-                if (index.isOdd) {
-                  final stepIndex = index ~/ 2;
-                  final isCompleted = steps[stepIndex].isActive &&
-                      stepIndex < steps.length - 1 &&
-                      steps[stepIndex + 1].isActive;
-                  return Expanded(
-                    child: Container(
-                      height: 2,
-                      color: isCompleted ? AppColors.primaryGreen : AppColors.divider,
-                    ),
-                  );
-                }
-                final stepIndex = index ~/ 2;
-                final step = steps[stepIndex];
-                return _buildTimelineStep(step);
+            Column(
+              children: List.generate(steps.length, (index) {
+                final step = steps[index];
+                final isLast = index == steps.length - 1;
+                return _buildTimelineStep(step, isLast: isLast);
               }),
             ),
           ],
@@ -264,31 +349,51 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
     );
   }
 
-  Widget _buildTimelineStep(_TimelineStep step) {
-    return Column(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: step.isActive ? AppColors.primaryGreen : AppColors.divider,
-            shape: BoxShape.circle,
+  Widget _buildTimelineStep(_TimelineStep step, {bool isLast = false}) {
+    final color = step.isActive ? AppColors.primaryGreen : AppColors.divider;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  step.icon,
+                  color: step.isActive ? Colors.white : AppColors.textSecondary,
+                  size: 18,
+                ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: color,
+                  ),
+                ),
+            ],
           ),
-          child: Icon(
-            step.icon,
-            color: step.isActive ? Colors.white : AppColors.textSecondary,
-            size: 20,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: 8, bottom: isLast ? 0 : 24),
+              child: Text(
+                step.label,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: step.isActive ? AppColors.textPrimary : AppColors.textSecondary,
+                  fontWeight: step.isActive ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          step.label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: step.isActive ? AppColors.primaryGreen : AppColors.textSecondary,
-            fontWeight: step.isActive ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -297,7 +402,7 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
       case OrderStatus.pending:
         return _buildPendingActions(order, provider);
       case OrderStatus.approved:
-        return _buildApprovedInfo(order);
+        return _buildApprovedSection(order, provider);
       case OrderStatus.declined:
         return _buildDeclinedInfo(order);
       case OrderStatus.delivered:
@@ -305,6 +410,390 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
       default:
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildApprovedSection(Order order, OrderProvider provider) {
+    if (order.deliveryStatusEnum == DeliveryStatus.declined) {
+      return _buildDeliveryDeclinedInfo(order);
+    }
+
+    final isOutForDelivery = order.isOutForDelivery;
+    final canDispatch = order.financeApproved;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (order.financeApproved) ...[
+          _buildPaymentVerifiedPanel(order),
+          const SizedBox(height: 16),
+        ],
+        if (isOutForDelivery)
+          _buildOutForDeliveryActions(order, provider)
+        else if (canDispatch)
+          _buildDispatchAction(order, provider)
+        else
+          _buildAwaitingPaymentInfo(order),
+      ],
+    );
+  }
+
+  Widget _buildPaymentVerifiedPanel(Order order) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.verified, color: AppColors.success),
+                const SizedBox(width: 8),
+                Text(
+                  'Finance Approved — Ready for Dispatch',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.success,
+                  ),
+                ),
+              ],
+            ),
+            if (order.financeVerifiedAt != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Payment accepted by Finance on ${Formatters.dateTime(order.financeVerifiedAt)}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                StatusBadge.fromDeliveryStatus(order.deliveryStatusEnum),
+                if (order.isPaymentReady)
+                  const StatusBadge(
+                    label: 'Ready for Dispatch',
+                    backgroundColor: AppColors.primaryGreen,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDispatchAction(Order order, OrderProvider provider) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Delivery Dispatch',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Finance has accepted and approved the payment for this order. '
+              'You can now dispatch the order for delivery.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            AppButton(
+              label: 'Dispatch — Out for Delivery',
+              onPressed: () => _confirmAndDispatch(order, provider),
+              backgroundColor: AppColors.info,
+              icon: Icons.local_shipping_outlined,
+            ),
+            const SizedBox(height: 8),
+            AppButton(
+              label: 'Decline Delivery',
+              onPressed: () => _showDeclineDeliveryDialog(order, provider),
+              foregroundColor: AppColors.error,
+              icon: Icons.cancel_outlined,
+              isOutlined: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAwaitingPaymentInfo(Order order) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.hourglass_top, color: AppColors.warning),
+                const SizedBox(width: 8),
+                Text(
+                  'Awaiting Finance Approval',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.warning,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Dispatch is not yet allowed. The franchise partner must submit a '
+              'payment for this order, and Finance must verify AND accept '
+              '(approve) it before this order can be dispatched.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            if (order.expectedDeliveryDate != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Expected Delivery: ${Formatters.dateTime(order.expectedDeliveryDate!)}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+            if (order.staffNotes != null && order.staffNotes!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Notes: ${order.staffNotes}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOutForDeliveryActions(Order order, OrderProvider provider) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.local_shipping, color: AppColors.info),
+                const SizedBox(width: 8),
+                Text(
+                  'Out for Delivery',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.info,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'The order has been dispatched. Confirm when it has been '
+              'delivered to the franchise partner.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            AppButton(
+              label: 'Mark as Delivered',
+              onPressed: () => _confirmMarkDelivered(order, provider),
+              backgroundColor: AppColors.success,
+              icon: Icons.check_circle_outline,
+            ),
+            const SizedBox(height: 8),
+            AppButton(
+              label: 'Decline Delivery',
+              onPressed: () => _showDeclineDeliveryDialog(order, provider),
+              foregroundColor: AppColors.error,
+              icon: Icons.cancel_outlined,
+              isOutlined: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeliveryDeclinedInfo(Order order) {
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.report_problem, color: AppColors.error),
+                const SizedBox(width: 8),
+                Text(
+                  'Delivery Declined',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+            if (order.deliveryDeclinedReason != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Reason: ${order.deliveryDeclinedReason}',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmAndDispatch(Order order, OrderProvider provider) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Dispatch Order'),
+        content: Text(
+          'Mark order ${order.displayOrderNumber} as Out for Delivery?',
+        ),
+        actions: [
+          AppButton(
+            label: 'Cancel',
+            onPressed: () => Navigator.pop(context, false),
+            isOutlined: true,
+          ),
+          AppButton(
+            label: 'Dispatch',
+            onPressed: () => Navigator.pop(context, true),
+            backgroundColor: AppColors.info,
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final success = await provider.dispatchOrder(order.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? 'Order dispatched' : 'Failed to dispatch order'),
+        backgroundColor: success ? AppColors.success : AppColors.error,
+      ),
+    );
+  }
+
+  Future<void> _confirmMarkDelivered(Order order, OrderProvider provider) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mark as Delivered'),
+        content: Text(
+          'Confirm order ${order.displayOrderNumber} has been delivered?',
+        ),
+        actions: [
+          AppButton(
+            label: 'Cancel',
+            onPressed: () => Navigator.pop(context, false),
+            isOutlined: true,
+          ),
+          AppButton(
+            label: 'Mark Delivered',
+            onPressed: () => Navigator.pop(context, true),
+            backgroundColor: AppColors.success,
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final success = await provider.markDelivered(order.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? 'Order marked as delivered' : 'Failed to mark as delivered'),
+        backgroundColor: success ? AppColors.success : AppColors.error,
+      ),
+    );
+  }
+
+  void _showDeclineDeliveryDialog(Order order, OrderProvider provider) {
+    final reasonController = TextEditingController();
+    String? errorText;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Decline Delivery'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppTextField(
+                label: 'Reason for declining delivery',
+                hint: 'Minimum 5 characters',
+                maxLines: 3,
+                controller: reasonController,
+                onChanged: (value) {
+                  if (value.trim().isNotEmpty && errorText != null) {
+                    setDialogState(() => errorText = null);
+                  }
+                },
+              ),
+              if (errorText != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  errorText!,
+                  style: const TextStyle(
+                    color: AppColors.error,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            AppButton(
+              label: 'Cancel',
+              onPressed: () => Navigator.pop(context),
+              isOutlined: true,
+            ),
+            AppButton(
+              label: 'Decline',
+              onPressed: () async {
+                final reason = reasonController.text.trim();
+                if (reason.length < 5) {
+                  setDialogState(
+                    () => errorText = 'Reason must be at least 5 characters',
+                  );
+                  return;
+                }
+                final success = await provider.declineDelivery(order.id, reason);
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(success ? 'Delivery declined' : 'Failed to decline delivery'),
+                    backgroundColor: success ? AppColors.success : AppColors.error,
+                  ),
+                );
+              },
+              backgroundColor: AppColors.error,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildPendingActions(Order order, OrderProvider provider) {
@@ -351,48 +840,6 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildApprovedInfo(Order order) {
-    return AppCard(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.check_circle, color: AppColors.success),
-                const SizedBox(width: 8),
-                Text(
-                  'Order Approved',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.success,
-                  ),
-                ),
-              ],
-            ),
-            if (order.expectedDeliveryDate != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Expected Delivery: ${Formatters.dateTime(order.expectedDeliveryDate!)}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-            if (order.staffNotes != null && order.staffNotes!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Notes: ${order.staffNotes}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -468,6 +915,26 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
   void _showApproveDialog(Order order, OrderProvider provider) {
     final deliveryController = TextEditingController();
     final notesController = TextEditingController();
+    DateTime? selectedDate = DateTime.now().add(const Duration(days: 3));
+    deliveryController.text = Formatters.date(selectedDate);
+    String notes = '';
+    String? dateError;
+
+    Future<void> pickDate(StateSetter setDialogState) async {
+      final date = await showDatePicker(
+        context: context,
+        initialDate: selectedDate ?? DateTime.now().add(const Duration(days: 3)),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 90)),
+      );
+      if (date != null) {
+        setDialogState(() {
+          selectedDate = date;
+          dateError = null;
+          deliveryController.text = Formatters.date(date);
+        });
+      }
+    }
 
     showDialog(
       context: context,
@@ -477,33 +944,33 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              GestureDetector(
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now().add(const Duration(days: 1)),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 90)),
-                  );
-                  if (date != null) {
-                    setDialogState(() {
-                      _selectedDeliveryDate = date;
-                      deliveryController.text = Formatters.date(date);
-                    });
-                  }
-                },
+              InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => pickDate(setDialogState),
                 child: AppTextField(
                   label: 'Expected Delivery Date',
                   readOnly: true,
                   controller: deliveryController,
+                  hint: 'Select the delivery date',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.calendar_month, color: AppColors.primaryGreen),
+                    onPressed: () => pickDate(setDialogState),
+                  ),
                 ),
               ),
+              if (dateError != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  dateError!,
+                  style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ],
               const SizedBox(height: 16),
               AppTextField(
                 label: 'Notes (optional)',
                 maxLines: 3,
                 controller: notesController,
-                onChanged: (value) => _notes = value,
+                onChanged: (value) => notes = value,
               ),
             ],
           ),
@@ -516,10 +983,14 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
             AppButton(
               label: 'Approve',
               onPressed: () async {
+                if (selectedDate == null) {
+                  setDialogState(() => dateError = 'Please select an expected delivery date');
+                  return;
+                }
                 final success = await provider.approveOrder(
                   order.id,
-                  deliveryDate: _selectedDeliveryDate?.toIso8601String(),
-                  notes: _notes.isNotEmpty ? _notes : null,
+                  deliveryDate: selectedDate!.toIso8601String(),
+                  notes: notes.isNotEmpty ? notes : null,
                 );
                 if (!context.mounted) return;
                 Navigator.pop(context);
@@ -540,17 +1011,35 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
 
   void _showDeclineDialog(Order order, OrderProvider provider) {
     final reasonController = TextEditingController();
+    String? errorText;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Decline Order'),
-          content: AppTextField(
-            label: 'Reason for declining',
-            maxLines: 3,
-            controller: reasonController,
-            onChanged: (value) => _declineReason = value,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppTextField(
+                label: 'Reason for declining',
+                hint: 'Specify why this order is declined',
+                maxLines: 3,
+                controller: reasonController,
+                onChanged: (value) {
+                  if (value.trim().isNotEmpty && errorText != null) {
+                    setDialogState(() => errorText = null);
+                  }
+                },
+              ),
+              if (errorText != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  errorText!,
+                  style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ],
           ),
           actions: [
             AppButton(
@@ -561,7 +1050,12 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
             AppButton(
               label: 'Decline',
               onPressed: () async {
-                final success = await provider.declineOrder(order.id, _declineReason);
+                final reason = reasonController.text.trim();
+                if (reason.isEmpty) {
+                  setDialogState(() => errorText = 'A decline reason is required');
+                  return;
+                }
+                final success = await provider.declineOrder(order.id, reason);
                 if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(

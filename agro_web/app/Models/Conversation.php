@@ -38,4 +38,48 @@ class Conversation extends Model
     {
         return $this->messages()->where('is_read', false)->count();
     }
+
+    /**
+     * Unread messages for a given user (messages not sent by them and unread).
+     */
+    public function getUnreadForUserAttribute(): int
+    {
+        $userId = auth()->id();
+        if (! $userId) {
+            return 0;
+        }
+
+        return $this->messages()
+            ->where('is_read', false)
+            ->where('sender_id', '!=', $userId)
+            ->count();
+    }
+
+    public function scopeForUser($query, User $user)
+    {
+        if ($user->role?->name === 'Franchise Partner') {
+            return $query->where(function ($q) use ($user) {
+                $q->where('created_by', $user->id)
+                    ->orWhere('franchise_id', $user->franchise_id);
+            });
+        }
+
+        return $query;
+    }
+
+    public function scopeSearch($query, ?string $term)
+    {
+        if (! $term) {
+            return $query;
+        }
+
+        return $query->where('subject', 'like', "%{$term}%")
+            ->orWhereHas('franchise', function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('code', 'like', "%{$term}%");
+            })
+            ->orWhereHas('creator', function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%");
+            });
+    }
 }

@@ -29,7 +29,10 @@ class _StaffDashboardState extends State<StaffDashboard> {
 
   Future<void> _loadData() async {
     try {
-      await context.read<OrderProvider>().loadOrders();
+      await Future.wait([
+        context.read<OrderProvider>().loadOrders(),
+        context.read<OrderProvider>().loadStaffDashboard(),
+      ]);
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
   }
@@ -46,6 +49,8 @@ class _StaffDashboardState extends State<StaffDashboard> {
           if (_isLoading)
             const SizedBox(height: 200, child: Center(child: LoadingView()))
           else ...[
+            _buildOperationsBanner(),
+            const SizedBox(height: 8),
             _buildQuickActions(),
             const SizedBox(height: 8),
             SectionHeader(
@@ -61,6 +66,102 @@ class _StaffDashboardState extends State<StaffDashboard> {
         ],
       ),
     );
+  }
+
+  Widget _buildOperationsBanner() {
+    final dashboard = context.watch<OrderProvider>().staffDashboard;
+    final summary = dashboard['summary'] ?? {};
+    final awaitingPayment = (summary['awaiting_payment_orders'] ?? 0) as num;
+    final deliveriesToday = (summary['deliveries_today'] ?? 0) as num;
+    final newMessages = (summary['new_support_messages'] ?? 0) as num;
+
+    if (awaitingPayment == 0 && deliveriesToday == 0 && newMessages == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primaryGreenDark, AppColors.primaryGreen],
+        ),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.insights, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Today\'s Operations',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildBannerItem(
+                Icons.payments_outlined,
+                '${awaitingPayment.toInt()}',
+                'Awaiting\npayment',
+              ),
+              _buildBannerDivider(),
+              _buildBannerItem(
+                Icons.local_shipping_outlined,
+                '${deliveriesToday.toInt()}',
+                'Deliveries\ntoday',
+              ),
+              _buildBannerDivider(),
+              _buildBannerItem(
+                Icons.headset_mic_outlined,
+                '${newMessages.toInt()}',
+                'New support\nmessages',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBannerItem(IconData icon, String count, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white, size: 22),
+          const SizedBox(height: 6),
+          Text(
+            count,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.2),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBannerDivider() {
+    return Container(width: 1, height: 48, color: Colors.white24);
   }
 
   Widget _buildWelcomeHeader() {
@@ -180,7 +281,13 @@ class _StaffDashboardState extends State<StaffDashboard> {
     return Column(
       children: pendingOrders.map((order) {
         return AppCard(
-          onTap: () {},
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              '/staff/order-detail',
+              arguments: order.id,
+            );
+          },
           child: Row(
             children: [
               Container(
