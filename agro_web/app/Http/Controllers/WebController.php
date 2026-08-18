@@ -1946,7 +1946,7 @@ class WebController extends Controller
 
         if ($activeId) {
             $activeConversation = Conversation::with(['creator:id,name,email', 'franchise:id,name', 'messages.sender:id,name'])
-                ->find($activeId);
+                ->findOrFail($activeId);
         } elseif ($conversations->isNotEmpty()) {
             $activeConversation = Conversation::with(['creator:id,name,email', 'franchise:id,name', 'messages.sender:id,name'])
                 ->find($conversations->first()->id);

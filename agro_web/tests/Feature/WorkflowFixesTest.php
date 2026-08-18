@@ -336,6 +336,26 @@ class WorkflowFixesTest extends TestCase
         $this->assertSame(2, $conversation->messages()->where('sender_id', $this->adminUser->id)->count());
     }
 
+    public function test_admin_conversation_link_opens_reply_composer_for_selected_user(): void
+    {
+        $conversation = Conversation::create([
+            'franchise_id' => $this->franchise->id,
+            'created_by' => $this->franchiseUser->id,
+            'subject' => 'Selected support request',
+            'priority' => 'normal',
+            'status' => 'open',
+        ]);
+
+        $this->actingAs($this->adminUser);
+
+        $this->get('/admin/chat?conversation_id='.$conversation->id)
+            ->assertOk()
+            ->assertSee('Selected support request')
+            ->assertSee('id="adminChatForm"', false)
+            ->assertSee('action="'.route('web.admin.chat.send', ['id' => $conversation->id]).'"', false)
+            ->assertSee('Type reply to '.$this->franchiseUser->name, false);
+    }
+
     public function test_web_pages_render_for_all_roles(): void
     {
         // Franchise: dashboard + key pages
