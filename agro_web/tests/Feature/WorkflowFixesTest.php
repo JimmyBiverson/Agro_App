@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Conversation;
 use App\Models\Franchise;
 use App\Models\FranchiseInventory;
 use App\Models\Order;
@@ -14,6 +15,7 @@ use App\Models\User;
 use App\Models\WarehouseInventory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -266,6 +268,72 @@ class WorkflowFixesTest extends TestCase
         $this->assertNotNull($found);
         $this->assertEquals('products/' . $this->product->sku . '.png', $found['image']);
         $this->assertStringContainsString('storage/products/' . $this->product->sku . '.png', $found['image_url']);
+    }
+
+    public function test_admin_user_creation_requires_matching_password_confirmation(): void
+    {
+        $this->actingAs($this->adminUser);
+
+        $response = $this->from('/admin/users')->post('/admin/users', [
+            'name' => 'New Admin User',
+            'email' => 'new-admin@test.com',
+            'password' => 'StrongPass123',
+            'password_confirmation' => 'DifferentPass123',
+            'role_id' => $this->staffRole->id,
+            'franchise_id' => null,
+        ]);
+
+        $response->assertSessionHasErrors(['password']);
+        $this->assertDatabaseMissing('users', ['email' => 'new-admin@test.com']);
+    }
+
+    public function test_admin_password_reset_requires_matching_confirmation(): void
+    {
+        $targetUser = User::create([
+            'name' => 'Reset Target User',
+            'email' => 'resettarget@test.com',
+            'password' => Hash::make('old-password'),
+            'role_id' => $this->staffRole->id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->adminUser);
+
+        $response = $this->from('/admin/settings/users')->post('/admin/users/reset-password', [
+            'user_id' => $targetUser->id,
+            'new_password' => 'NewSecurePass123',
+            'new_password_confirmation' => 'DifferentSecurePass123',
+        ]);
+
+        $response->assertSessionHasErrors(['new_password']);
+        $this->assertTrue(Hash::check('old-password', $targetUser->fresh()->password));
+    }
+
+    public function test_admin_can_send_multiple_replies_in_one_support_conversation(): void
+    {
+        $conversation = Conversation::create([
+            'franchise_id' => $this->franchise->id,
+            'created_by' => $this->franchiseUser->id,
+            'subject' => 'Support request',
+            'priority' => 'normal',
+            'status' => 'open',
+        ]);
+        $conversation->messages()->create([
+            'sender_id' => $this->franchiseUser->id,
+            'message' => 'I need help with my order.',
+        ]);
+
+        $this->actingAs($this->adminUser);
+
+        $this->postJson("/admin/chat/{$conversation->id}/send", ['message' => 'We are checking this now.'])
+            ->assertOk()
+            ->assertJsonPath('status', 'success');
+        $this->postJson("/admin/chat/{$conversation->id}/send", ['message' => 'The update is complete.'])
+            ->assertOk()
+            ->assertJsonPath('status', 'success');
+
+        $this->assertSame(3, $conversation->messages()->count());
+        $this->assertSame(2, $conversation->messages()->where('sender_id', $this->adminUser->id)->count());
     }
 
     public function test_web_pages_render_for_all_roles(): void

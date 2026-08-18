@@ -711,7 +711,7 @@ class WebController extends Controller
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'new_password' => 'required|string|min:8',
+            'new_password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = User::findOrFail($request->user_id);
@@ -1997,7 +1997,7 @@ class WebController extends Controller
 
         $conversation->touch(); // update updated_at
 
-        if ($request->wantsJson()) {
+        if ($request->expectsJson()) {
             return response()->json([
                 'status' => 'success',
                 'message' => [

@@ -110,6 +110,44 @@
 
 @push('scripts')
 <script>
+function togglePasswordVisibility(inputId) {
+    const button = document.querySelector(`[data-toggle-password="${inputId}"]`);
+    const input = button?.parentElement?.querySelector(`#${inputId}`) || document.getElementById(inputId);
+    if (!input) return;
+
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+
+    if (button) {
+        const icon = button.querySelector('i');
+        if (icon) {
+            icon.classList.toggle('fa-eye', !isPassword);
+            icon.classList.toggle('fa-eye-slash', isPassword);
+        }
+    }
+}
+
+function validateAdminResetPassword(form) {
+    const password = form.querySelector('[name="new_password"]');
+    const confirmation = form.querySelector('[name="new_password_confirmation"]');
+    const errorNode = form.querySelector('.password-match-error');
+
+    if (!password || !confirmation) {
+        return true;
+    }
+
+    if (password.value !== confirmation.value) {
+        confirmation.setCustomValidity('Passwords do not match.');
+        if (errorNode) errorNode.classList.remove('hidden');
+        form.reportValidity();
+        return false;
+    }
+
+    confirmation.setCustomValidity('');
+    if (errorNode) errorNode.classList.add('hidden');
+    return true;
+}
+
 function resetPassword(userId, userName) {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -119,14 +157,30 @@ function resetPassword(userId, userName) {
             <div style="padding:24px;">
                 <h3 style="font-size:16px; font-weight:700; margin-bottom:4px; color:var(--text-primary)">Reset Password</h3>
                 <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Set a new password for <strong>${userName}</strong></p>
-                <form method="POST" action="{{ route('web.admin.users.resetPassword') }}">
+                <form method="POST" action="{{ route('web.admin.users.resetPassword') }}" onsubmit="return validateAdminResetPassword(this)">
                     @csrf
                     <input type="hidden" name="user_id" value="${userId}">
                     <div style="margin-bottom:16px;">
                         <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">New Password</label>
-                        <input type="text" name="new_password" required minlength="8"
-                               class="w-full rounded-xl border px-3 py-2.5 text-sm" placeholder="Min 8 characters"
-                               style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                           <div style="position:relative; width:100%;">
+                            <input type="password" id="admin-reset-password" name="new_password" required minlength="8"
+                                class="w-full rounded-xl border px-3 py-2.5 text-sm" placeholder="Min 8 characters"
+                                style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary); padding-right:2.75rem;">
+                            <button type="button" data-toggle-password="admin-reset-password" aria-label="Show or hide password" style="position:absolute; top:50%; right:0.75rem; transform:translateY(-50%); z-index:2; color:var(--text-muted); background:transparent; border:0; padding:0.25rem; cursor:pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Confirm New Password</label>
+                           <div style="position:relative; width:100%;">
+                            <input type="password" id="admin-reset-password-confirmation" name="new_password_confirmation" required placeholder="Re-enter password"
+                                class="w-full rounded-xl border px-3 py-2.5 text-sm" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary); padding-right:2.75rem;">
+                            <button type="button" data-toggle-password="admin-reset-password-confirmation" aria-label="Show or hide password confirmation" style="position:absolute; top:50%; right:0.75rem; transform:translateY(-50%); z-index:2; color:var(--text-muted); background:transparent; border:0; padding:0.25rem; cursor:pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <p class="password-match-error hidden text-xs mt-1 text-red-500">Passwords do not match. Please re-enter to confirm.</p>
                     </div>
                     <div class="flex gap-3 justify-end">
                         <button type="button" onclick="this.closest('.modal-overlay').remove()"
@@ -143,5 +197,11 @@ function resetPassword(userId, userName) {
     `;
     document.body.appendChild(modal);
 }
+
+document.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-toggle-password]');
+    if (!button) return;
+    togglePasswordVisibility(button.dataset.togglePassword);
+});
 </script>
 @endpush

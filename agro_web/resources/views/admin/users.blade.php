@@ -80,7 +80,7 @@
                 </div>
                 <button @click="open = false" class="btn-delete" style="color:var(--text-muted);width:2rem;height:2rem"><i class="fas fa-times"></i></button>
             </div>
-            <form action="{{ route('web.admin.users.store') }}" method="POST" class="space-y-4">
+            <form action="{{ route('web.admin.users.store') }}" method="POST" class="space-y-4" onsubmit="return validatePasswordMatch(this)">
                 @csrf
                 <div>
                     <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Full Name *</label>
@@ -93,11 +93,22 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Password *</label>
-                        <input type="password" name="password" required minlength="6" placeholder="Min 6 characters">
+                        <div style="position:relative; width:100%;">
+                            <input type="password" id="admin-create-password" name="password" required minlength="6" placeholder="Min 6 characters" style="width:100%; padding-right:2.75rem;">
+                            <button type="button" data-toggle-password="admin-create-password" aria-label="Show or hide password" style="position:absolute; top:50%; right:0.75rem; transform:translateY(-50%); z-index:2; color:var(--text-muted); background:transparent; border:0; padding:0.25rem; cursor:pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Confirm Password *</label>
-                        <input type="password" name="password_confirmation" required placeholder="Re-enter password">
+                        <div style="position:relative; width:100%;">
+                            <input type="password" id="admin-create-password-confirmation" name="password_confirmation" required placeholder="Re-enter password" style="width:100%; padding-right:2.75rem;">
+                            <button type="button" data-toggle-password="admin-create-password-confirmation" aria-label="Show or hide password confirmation" style="position:absolute; top:50%; right:0.75rem; transform:translateY(-50%); z-index:2; color:var(--text-muted); background:transparent; border:0; padding:0.25rem; cursor:pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <p class="password-match-error hidden text-xs mt-1 text-red-500">Passwords do not match. Please re-enter to confirm.</p>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -143,7 +154,7 @@
                 </div>
                 <button @click="editing = false" class="btn-delete" style="color:var(--text-muted);width:2rem;height:2rem"><i class="fas fa-times"></i></button>
             </div>
-            <form action="{{ route('web.admin.users.update') }}" method="POST" class="space-y-4">
+            <form action="{{ route('web.admin.users.update') }}" method="POST" class="space-y-4" onsubmit="return validatePasswordMatch(this)">
                 @csrf
                 <input type="hidden" name="id" :value="editUser.id">
                 <div>
@@ -157,11 +168,22 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">New Password</label>
-                        <input type="password" name="password" minlength="6" placeholder="Leave blank to keep">
+                        <div style="position:relative; width:100%;">
+                            <input type="password" id="admin-edit-password" name="password" minlength="6" placeholder="Leave blank to keep" style="width:100%; padding-right:2.75rem;">
+                            <button type="button" data-toggle-password="admin-edit-password" aria-label="Show or hide password" style="position:absolute; top:50%; right:0.75rem; transform:translateY(-50%); z-index:2; color:var(--text-muted); background:transparent; border:0; padding:0.25rem; cursor:pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold mb-1.5" style="color:var(--text-secondary)">Confirm Password</label>
-                        <input type="password" name="password_confirmation" placeholder="Re-enter password">
+                        <div style="position:relative; width:100%;">
+                            <input type="password" id="admin-edit-password-confirmation" name="password_confirmation" placeholder="Re-enter password" style="width:100%; padding-right:2.75rem;">
+                            <button type="button" data-toggle-password="admin-edit-password-confirmation" aria-label="Show or hide password confirmation" style="position:absolute; top:50%; right:0.75rem; transform:translateY(-50%); z-index:2; color:var(--text-muted); background:transparent; border:0; padding:0.25rem; cursor:pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <p class="password-match-error hidden text-xs mt-1 text-red-500">Passwords do not match. Please re-enter to confirm.</p>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -197,3 +219,60 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function togglePasswordVisibility(inputId) {
+        const button = document.querySelector(`[data-toggle-password="${inputId}"]`);
+        const input = button?.parentElement?.querySelector(`#${inputId}`) || document.getElementById(inputId);
+        if (!input) return;
+
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+
+        if (button) {
+            const icon = button.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('fa-eye', !isPassword);
+                icon.classList.toggle('fa-eye-slash', isPassword);
+            }
+        }
+    }
+
+    function validatePasswordMatch(form) {
+        const passwordFields = [
+            { field: form.querySelector('[name="password"]'), confirmField: form.querySelector('[name="password_confirmation"]') },
+        ].filter(item => item.field && item.confirmField);
+
+        let isValid = true;
+
+        passwordFields.forEach(({ field, confirmField }) => {
+            const hasPassword = field.value.trim() !== '';
+            const confirmValue = confirmField.value;
+            const errorNode = confirmField.closest('div')?.querySelector('.password-match-error');
+
+            if (hasPassword && confirmValue !== field.value) {
+                isValid = false;
+                confirmField.setCustomValidity('Passwords do not match.');
+                if (errorNode) errorNode.classList.remove('hidden');
+            } else {
+                confirmField.setCustomValidity('');
+                if (errorNode) errorNode.classList.add('hidden');
+            }
+        });
+
+        if (!isValid) {
+            form.reportValidity();
+            return false;
+        }
+
+        return true;
+    }
+
+    document.addEventListener('click', function (event) {
+        const button = event.target.closest('[data-toggle-password]');
+        if (!button) return;
+        togglePasswordVisibility(button.dataset.togglePassword);
+    });
+</script>
+@endpush

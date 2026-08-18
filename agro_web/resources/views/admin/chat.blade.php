@@ -155,14 +155,21 @@
                     },
                     body: formData
                 })
-                .then(res => res.json())
+                .then(async res => {
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(data.message || 'Unable to send message.');
+                    return data;
+                })
                 .then(data => {
                     if (data.status === 'success') {
                         messageInput.value = '';
                         fetchMessages();
                     }
                 })
-                .catch(err => console.error(err));
+                .catch(err => {
+                    console.error(err);
+                    if (typeof showToast === 'function') showToast(err.message, 'danger');
+                });
             });
         }
 
