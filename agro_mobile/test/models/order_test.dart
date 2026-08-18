@@ -19,7 +19,7 @@ void main() {
             'quantity': 10,
             'unit_price': 42000,
             'subtotal': 420000,
-          }
+          },
         ],
         'total_amount': 420000,
         'status': 'pending',
@@ -77,29 +77,108 @@ void main() {
       expect(order.deliveredAt, isA<DateTime>());
     });
 
+    test('finance approval accepts boolean and nested payment responses', () {
+      final booleanOrder = Order.fromJson({
+        'status': 'approved',
+        'payment_accepted': true,
+      });
+      final nestedOrder = Order.fromJson({
+        'status': 'approved',
+        'payment': {'status': 'accepted'},
+      });
+
+      expect(booleanOrder.financeApproved, isTrue);
+      expect(nestedOrder.financeApproved, isTrue);
+    });
+
+    test('delivery status completes an order even when status is stale', () {
+      final order = Order.fromJson({
+        'status': 'approved',
+        'delivery_status': 'delivered',
+      });
+
+      expect(order.statusEnum, OrderStatus.delivered);
+      expect(order.isFullyCompleted, isTrue);
+      expect(order.financeApproved, isTrue);
+    });
+
     test('statusEnum maps all statuses correctly', () {
       expect(
-        const Order(id: '', franchiseId: '', franchiseName: '', items: [], totalAmount: 0, status: 'pending', createdAt: null, updatedAt: null).statusEnum,
+        const Order(
+          id: '',
+          franchiseId: '',
+          franchiseName: '',
+          items: [],
+          totalAmount: 0,
+          status: 'pending',
+          createdAt: null,
+          updatedAt: null,
+        ).statusEnum,
         OrderStatus.pending,
       );
       expect(
-        const Order(id: '', franchiseId: '', franchiseName: '', items: [], totalAmount: 0, status: 'approved', createdAt: null, updatedAt: null).statusEnum,
+        const Order(
+          id: '',
+          franchiseId: '',
+          franchiseName: '',
+          items: [],
+          totalAmount: 0,
+          status: 'approved',
+          createdAt: null,
+          updatedAt: null,
+        ).statusEnum,
         OrderStatus.approved,
       );
       expect(
-        const Order(id: '', franchiseId: '', franchiseName: '', items: [], totalAmount: 0, status: 'declined', createdAt: null, updatedAt: null).statusEnum,
+        const Order(
+          id: '',
+          franchiseId: '',
+          franchiseName: '',
+          items: [],
+          totalAmount: 0,
+          status: 'declined',
+          createdAt: null,
+          updatedAt: null,
+        ).statusEnum,
         OrderStatus.declined,
       );
       expect(
-        const Order(id: '', franchiseId: '', franchiseName: '', items: [], totalAmount: 0, status: 'adjusted', createdAt: null, updatedAt: null).statusEnum,
+        const Order(
+          id: '',
+          franchiseId: '',
+          franchiseName: '',
+          items: [],
+          totalAmount: 0,
+          status: 'adjusted',
+          createdAt: null,
+          updatedAt: null,
+        ).statusEnum,
         OrderStatus.adjusted,
       );
       expect(
-        const Order(id: '', franchiseId: '', franchiseName: '', items: [], totalAmount: 0, status: 'delivered', createdAt: null, updatedAt: null).statusEnum,
+        const Order(
+          id: '',
+          franchiseId: '',
+          franchiseName: '',
+          items: [],
+          totalAmount: 0,
+          status: 'delivered',
+          createdAt: null,
+          updatedAt: null,
+        ).statusEnum,
         OrderStatus.delivered,
       );
       expect(
-        const Order(id: '', franchiseId: '', franchiseName: '', items: [], totalAmount: 0, status: 'cancelled', createdAt: null, updatedAt: null).statusEnum,
+        const Order(
+          id: '',
+          franchiseId: '',
+          franchiseName: '',
+          items: [],
+          totalAmount: 0,
+          status: 'cancelled',
+          createdAt: null,
+          updatedAt: null,
+        ).statusEnum,
         OrderStatus.cancelled,
       );
     });
@@ -124,8 +203,24 @@ void main() {
         franchiseId: 'F1',
         franchiseName: 'Test',
         items: const [
-          OrderItem(id: '1', productId: 'P1', productName: 'A', categoryName: 'C1', quantity: 5, unitPrice: 100, totalPrice: 500),
-          OrderItem(id: '2', productId: 'P2', productName: 'B', categoryName: 'C2', quantity: 3, unitPrice: 200, totalPrice: 600),
+          OrderItem(
+            id: '1',
+            productId: 'P1',
+            productName: 'A',
+            categoryName: 'C1',
+            quantity: 5,
+            unitPrice: 100,
+            totalPrice: 500,
+          ),
+          OrderItem(
+            id: '2',
+            productId: 'P2',
+            productName: 'B',
+            categoryName: 'C2',
+            quantity: 3,
+            unitPrice: 200,
+            totalPrice: 600,
+          ),
         ],
         totalAmount: 1100,
         status: 'pending',

@@ -70,12 +70,19 @@ class Order {
     }
   }
 
-  bool get isPaymentReady => deliveryStatusEnum == DeliveryStatus.paymentVerified ||
+  bool get isPaymentReady =>
+      deliveryStatusEnum == DeliveryStatus.paymentVerified ||
       deliveryStatusEnum == DeliveryStatus.readyForDelivery;
 
-  bool get isOutForDelivery => deliveryStatusEnum == DeliveryStatus.outForDelivery;
+  bool get isOutForDelivery =>
+      deliveryStatusEnum == DeliveryStatus.outForDelivery;
 
   OrderStatus get statusEnum {
+    if (deliveryStatusEnum == DeliveryStatus.delivered ||
+        deliveryStatusEnum == DeliveryStatus.confirmed ||
+        deliveredAt != null) {
+      return OrderStatus.delivered;
+    }
     switch (status) {
       case 'pending':
         return OrderStatus.pending;
@@ -114,18 +121,45 @@ class Order {
     return 0;
   }
 
+  static bool _isTruthy(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value > 0;
+    if (value is String) {
+      return {
+        '1',
+        'true',
+        'yes',
+        'accepted',
+        'approved',
+        'verified',
+      }.contains(value.toLowerCase());
+    }
+    return false;
+  }
+
   factory Order.fromJson(Map<String, dynamic> json) {
     final franchise = json['franchise'];
+    final payment = json['payment'];
+    final financeAccepted =
+        _isTruthy(
+          json['payment_accepted'] ??
+              json['finance_approved'] ??
+              json['payment_status'],
+        ) ||
+        (payment is Map && _isTruthy(payment['accepted'] ?? payment['status']));
     return Order(
       id: json['id']?.toString() ?? '',
       orderNumber: json['order_number'],
       franchiseId: franchise is Map
-          ? (franchise['id']?.toString() ?? json['franchise_id']?.toString() ?? '')
+          ? (franchise['id']?.toString() ??
+                json['franchise_id']?.toString() ??
+                '')
           : (json['franchise_id']?.toString() ?? ''),
       franchiseName: franchise is Map
           ? (franchise['name'] ?? '')
           : (json['franchise_name'] ?? ''),
-      items: (json['items'] as List<dynamic>?)
+      items:
+          (json['items'] as List<dynamic>?)
               ?.map((i) => OrderItem.fromJson(i))
               .toList() ??
           [],
@@ -141,7 +175,9 @@ class Order {
           json['delivery_declined_reason'] ?? json['declined_reason'],
       adjustmentNotes: json['adjustment_notes'],
       expectedDeliveryDate: _parseDate(json['expected_delivery_date']),
-      deliveredAt: _parseDate(json['delivered_at'] ?? json['completed_at'] ?? json['received_at']),
+      deliveredAt: _parseDate(
+        json['delivered_at'] ?? json['completed_at'] ?? json['received_at'],
+      ),
       createdAt: _parseDate(json['created_at']) ?? DateTime.now(),
       updatedAt: _parseDate(json['updated_at']) ?? DateTime.now(),
       staffNotes: json['notes'] ?? json['staff_notes'],
@@ -150,18 +186,32 @@ class Order {
       approvedBy: json['approved_by']?.toString(),
       approvedAt: _parseDate(json['approved_at']),
       paymentVerifiedCount: _toInt(
-        json['payment_accepted_count'] ?? json['payment_verified'] ?? 0,
+        json['payment_accepted_count'] ??
+            json['payment_verified'] ??
+            (financeAccepted ? 1 : 0),
       ),
     );
   }
 
   /// True when Finance has fully ACCEPTED (approved) a payment for this order.
-  bool get financeApproved => paymentVerifiedCount > 0 || isPaymentReady;
+  bool get financeApproved =>
+      paymentVerifiedCount > 0 ||
+      isPaymentReady ||
+      deliveryStatusEnum == DeliveryStatus.outForDelivery ||
+      deliveryStatusEnum == DeliveryStatus.delivered ||
+      statusEnum == OrderStatus.delivered;
+
+  bool get isFullyCompleted =>
+      statusEnum == OrderStatus.delivered ||
+      deliveryStatusEnum == DeliveryStatus.delivered ||
+      deliveryStatusEnum == DeliveryStatus.confirmed;
 
   /// Payment status summary for this order.
   String get paymentStatusLabel {
     if (financeApproved) return 'Approved by Finance';
-    if (deliveryStatusEnum == DeliveryStatus.pending) return 'Awaiting Finance Approval';
+    if (deliveryStatusEnum == DeliveryStatus.pending) {
+      return 'Awaiting Finance Approval';
+    }
     return deliveryStatusEnum.displayName;
   }
 
@@ -222,7 +272,9 @@ class OrderItem {
           : json['image_url'],
       quantity: Order._toInt(json['quantity']),
       unitPrice: Order._toDouble(json['unit_price']),
-      baseUnitPrice: Order._toDouble(json['base_unit_price'] ?? json['unit_price']),
+      baseUnitPrice: Order._toDouble(
+        json['base_unit_price'] ?? json['unit_price'],
+      ),
       taxRate: Order._toDouble(json['tax_rate']),
       taxAmount: Order._toDouble(json['tax_amount']),
       totalPrice: Order._toDouble(json['subtotal'] ?? json['total_price']),

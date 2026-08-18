@@ -7,12 +7,14 @@ class NotificationProvider extends ChangeNotifier {
   final ApiService _apiService;
 
   NotificationProvider({required ApiService apiService})
-      : _apiService = apiService;
+    : _apiService = apiService;
 
   List<NotificationItem> _notifications = [];
   int _unreadCount = 0;
   bool _isLoading = false;
   String? _error;
+  bool _hasLoaded = false;
+  NotificationItem? _latestIncoming;
 
   List<NotificationItem> get notifications => _notifications;
   int get unreadCount => _unreadCount;
@@ -20,7 +22,16 @@ class NotificationProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isEmpty => _notifications.isEmpty && !_isLoading && _error == null;
 
-  Future<void> loadNotifications({bool? unreadOnly, bool silent = false}) async {
+  NotificationItem? takeLatestAlert() {
+    final latest = _latestIncoming;
+    _latestIncoming = null;
+    return latest;
+  }
+
+  Future<void> loadNotifications({
+    bool? unreadOnly,
+    bool silent = false,
+  }) async {
     if (!silent) {
       _isLoading = true;
       _error = null;
@@ -28,11 +39,21 @@ class NotificationProvider extends ChangeNotifier {
     }
 
     try {
-      _notifications =
-          await _apiService.getNotifications(unreadOnly: unreadOnly);
+      final previousIds = _notifications.map((n) => n.id).toSet();
+      final loaded = await _apiService.getNotifications(unreadOnly: unreadOnly);
+      if (silent && _hasLoaded) {
+        final incoming = loaded.where(
+          (n) => !previousIds.contains(n.id) && !n.isRead,
+        );
+        if (incoming.isNotEmpty) {
+          _latestIncoming = incoming.first;
+        }
+      }
+      _notifications = loaded;
       if (unreadOnly != true) {
         _unreadCount = _notifications.where((n) => !n.isRead).length;
       }
+      _hasLoaded = true;
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -60,8 +81,9 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> markAllAsRead() async {
     try {
       await _apiService.markAllNotificationsRead();
-      _notifications =
-          _notifications.map((n) => n.copyWith(isRead: true)).toList();
+      _notifications = _notifications
+          .map((n) => n.copyWith(isRead: true))
+          .toList();
       _unreadCount = 0;
       notifyListeners();
     } catch (e) {

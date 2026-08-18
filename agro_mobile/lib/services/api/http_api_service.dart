@@ -22,6 +22,22 @@ class HttpApiService implements ApiService {
 
   HttpApiService({http.Client? client}) : _client = client ?? http.Client();
 
+  static bool _isTruthy(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value > 0;
+    if (value is String) {
+      return {
+        '1',
+        'true',
+        'yes',
+        'accepted',
+        'approved',
+        'verified',
+      }.contains(value.toLowerCase());
+    }
+    return false;
+  }
+
   @override
   Future<void> initialize() async {
     // No-op for HTTP client
@@ -38,21 +54,26 @@ class HttpApiService implements ApiService {
   }
 
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        if (_token != null) 'Authorization': 'Bearer $_token',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    if (_token != null) 'Authorization': 'Bearer $_token',
+  };
 
-  Future<Map<String, dynamic>> _get(String path,
-      {Map<String, String>? queryParams}) async {
-    final uri = Uri.parse('${ApiEndpoints.baseUrl}$path')
-        .replace(queryParameters: queryParams);
+  Future<Map<String, dynamic>> _get(
+    String path, {
+    Map<String, String>? queryParams,
+  }) async {
+    final uri = Uri.parse(
+      '${ApiEndpoints.baseUrl}$path',
+    ).replace(queryParameters: queryParams);
     final response = await _client.get(uri, headers: _headers);
     return _handleResponse(response);
   }
 
-  Future<Map<String, dynamic>> _post(String path,
-      {Map<String, dynamic>? body}) async {
+  Future<Map<String, dynamic>> _post(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
     final uri = Uri.parse('${ApiEndpoints.baseUrl}$path');
     final response = await _client.post(
       uri,
@@ -62,8 +83,10 @@ class HttpApiService implements ApiService {
     return _handleResponse(response);
   }
 
-  Future<Map<String, dynamic>> _put(String path,
-      {Map<String, dynamic>? body}) async {
+  Future<Map<String, dynamic>> _put(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
     final uri = Uri.parse('${ApiEndpoints.baseUrl}$path');
     final response = await _client.put(
       uri,
@@ -74,7 +97,10 @@ class HttpApiService implements ApiService {
   }
 
   Future<Map<String, dynamic>> _postMultipart(
-      String path, Map<String, String> fields, List<http.MultipartFile> files) async {
+    String path,
+    Map<String, String> fields,
+    List<http.MultipartFile> files,
+  ) async {
     final uri = Uri.parse('${ApiEndpoints.baseUrl}$path');
     final request = http.MultipartRequest('POST', uri);
     request.headers.addAll({
@@ -122,7 +148,9 @@ class HttpApiService implements ApiService {
 
     if (response.statusCode == 404) {
       throw AppException(
-          message: body['message'] ?? 'Resource not found.', code: 'NOT_FOUND');
+        message: body['message'] ?? 'Resource not found.',
+        code: 'NOT_FOUND',
+      );
     }
 
     throw AppException(
@@ -147,7 +175,8 @@ class HttpApiService implements ApiService {
 
   /// Extract single item from response
   Map<String, dynamic> _extractOne(Map<String, dynamic> response) {
-    if (response.containsKey('data') && response['data'] is Map<String, dynamic>) {
+    if (response.containsKey('data') &&
+        response['data'] is Map<String, dynamic>) {
       return response['data'] as Map<String, dynamic>;
     }
     return response;
@@ -160,9 +189,10 @@ class HttpApiService implements ApiService {
   @override
   Future<Map<String, dynamic>> getSiteSettings() async {
     final uri = Uri.parse('${ApiEndpoints.baseUrl}/settings/public');
-    final response = await _client.get(uri, headers: {
-      'Accept': 'application/json',
-    });
+    final response = await _client.get(
+      uri,
+      headers: {'Accept': 'application/json'},
+    );
     final body = _handleResponse(response);
     return _extractOne(body);
   }
@@ -171,19 +201,17 @@ class HttpApiService implements ApiService {
   // AUTH
   // ══════════════════════════════════════════════════════════════
 
-
   @override
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await _post(ApiEndpoints.login, body: {
-      'email': email,
-      'password': password,
-    });
+    final response = await _post(
+      ApiEndpoints.login,
+      body: {'email': email, 'password': password},
+    );
 
-    final user = _normalizeUser(response['user'] as Map<String, dynamic>? ?? {});
-    return {
-      'token': response['token'],
-      'user': user,
-    };
+    final user = _normalizeUser(
+      response['user'] as Map<String, dynamic>? ?? {},
+    );
+    return {'token': response['token'], 'user': user};
   }
 
   @override
@@ -201,12 +229,18 @@ class HttpApiService implements ApiService {
   }
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
-    await _post(ApiEndpoints.changePassword, body: {
-      'current_password': currentPassword,
-      'password': newPassword,
-      'password_confirmation': newPassword,
-    });
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    await _post(
+      ApiEndpoints.changePassword,
+      body: {
+        'current_password': currentPassword,
+        'password': newPassword,
+        'password_confirmation': newPassword,
+      },
+    );
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -216,14 +250,18 @@ class HttpApiService implements ApiService {
   @override
   Future<User> getProfile() async {
     final response = await _get(ApiEndpoints.me);
-    final user = _normalizeUser(response['user'] as Map<String, dynamic>? ?? {});
+    final user = _normalizeUser(
+      response['user'] as Map<String, dynamic>? ?? {},
+    );
     return User.fromJson(user);
   }
 
   @override
   Future<User> updateProfile(Map<String, dynamic> data) async {
     final response = await _put(ApiEndpoints.updateProfile, body: data);
-    final user = _normalizeUser(response['user'] as Map<String, dynamic>? ?? {});
+    final user = _normalizeUser(
+      response['user'] as Map<String, dynamic>? ?? {},
+    );
     return User.fromJson(user);
   }
 
@@ -237,17 +275,18 @@ class HttpApiService implements ApiService {
       'Accept': 'application/json',
       if (_token != null) 'Authorization': 'Bearer $_token',
     });
-    request.files.add(http.MultipartFile.fromBytes(
-      'avatar',
-      fileBytes,
-      filename: fileName,
-    ));
+    request.files.add(
+      http.MultipartFile.fromBytes('avatar', fileBytes, filename: fileName),
+    );
 
     final streamedResponse = await _client.send(request);
     final response = await http.Response.fromStream(streamedResponse);
     final body = _handleResponse(response);
     final user = _normalizeUser(
-        body['user'] as Map<String, dynamic>? ?? body['data'] as Map<String, dynamic>? ?? {});
+      body['user'] as Map<String, dynamic>? ??
+          body['data'] as Map<String, dynamic>? ??
+          {},
+    );
     return User.fromJson(user);
   }
 
@@ -306,13 +345,17 @@ class HttpApiService implements ApiService {
   Future<List<ProductCategory>> getCategories() async {
     final response = await _get(ApiEndpoints.categories);
     final list = _extractList(response);
-    return list.map((c) => ProductCategory.fromJson({
-      'id': c['id']?.toString() ?? '',
-      'name': c['name'] ?? '',
-      'description': c['description'],
-      'icon_url': c['image'],
-      'product_count': c['products_count'] ?? 0,
-    })).toList();
+    return list
+        .map(
+          (c) => ProductCategory.fromJson({
+            'id': c['id']?.toString() ?? '',
+            'name': c['name'] ?? '',
+            'description': c['description'],
+            'icon_url': c['image'],
+            'product_count': c['products_count'] ?? 0,
+          }),
+        )
+        .toList();
   }
 
   @override
@@ -320,7 +363,10 @@ class HttpApiService implements ApiService {
     final params = <String, String>{};
     if (categoryId != null) params['category_id'] = categoryId;
 
-    final response = await _get(ApiEndpoints.products, queryParams: params.isNotEmpty ? params : null);
+    final response = await _get(
+      ApiEndpoints.products,
+      queryParams: params.isNotEmpty ? params : null,
+    );
     final list = _extractList(response);
     return list.map((p) => _normalizeProduct(p)).toList();
   }
@@ -347,14 +393,18 @@ class HttpApiService implements ApiService {
     List<PriceSlab> slabs = [];
     final rawSlabs = p['price_slabs'] ?? p['priceSlabs'];
     if (rawSlabs is List) {
-      slabs = rawSlabs.map((s) => PriceSlab.fromJson({
-        'id': s['id']?.toString() ?? '',
-        'product_id': s['product_id']?.toString() ?? '',
-        'min_quantity': s['min_quantity'] ?? 0,
-        'max_quantity': s['max_quantity'],
-        'price_per_unit': s['slab_price'] ?? s['price_per_unit'] ?? 0,
-        'label': null,
-      })).toList();
+      slabs = rawSlabs
+          .map(
+            (s) => PriceSlab.fromJson({
+              'id': s['id']?.toString() ?? '',
+              'product_id': s['product_id']?.toString() ?? '',
+              'min_quantity': s['min_quantity'] ?? 0,
+              'max_quantity': s['max_quantity'],
+              'price_per_unit': s['slab_price'] ?? s['price_per_unit'] ?? 0,
+              'label': null,
+            }),
+          )
+          .toList();
     }
 
     // Extract gallery images from API response
@@ -364,7 +414,8 @@ class HttpApiService implements ApiService {
     if (p['images'] is List) {
       for (final imgItem in p['images']) {
         if (imgItem is Map) {
-          final path = imgItem['image_path'] ?? imgItem['image_url'] ?? imgItem['url'];
+          final path =
+              imgItem['image_path'] ?? imgItem['image_url'] ?? imgItem['url'];
           if (path != null) {
             final resolved = resolveImageUrl(path);
             if (resolved.isNotEmpty && !extractedUrls.contains(resolved)) {
@@ -407,15 +458,20 @@ class HttpApiService implements ApiService {
       categoryName: categoryName,
       unitOfMeasure: p['unit_of_measure'] ?? '',
       packagingDetails: p['packaging_details'],
-      standardPrice: Formatters.toDouble(p['standard_price'] ?? p['selling_price']),
+      standardPrice: Formatters.toDouble(
+        p['standard_price'] ?? p['selling_price'],
+      ),
       taxEnabled: p['tax_enabled'] ?? false,
       taxType: p['tax_type'],
       taxRate: Formatters.toDouble(p['tax_rate']),
       basePrice: Formatters.toDouble(p['base_price'] ?? p['standard_price']),
       finalPrice: Formatters.toDouble(
-          p['final_price'] ?? p['effective_price'] ?? p['standard_price']),
+        p['final_price'] ?? p['effective_price'] ?? p['standard_price'],
+      ),
       priceSlabs: slabs,
-      imageUrl: mainImg.isNotEmpty ? mainImg : (extractedUrls.isNotEmpty ? extractedUrls.first : null),
+      imageUrl: mainImg.isNotEmpty
+          ? mainImg
+          : (extractedUrls.isNotEmpty ? extractedUrls.first : null),
       imageUrls: extractedUrls,
       isActive: p['is_active'] ?? true,
     );
@@ -425,16 +481,22 @@ class HttpApiService implements ApiService {
 
   @override
   Future<List<PriceSlab>> getPriceSlabs(String productId) async {
-    final response = await _get('${ApiEndpoints.products}/$productId/price-slabs');
+    final response = await _get(
+      '${ApiEndpoints.products}/$productId/price-slabs',
+    );
     final list = _extractList(response);
-    return list.map((s) => PriceSlab.fromJson({
-      'id': s['id']?.toString() ?? '',
-      'product_id': s['product_id']?.toString() ?? '',
-      'min_quantity': s['min_quantity'] ?? 0,
-      'max_quantity': s['max_quantity'],
-      'price_per_unit': s['slab_price'] ?? 0,
-      'label': null,
-    })).toList();
+    return list
+        .map(
+          (s) => PriceSlab.fromJson({
+            'id': s['id']?.toString() ?? '',
+            'product_id': s['product_id']?.toString() ?? '',
+            'min_quantity': s['min_quantity'] ?? 0,
+            'max_quantity': s['max_quantity'],
+            'price_per_unit': s['slab_price'] ?? 0,
+            'label': null,
+          }),
+        )
+        .toList();
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -442,7 +504,11 @@ class HttpApiService implements ApiService {
   // ══════════════════════════════════════════════════════════════
 
   @override
-  Future<List<Order>> getOrders({String? status, String? franchiseId, String? deliveryStatus}) async {
+  Future<List<Order>> getOrders({
+    String? status,
+    String? franchiseId,
+    String? deliveryStatus,
+  }) async {
     final params = <String, String>{};
     if (status != null) params['status'] = status;
     if (franchiseId != null) params['franchise_id'] = franchiseId;
@@ -455,7 +521,10 @@ class HttpApiService implements ApiService {
       endpoint = '/franchise/orders';
     }
 
-    final response = await _get(endpoint, queryParams: params.isNotEmpty ? params : null);
+    final response = await _get(
+      endpoint,
+      queryParams: params.isNotEmpty ? params : null,
+    );
     final list = _extractList(response);
     return list.map((o) => _normalizeOrder(o)).toList();
   }
@@ -482,7 +551,8 @@ class HttpApiService implements ApiService {
         if (i['product'] is Map) {
           productName = i['product']['name'] ?? '';
           imageUrl = resolveImageUrl(
-              i['product']['image_url'] ?? i['product']['image']);
+            i['product']['image_url'] ?? i['product']['image'],
+          );
           if (i['product']['category'] is Map) {
             categoryName = i['product']['category']['name'] ?? '';
           }
@@ -490,15 +560,22 @@ class HttpApiService implements ApiService {
         return OrderItem(
           id: i['id']?.toString() ?? '',
           productId: i['product_id']?.toString() ?? '',
-          productName: productName.isNotEmpty ? productName : (i['product_name'] ?? ''),
-          categoryName: categoryName.isNotEmpty ? categoryName : (i['category_name'] ?? ''),
+          productName: productName.isNotEmpty
+              ? productName
+              : (i['product_name'] ?? ''),
+          categoryName: categoryName.isNotEmpty
+              ? categoryName
+              : (i['category_name'] ?? ''),
           imageUrl: imageUrl != null && imageUrl.isNotEmpty
               ? imageUrl
-              : (i['image_url'] != null ? resolveImageUrl(i['image_url']) : null),
+              : (i['image_url'] != null
+                    ? resolveImageUrl(i['image_url'])
+                    : null),
           quantity: Formatters.toInt(i['quantity']),
           unitPrice: Formatters.toDouble(i['unit_price']),
           baseUnitPrice: Formatters.toDouble(
-              i['base_unit_price'] ?? i['unit_price']),
+            i['base_unit_price'] ?? i['unit_price'],
+          ),
           taxRate: Formatters.toDouble(i['tax_rate']),
           taxAmount: Formatters.toDouble(i['tax_amount']),
           totalPrice: Formatters.toDouble(i['subtotal'] ?? i['total_price']),
@@ -512,6 +589,14 @@ class HttpApiService implements ApiService {
 
     // Map status
     String statusStr = o['status'] ?? 'pending';
+    final payment = o['payment'];
+    final financeApproved =
+        _isTruthy(o['payment_accepted_count']) ||
+        _isTruthy(o['payment_verified']) ||
+        _isTruthy(o['payment_accepted']) ||
+        _isTruthy(o['finance_approved']) ||
+        _isTruthy(o['payment_status']) ||
+        (payment is Map && _isTruthy(payment['accepted'] ?? payment['status']));
 
     return Order(
       id: o['id']?.toString() ?? '',
@@ -531,7 +616,9 @@ class HttpApiService implements ApiService {
           o['delivery_declined_reason'] ?? o['declined_reason'],
       adjustmentNotes: o['adjustment_notes'],
       expectedDeliveryDate: _parseDate(o['expected_delivery_date']),
-      deliveredAt: _parseDate(o['delivered_at'] ?? o['completed_at'] ?? o['received_at']),
+      deliveredAt: _parseDate(
+        o['delivered_at'] ?? o['completed_at'] ?? o['received_at'],
+      ),
       createdAt: _parseDate(o['created_at'] ?? ''),
       updatedAt: _parseDate(o['updated_at'] ?? ''),
       staffNotes: o['notes'],
@@ -539,9 +626,9 @@ class HttpApiService implements ApiService {
       financeVerifiedAt: _parseDate(o['finance_verified_at']),
       approvedBy: o['approved_by']?.toString(),
       approvedAt: _parseDate(o['approved_at']),
-      paymentVerifiedCount: o['payment_accepted_count'] is bool
-          ? ((o['payment_accepted_count'] as bool) ? 1 : 0)
-          : Formatters.toInt(o['payment_accepted_count'] ?? o['payment_verified'] ?? 0),
+      paymentVerifiedCount: financeApproved
+          ? 1
+          : Formatters.toInt(o['payment_accepted_count'] ?? 0),
     );
   }
 
@@ -572,10 +659,18 @@ class HttpApiService implements ApiService {
   }
 
   @override
-  Future<Order> approveOrder(String id,
-      {String? deliveryDate, String? notes}) async {
+  Future<Order> approveOrder(
+    String id, {
+    String? deliveryDate,
+    String? notes,
+  }) async {
     final body = <String, dynamic>{
-      'expected_delivery_date': deliveryDate ?? DateTime.now().add(const Duration(days: 3)).toIso8601String().substring(0, 10),
+      'expected_delivery_date':
+          deliveryDate ??
+          DateTime.now()
+              .add(const Duration(days: 3))
+              .toIso8601String()
+              .substring(0, 10),
     };
     if (notes != null && notes.isNotEmpty) body['notes'] = notes;
 
@@ -585,9 +680,10 @@ class HttpApiService implements ApiService {
 
   @override
   Future<Order> declineOrder(String id, String reason) async {
-    final response = await _post('/staff/orders/$id/decline', body: {
-      'decline_reason': reason,
-    });
+    final response = await _post(
+      '/staff/orders/$id/decline',
+      body: {'decline_reason': reason},
+    );
     return _normalizeOrder(_extractOne(response));
   }
 
@@ -615,8 +711,9 @@ class HttpApiService implements ApiService {
 
     if (receiptId == null) {
       throw AppException(
-          message: 'No stock receipt found for this order.',
-          code: 'NOT_FOUND');
+        message: 'No stock receipt found for this order.',
+        code: 'NOT_FOUND',
+      );
     }
 
     // Get receipt details to find items
@@ -625,14 +722,19 @@ class HttpApiService implements ApiService {
     final receiptItems = receipt['items'] as List<dynamic>? ?? [];
 
     final items = receiptItems
-        .map((item) => {
-              'stock_receipt_item_id': item['id'],
-              'received_quantity': item['ordered_quantity'] ?? item['quantity'] ?? 0,
-            })
+        .map(
+          (item) => {
+            'stock_receipt_item_id': item['id'],
+            'received_quantity':
+                item['ordered_quantity'] ?? item['quantity'] ?? 0,
+          },
+        )
         .toList();
 
-    await _post('/franchise/stock-receipts/$receiptId/confirm',
-        body: {'items': items, 'notes': notes});
+    await _post(
+      '/franchise/stock-receipts/$receiptId/confirm',
+      body: {'items': items, 'notes': notes},
+    );
 
     return getOrder(id);
   }
@@ -651,9 +753,10 @@ class HttpApiService implements ApiService {
 
   @override
   Future<Order> declineDelivery(String id, String reason) async {
-    final response = await _post('/staff/orders/$id/decline-delivery', body: {
-      'reason': reason,
-    });
+    final response = await _post(
+      '/staff/orders/$id/decline-delivery',
+      body: {'reason': reason},
+    );
     return _normalizeOrder(_extractOne(response));
   }
 
@@ -668,13 +771,21 @@ class HttpApiService implements ApiService {
       try {
         final warehouseRes = await _get('/staff/warehouse-stock');
         final warehouseList = _extractList(warehouseRes);
-        items.addAll(warehouseList.map((i) => _normalizeInventoryItem(i, isWarehouse: true)));
+        items.addAll(
+          warehouseList.map(
+            (i) => _normalizeInventoryItem(i, isWarehouse: true),
+          ),
+        );
       } catch (_) {}
 
       try {
         final franchiseRes = await _get('/staff/franchise-stock');
         final franchiseList = _extractList(franchiseRes);
-        items.addAll(franchiseList.map((i) => _normalizeInventoryItem(i, isWarehouse: false)));
+        items.addAll(
+          franchiseList.map(
+            (i) => _normalizeInventoryItem(i, isWarehouse: false),
+          ),
+        );
       } catch (_) {}
 
       return items;
@@ -685,7 +796,10 @@ class HttpApiService implements ApiService {
     return list.map((i) => _normalizeInventoryItem(i)).toList();
   }
 
-  InventoryItem _normalizeInventoryItem(Map<String, dynamic> i, {bool isWarehouse = false}) {
+  InventoryItem _normalizeInventoryItem(
+    Map<String, dynamic> i, {
+    bool isWarehouse = false,
+  }) {
     String productName = '';
     String categoryName = '';
     String unitOfMeasure = '';
@@ -706,7 +820,9 @@ class HttpApiService implements ApiService {
       alertLevel = InventoryAlertLevel.low;
     }
 
-    final unitCost = Formatters.toDouble(i['product']?['standard_price'] ?? i['product']?['selling_price']);
+    final unitCost = Formatters.toDouble(
+      i['product']?['standard_price'] ?? i['product']?['selling_price'],
+    );
     final rawTotalVal = Formatters.toDouble(i['total_value']);
     final totalVal = rawTotalVal > 0 ? rawTotalVal : (qty * unitCost);
 
@@ -720,7 +836,11 @@ class HttpApiService implements ApiService {
       unitCost: unitCost,
       totalValue: totalVal,
       franchiseId: isWarehouse ? null : i['franchise_id']?.toString(),
-      franchiseName: isWarehouse ? null : (i['franchise'] is Map ? i['franchise']['name'] : i['franchise_name']),
+      franchiseName: isWarehouse
+          ? null
+          : (i['franchise'] is Map
+                ? i['franchise']['name']
+                : i['franchise_name']),
       reorderLevel: reorder,
       alertLevel: alertLevel,
       lastUpdated: i['updated_at'] ?? DateTime.now().toIso8601String(),
@@ -728,13 +848,16 @@ class HttpApiService implements ApiService {
   }
 
   @override
-  Future<List<InventoryMovement>> getInventoryMovements(
-      {String? productId}) async {
+  Future<List<InventoryMovement>> getInventoryMovements({
+    String? productId,
+  }) async {
     final params = <String, String>{};
     if (productId != null) params['product_id'] = productId;
 
-    final response =
-        await _get(ApiEndpoints.stockMovements, queryParams: params.isNotEmpty ? params : null);
+    final response = await _get(
+      ApiEndpoints.stockMovements,
+      queryParams: params.isNotEmpty ? params : null,
+    );
     final list = _extractList(response);
     return list.map((m) {
       String productName = '';
@@ -761,14 +884,18 @@ class HttpApiService implements ApiService {
   // ══════════════════════════════════════════════════════════════
 
   @override
-  Future<List<Map<String, dynamic>>> getSales(
-      {String? dateFrom, String? dateTo}) async {
+  Future<List<Map<String, dynamic>>> getSales({
+    String? dateFrom,
+    String? dateTo,
+  }) async {
     final params = <String, String>{};
     if (dateFrom != null) params['from_date'] = dateFrom;
     if (dateTo != null) params['to_date'] = dateTo;
 
-    final response = await _get('/franchise/sales',
-        queryParams: params.isNotEmpty ? params : null);
+    final response = await _get(
+      '/franchise/sales',
+      queryParams: params.isNotEmpty ? params : null,
+    );
     final list = _extractList(response);
     return list.map((s) {
       String customerName = '';
@@ -800,15 +927,19 @@ class HttpApiService implements ApiService {
   Future<List<Customer>> getCustomers() async {
     final response = await _get('/franchise/customers');
     final list = _extractList(response);
-    return list.map((c) => Customer.fromJson({
-      'id': c['id']?.toString() ?? '',
-      'name': c['name'] ?? '',
-      'phone': c['phone'] ?? '',
-      'email': c['email'],
-      'location': c['address'],
-      'notes': null,
-      'created_at': c['created_at'],
-    })).toList();
+    return list
+        .map(
+          (c) => Customer.fromJson({
+            'id': c['id']?.toString() ?? '',
+            'name': c['name'] ?? '',
+            'phone': c['phone'] ?? '',
+            'email': c['email'],
+            'location': c['address'],
+            'notes': null,
+            'created_at': c['created_at'],
+          }),
+        )
+        .toList();
   }
 
   @override
@@ -850,8 +981,10 @@ class HttpApiService implements ApiService {
     final params = <String, String>{};
     if (status != null) params['status'] = status;
 
-    final response = await _get('/franchise/payments',
-        queryParams: params.isNotEmpty ? params : null);
+    final response = await _get(
+      '/franchise/payments',
+      queryParams: params.isNotEmpty ? params : null,
+    );
     final list = _extractList(response);
     return list.map((p) => _normalizePayment(p)).toList();
   }
@@ -892,7 +1025,8 @@ class HttpApiService implements ApiService {
       verifiedAt: p['verified_at'],
       submittedAt: p['submitted_at'] ?? p['created_at'] ?? '',
       updatedAt: p['updated_at'] ?? '',
-      orders: (p['orders'] as List<dynamic>?)
+      orders:
+          (p['orders'] as List<dynamic>?)
               ?.map((o) => LinkedOrder.fromJson(o as Map<String, dynamic>))
               .toList() ??
           [],
@@ -938,10 +1072,9 @@ class HttpApiService implements ApiService {
       try {
         // Use conditional import approach - on native, read file bytes
         final filePath = paymentData['proof_file_path'] as String;
-        files.add(await http.MultipartFile.fromPath(
-          'proof_of_payment',
-          filePath,
-        ));
+        files.add(
+          await http.MultipartFile.fromPath('proof_of_payment', filePath),
+        );
       } catch (_) {
         // File not available - submit without proof
       }
@@ -953,21 +1086,27 @@ class HttpApiService implements ApiService {
 
   @override
   Future<String> uploadPaymentProof(
-      String paymentId, List<int> fileBytes, String fileName) async {
+    String paymentId,
+    List<int> fileBytes,
+    String fileName,
+  ) async {
     final request = http.MultipartRequest(
       'POST',
       Uri.parse(
-          '${ApiEndpoints.baseUrl}/franchise/payments/$paymentId/upload-proof'),
+        '${ApiEndpoints.baseUrl}/franchise/payments/$paymentId/upload-proof',
+      ),
     );
     request.headers.addAll({
       'Accept': 'application/json',
       if (_token != null) 'Authorization': 'Bearer $_token',
     });
-    request.files.add(http.MultipartFile.fromBytes(
-      'proof_of_payment',
-      fileBytes,
-      filename: fileName,
-    ));
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'proof_of_payment',
+        fileBytes,
+        filename: fileName,
+      ),
+    );
 
     final streamedResponse = await _client.send(request);
     final response = await http.Response.fromStream(streamedResponse);
@@ -976,10 +1115,12 @@ class HttpApiService implements ApiService {
   }
 
   @override
-  Future<Payment> verifyPayment(String id, {double? verifiedAmount, String? notes}) async {
-    final body = <String, dynamic>{
-      'verified_amount': verifiedAmount ?? 0,
-    };
+  Future<Payment> verifyPayment(
+    String id, {
+    double? verifiedAmount,
+    String? notes,
+  }) async {
+    final body = <String, dynamic>{'verified_amount': verifiedAmount ?? 0};
     if (notes != null) body['finance_notes'] = notes;
     final response = await _post('/finance/payments/$id/verify', body: body);
     return _normalizePayment(_extractOne(response));
@@ -997,17 +1138,19 @@ class HttpApiService implements ApiService {
 
   @override
   Future<Payment> rejectPayment(String id, String reason) async {
-    final response = await _post('/finance/payments/$id/reject', body: {
-      'rejection_reason': reason,
-    });
+    final response = await _post(
+      '/finance/payments/$id/reject',
+      body: {'rejection_reason': reason},
+    );
     return _normalizePayment(_extractOne(response));
   }
 
   @override
   Future<Payment> requestPaymentInfo(String id, String note) async {
-    final response = await _post('/finance/payments/$id/request-info', body: {
-      'info_request_note': note,
-    });
+    final response = await _post(
+      '/finance/payments/$id/request-info',
+      body: {'info_request_note': note},
+    );
     return _normalizePayment(_extractOne(response));
   }
 
@@ -1016,13 +1159,18 @@ class HttpApiService implements ApiService {
   // ══════════════════════════════════════════════════════════════
 
   @override
-  Future<List<Payment>> getFinancePayments({String? status, String? franchiseId}) async {
+  Future<List<Payment>> getFinancePayments({
+    String? status,
+    String? franchiseId,
+  }) async {
     final params = <String, String>{};
     if (status != null) params['status'] = status;
     if (franchiseId != null) params['franchise_id'] = franchiseId;
 
-    final response = await _get('/finance/payments',
-        queryParams: params.isNotEmpty ? params : null);
+    final response = await _get(
+      '/finance/payments',
+      queryParams: params.isNotEmpty ? params : null,
+    );
     final list = _extractList(response);
     return list.map((p) => _normalizePayment(p)).toList();
   }
@@ -1102,10 +1250,11 @@ class HttpApiService implements ApiService {
           ? response['data'] as Map<String, dynamic>
           : response;
       final trend = data['sales_trend'] ?? [];
-      return (trend as List).map((t) => {
-        'month': t['date'] ?? '',
-        'amount': t['total_sales'] ?? 0,
-      }).toList();
+      return (trend as List)
+          .map(
+            (t) => {'month': t['date'] ?? '', 'amount': t['total_sales'] ?? 0},
+          )
+          .toList();
     } catch (_) {
       return [];
     }
@@ -1152,11 +1301,14 @@ class HttpApiService implements ApiService {
     String initialMessage, {
     String? priority,
   }) async {
-    final response = await _post('/conversations', body: {
-      'subject': subject,
-      'message': initialMessage,
-      'priority': ?priority,
-    });
+    final response = await _post(
+      '/conversations',
+      body: {
+        'subject': subject,
+        'message': initialMessage,
+        'priority': ?priority,
+      },
+    );
     return _extractOne(response);
   }
 
@@ -1167,10 +1319,14 @@ class HttpApiService implements ApiService {
   }
 
   @override
-  Future<Map<String, dynamic>> sendMessage(String conversationId, String message) async {
-    final response = await _post('/conversations/$conversationId/messages', body: {
-      'message': message,
-    });
+  Future<Map<String, dynamic>> sendMessage(
+    String conversationId,
+    String message,
+  ) async {
+    final response = await _post(
+      '/conversations/$conversationId/messages',
+      body: {'message': message},
+    );
     return _extractOne(response);
   }
 
@@ -1182,7 +1338,10 @@ class HttpApiService implements ApiService {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getMessagesSince(String conversationId, {int? afterId}) async {
+  Future<List<Map<String, dynamic>>> getMessagesSince(
+    String conversationId, {
+    int? afterId,
+  }) async {
     final path = afterId != null
         ? '/conversations/$conversationId/messages/since/$afterId'
         : '/conversations/$conversationId/messages/since';
@@ -1201,20 +1360,26 @@ class HttpApiService implements ApiService {
     if (unreadOnly == true) params['unreadOnly'] = '1';
 
     try {
-      final response = await _get(ApiEndpoints.notifications,
-          queryParams: params.isNotEmpty ? params : null);
+      final response = await _get(
+        ApiEndpoints.notifications,
+        queryParams: params.isNotEmpty ? params : null,
+      );
       final list = _extractList(response);
-      return list.map((n) => NotificationItem.fromJson({
-        'id': n['id']?.toString() ?? '',
-        'title': n['title'] ?? '',
-        'message': n['message'] ?? '',
-        'type': n['type'] ?? 'general',
-        'is_read': n['is_read'] ?? false,
-        'created_at': n['created_at'],
-        'reference_id': n['reference_id']?.toString(),
-        'reference_type': n['reference_type'],
-        'route': n['route'],
-      })).toList();
+      return list
+          .map(
+            (n) => NotificationItem.fromJson({
+              'id': n['id']?.toString() ?? '',
+              'title': n['title'] ?? '',
+              'message': n['message'] ?? '',
+              'type': n['type'] ?? 'general',
+              'is_read': n['is_read'] ?? false,
+              'created_at': n['created_at'],
+              'reference_id': n['reference_id']?.toString(),
+              'reference_type': n['reference_type'],
+              'route': n['route'],
+            }),
+          )
+          .toList();
     } catch (_) {
       return [];
     }

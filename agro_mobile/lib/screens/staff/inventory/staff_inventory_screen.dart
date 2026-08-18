@@ -45,6 +45,10 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen>
         title: const Text('Inventory'),
         bottom: TabBar(
           controller: _tabController,
+          labelColor: AppColors.primaryGreen,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primaryGreen,
+          indicatorWeight: 3,
           tabs: const [
             Tab(text: 'Warehouse'),
             Tab(text: 'Franchise Stock'),
@@ -88,12 +92,19 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen>
         .toList();
   }
 
-  List<InventoryItem> _getFranchiseItems(InventoryProvider provider, String? franchiseId) {
-    final allFranchiseItems = provider.items.where((item) => item.franchiseId != null).toList();
+  List<InventoryItem> _getFranchiseItems(
+    InventoryProvider provider,
+    String? franchiseId,
+  ) {
+    final allFranchiseItems = provider.items
+        .where((item) => item.franchiseId != null)
+        .toList();
     if (franchiseId == null || franchiseId == 'ALL') {
       return allFranchiseItems;
     }
-    return allFranchiseItems.where((item) => item.franchiseId == franchiseId).toList();
+    return allFranchiseItems
+        .where((item) => item.franchiseId == franchiseId)
+        .toList();
   }
 
   Widget _buildWarehouseTab(InventoryProvider provider) {
@@ -170,7 +181,10 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen>
                 decoration: const InputDecoration(
                   labelText: 'Filter Franchise',
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                 ),
                 items: [
                   const DropdownMenuItem(
@@ -183,7 +197,9 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen>
                     );
                     return DropdownMenuItem(
                       value: franchiseId,
-                      child: Text(item.franchiseName ?? 'Franchise #$franchiseId'),
+                      child: Text(
+                        item.franchiseName ?? 'Franchise #$franchiseId',
+                      ),
                     );
                   }),
                 ],
@@ -206,9 +222,14 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen>
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (item.franchiseName != null && activeFranchiseId == 'ALL')
+                          if (item.franchiseName != null &&
+                              activeFranchiseId == 'ALL')
                             Padding(
-                              padding: const EdgeInsets.only(top: 4, bottom: 2, left: 4),
+                              padding: const EdgeInsets.only(
+                                top: 4,
+                                bottom: 2,
+                                left: 4,
+                              ),
                               child: Text(
                                 item.franchiseName!,
                                 style: const TextStyle(
@@ -392,9 +413,9 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen>
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 2),
         Text(

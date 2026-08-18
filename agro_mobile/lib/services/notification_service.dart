@@ -45,11 +45,14 @@ class NotificationService {
   }
 
   void _playHaptic(NotificationStyle style) {
+    SystemSound.play(SystemSoundType.alert);
     switch (style) {
       case NotificationStyle.success:
         HapticFeedback.lightImpact();
-        Future.delayed(const Duration(milliseconds: 120),
-            () => HapticFeedback.lightImpact());
+        Future.delayed(
+          const Duration(milliseconds: 120),
+          () => HapticFeedback.lightImpact(),
+        );
         break;
       case NotificationStyle.error:
         HapticFeedback.heavyImpact();
@@ -111,10 +114,9 @@ class _NotificationHostState extends State<_NotificationHost> {
       right: 12,
       child: Column(
         children: _active
-            .map((e) => _NotificationBanner(
-                  entry: e,
-                  onDismiss: () => _remove(e),
-                ))
+            .map(
+              (e) => _NotificationBanner(entry: e, onDismiss: () => _remove(e)),
+            )
             .toList(),
       ),
     );
@@ -208,15 +210,14 @@ class _NotificationBannerState extends State<_NotificationBanner>
               borderRadius: BorderRadius.circular(14),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: _backgroundColor,
                   borderRadius: BorderRadius.circular(14),
                   gradient: LinearGradient(
-                    colors: [
-                      _backgroundColor,
-                      _backgroundColor.withAlpha(220),
-                    ],
+                    colors: [_backgroundColor, _backgroundColor.withAlpha(220)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -260,8 +261,11 @@ class _NotificationBannerState extends State<_NotificationBanner>
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: widget.onDismiss,
-                      child: Icon(Icons.close_rounded,
-                          color: Colors.white.withAlpha(160), size: 18),
+                      child: Icon(
+                        Icons.close_rounded,
+                        color: Colors.white.withAlpha(160),
+                        size: 18,
+                      ),
                     ),
                   ],
                 ),
@@ -278,38 +282,47 @@ class _NotificationBannerState extends State<_NotificationBanner>
 class AppNotify {
   static final NotificationService _svc = NotificationService();
 
-  static void success(BuildContext context, String title, String message,
-          {VoidCallback? onTap}) =>
-      _svc.show(
-          context: context,
-          title: title,
-          message: message,
-          style: NotificationStyle.success,
-          onTap: onTap);
+  static void success(
+    BuildContext context,
+    String title,
+    String message, {
+    VoidCallback? onTap,
+  }) => _svc.show(
+    context: context,
+    title: title,
+    message: message,
+    style: NotificationStyle.success,
+    onTap: onTap,
+  );
 
   static void error(BuildContext context, String title, String message) =>
       _svc.show(
-          context: context,
-          title: title,
-          message: message,
-          style: NotificationStyle.error,
-          duration: const Duration(seconds: 6));
+        context: context,
+        title: title,
+        message: message,
+        style: NotificationStyle.error,
+        duration: const Duration(seconds: 6),
+      );
 
   static void warning(BuildContext context, String title, String message) =>
       _svc.show(
-          context: context,
-          title: title,
-          message: message,
-          style: NotificationStyle.warning);
+        context: context,
+        title: title,
+        message: message,
+        style: NotificationStyle.warning,
+      );
 
-  static void orderUpdate(BuildContext context, String message,
-          {VoidCallback? onTap}) =>
-      _svc.show(
-          context: context,
-          title: '📦 Order Update',
-          message: message,
-          style: NotificationStyle.order,
-          onTap: onTap);
+  static void orderUpdate(
+    BuildContext context,
+    String message, {
+    VoidCallback? onTap,
+  }) => _svc.show(
+    context: context,
+    title: '📦 Order Update',
+    message: message,
+    style: NotificationStyle.order,
+    onTap: onTap,
+  );
 
   static void info(BuildContext context, String title, String message) =>
       _svc.show(context: context, title: title, message: message);

@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../models/order.dart';
 import '../../../providers/order_provider.dart';
+import '../../../providers/payment_provider.dart';
 import '../../../widgets/common/app_card.dart';
 import '../../../widgets/common/app_button.dart';
 import '../../../widgets/common/app_text_field.dart';
@@ -66,6 +67,8 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                 const SizedBox(height: 16),
                 _buildOrderItems(order),
                 const SizedBox(height: 16),
+                _buildFinancePaymentDetails(order),
+                const SizedBox(height: 16),
                 _buildOrderTotal(order),
                 const SizedBox(height: 16),
                 _buildStatusTimeline(order),
@@ -91,9 +94,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
               children: [
                 Text(
                   order.franchiseName,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -110,23 +113,23 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
             const SizedBox(height: 8),
             Text(
               'Franchise ID: ${order.franchiseId}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 4),
             Text(
               'Order #${order.id}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 4),
             Text(
               'Placed on ${Formatters.dateTime(order.createdAt)}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -143,9 +146,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
           children: [
             Text(
               'Order Items',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             ...order.items.map((item) => _buildOrderItem(item)),
@@ -201,7 +204,10 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                     if (item.adjustedQuantity != null) ...[
                       const SizedBox(height: 2),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.warning.withAlpha(30),
                           borderRadius: BorderRadius.circular(4),
@@ -213,7 +219,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: item.adjustedQuantity! == 0 ? AppColors.error : AppColors.warning,
+                            color: item.adjustedQuantity! == 0
+                                ? AppColors.error
+                                : AppColors.warning,
                           ),
                         ),
                       ),
@@ -223,9 +231,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
               ),
               Text(
                 Formatters.currency(item.totalPrice),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -304,15 +312,22 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
         order.deliveryStatusEnum == DeliveryStatus.declined;
     final steps = [
       _TimelineStep('Placed', Icons.shopping_cart, true),
-      _TimelineStep('Approved', Icons.check_circle, order.statusEnum != OrderStatus.pending),
+      _TimelineStep(
+        'Approved',
+        Icons.check_circle,
+        order.statusEnum != OrderStatus.pending,
+      ),
       _TimelineStep('Payment Accepted', Icons.verified, order.financeApproved),
       _TimelineStep(
         'Out for Delivery',
         Icons.local_shipping,
-        order.isOutForDelivery || order.statusEnum == OrderStatus.delivered,
+        order.isOutForDelivery || order.isFullyCompleted,
       ),
-      _TimelineStep('Delivered', Icons.assignment_turned_in,
-          order.statusEnum == OrderStatus.delivered),
+      _TimelineStep(
+        'Delivered',
+        Icons.assignment_turned_in,
+        order.isFullyCompleted,
+      ),
     ];
 
     if (order.statusEnum == OrderStatus.declined) {
@@ -331,9 +346,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
           children: [
             Text(
               'Order Status',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Column(
@@ -360,23 +375,14 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                 child: Icon(
                   step.icon,
                   color: step.isActive ? Colors.white : AppColors.textSecondary,
                   size: 18,
                 ),
               ),
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: color,
-                  ),
-                ),
+              if (!isLast) Expanded(child: Container(width: 2, color: color)),
             ],
           ),
           const SizedBox(width: 14),
@@ -386,8 +392,12 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
               child: Text(
                 step.label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: step.isActive ? AppColors.textPrimary : AppColors.textSecondary,
-                  fontWeight: step.isActive ? FontWeight.bold : FontWeight.normal,
+                  color: step.isActive
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
+                  fontWeight: step.isActive
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
             ),
@@ -448,11 +458,13 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
               children: [
                 const Icon(Icons.verified, color: AppColors.success),
                 const SizedBox(width: 8),
-                Text(
-                  'Finance Approved — Ready for Dispatch',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.success,
+                Expanded(
+                  child: Text(
+                    'Finance Approved - Ready for Dispatch',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.success,
+                    ),
                   ),
                 ),
               ],
@@ -492,17 +504,17 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
           children: [
             Text(
               'Delivery Dispatch',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Finance has accepted and approved the payment for this order. '
               'You can now dispatch the order for delivery.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),
             AppButton(
@@ -550,9 +562,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
               'Dispatch is not yet allowed. The franchise partner must submit a '
               'payment for this order, and Finance must verify AND accept '
               '(approve) it before this order can be dispatched.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
             if (order.expectedDeliveryDate != null) ...[
               const SizedBox(height: 12),
@@ -600,9 +612,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
             Text(
               'The order has been dispatched. Confirm when it has been '
               'delivered to the franchise partner.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),
             AppButton(
@@ -686,13 +698,18 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success ? 'Order dispatched' : 'Failed to dispatch order'),
+        content: Text(
+          success ? 'Order dispatched' : 'Failed to dispatch order',
+        ),
         backgroundColor: success ? AppColors.success : AppColors.error,
       ),
     );
   }
 
-  Future<void> _confirmMarkDelivered(Order order, OrderProvider provider) async {
+  Future<void> _confirmMarkDelivered(
+    Order order,
+    OrderProvider provider,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -720,7 +737,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success ? 'Order marked as delivered' : 'Failed to mark as delivered'),
+        content: Text(
+          success ? 'Order marked as delivered' : 'Failed to mark as delivered',
+        ),
         backgroundColor: success ? AppColors.success : AppColors.error,
       ),
     );
@@ -778,13 +797,22 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                   );
                   return;
                 }
-                final success = await provider.declineDelivery(order.id, reason);
+                final success = await provider.declineDelivery(
+                  order.id,
+                  reason,
+                );
                 if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(success ? 'Delivery declined' : 'Failed to decline delivery'),
-                    backgroundColor: success ? AppColors.success : AppColors.error,
+                    content: Text(
+                      success
+                          ? 'Delivery declined'
+                          : 'Failed to decline delivery',
+                    ),
+                    backgroundColor: success
+                        ? AppColors.success
+                        : AppColors.error,
                   ),
                 );
               },
@@ -805,9 +833,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
           children: [
             Text(
               'Actions',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             AppButton(
@@ -866,7 +894,8 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                 ),
               ],
             ),
-            if (order.declineReason != null && order.declineReason!.isNotEmpty) ...[
+            if (order.declineReason != null &&
+                order.declineReason!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
                 'Reason: ${order.declineReason}',
@@ -912,6 +941,72 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
     );
   }
 
+  Widget _buildFinancePaymentDetails(Order order) {
+    final payments = context.watch<PaymentProvider>().payments;
+    final matches = payments.where(
+      (payment) =>
+          payment.orders.any((linkedOrder) => linkedOrder.id == order.id),
+    );
+    final payment = matches.isEmpty ? null : matches.first;
+
+    return AppCard(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Finance Payment Details',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            _buildDetailRow(
+              'Status',
+              payment?.statusEnum.displayName ?? order.paymentStatusLabel,
+            ),
+            if (payment != null) ...[
+              _buildDetailRow('Amount', Formatters.currency(payment.amount)),
+              _buildDetailRow(
+                'Reference',
+                payment.transactionReference.isEmpty
+                    ? 'Not provided'
+                    : payment.transactionReference,
+              ),
+              if (payment.bankName != null && payment.bankName!.isNotEmpty)
+                _buildDetailRow('Bank', payment.bankName!),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 88,
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showApproveDialog(Order order, OrderProvider provider) {
     final deliveryController = TextEditingController();
     final notesController = TextEditingController();
@@ -923,7 +1018,8 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
     Future<void> pickDate(StateSetter setDialogState) async {
       final date = await showDatePicker(
         context: context,
-        initialDate: selectedDate ?? DateTime.now().add(const Duration(days: 3)),
+        initialDate:
+            selectedDate ?? DateTime.now().add(const Duration(days: 3)),
         firstDate: DateTime.now(),
         lastDate: DateTime.now().add(const Duration(days: 90)),
       );
@@ -953,7 +1049,10 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                   controller: deliveryController,
                   hint: 'Select the delivery date',
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.calendar_month, color: AppColors.primaryGreen),
+                    icon: const Icon(
+                      Icons.calendar_month,
+                      color: AppColors.primaryGreen,
+                    ),
                     onPressed: () => pickDate(setDialogState),
                   ),
                 ),
@@ -962,7 +1061,11 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                 const SizedBox(height: 6),
                 Text(
                   dateError!,
-                  style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: AppColors.error,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
               const SizedBox(height: 16),
@@ -984,7 +1087,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
               label: 'Approve',
               onPressed: () async {
                 if (selectedDate == null) {
-                  setDialogState(() => dateError = 'Please select an expected delivery date');
+                  setDialogState(
+                    () => dateError = 'Please select an expected delivery date',
+                  );
                   return;
                 }
                 final success = await provider.approveOrder(
@@ -996,8 +1101,12 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(success ? 'Order approved' : 'Failed to approve order'),
-                    backgroundColor: success ? AppColors.success : AppColors.error,
+                    content: Text(
+                      success ? 'Order approved' : 'Failed to approve order',
+                    ),
+                    backgroundColor: success
+                        ? AppColors.success
+                        : AppColors.error,
                   ),
                 );
               },
@@ -1036,7 +1145,11 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                 const SizedBox(height: 6),
                 Text(
                   errorText!,
-                  style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: AppColors.error,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ],
@@ -1052,7 +1165,9 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
               onPressed: () async {
                 final reason = reasonController.text.trim();
                 if (reason.isEmpty) {
-                  setDialogState(() => errorText = 'A decline reason is required');
+                  setDialogState(
+                    () => errorText = 'A decline reason is required',
+                  );
                   return;
                 }
                 final success = await provider.declineOrder(order.id, reason);
@@ -1060,8 +1175,12 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(success ? 'Order declined' : 'Failed to decline order'),
-                    backgroundColor: success ? AppColors.success : AppColors.error,
+                    content: Text(
+                      success ? 'Order declined' : 'Failed to decline order',
+                    ),
+                    backgroundColor: success
+                        ? AppColors.success
+                        : AppColors.error,
                   ),
                 );
               },
@@ -1133,17 +1252,29 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
             AppButton(
               label: 'Save Adjustments',
               onPressed: () async {
-                final itemsPayload = order.items.map((item) => {
-                  'order_item_id': int.tryParse(item.id) ?? item.id,
-                  'adjusted_quantity': _adjustedQuantities[item.productId]?.toInt() ?? item.quantity,
-                }).toList();
-                final success = await provider.adjustOrder(order.id, {'items': itemsPayload});
+                final itemsPayload = order.items
+                    .map(
+                      (item) => {
+                        'order_item_id': int.tryParse(item.id) ?? item.id,
+                        'adjusted_quantity':
+                            _adjustedQuantities[item.productId]?.toInt() ??
+                            item.quantity,
+                      },
+                    )
+                    .toList();
+                final success = await provider.adjustOrder(order.id, {
+                  'items': itemsPayload,
+                });
                 if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(success ? 'Order adjusted' : 'Failed to adjust order'),
-                    backgroundColor: success ? AppColors.success : AppColors.error,
+                    content: Text(
+                      success ? 'Order adjusted' : 'Failed to adjust order',
+                    ),
+                    backgroundColor: success
+                        ? AppColors.success
+                        : AppColors.error,
                   ),
                 );
               },

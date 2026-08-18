@@ -21,6 +21,7 @@ import '../shared/notifications/notification_screen.dart';
 import '../../widgets/common/logout_dialog.dart';
 import '../shared/profile/profile_screen.dart';
 import '../shared/support/chat_screen.dart';
+import '../../services/notification_service.dart';
 
 class FranchiseShell extends StatefulWidget {
   const FranchiseShell({super.key});
@@ -38,6 +39,7 @@ class _FranchiseShellState extends State<FranchiseShell>
   void initState() {
     super.initState();
     _tabNotifier = ValueNotifier(_currentTab);
+    context.read<NotificationProvider>().addListener(_showIncomingNotification);
     startAutoRefresh();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
@@ -76,8 +78,28 @@ class _FranchiseShellState extends State<FranchiseShell>
 
   @override
   void dispose() {
+    context.read<NotificationProvider>().removeListener(
+      _showIncomingNotification,
+    );
     _tabNotifier.dispose();
     super.dispose();
+  }
+
+  void _showIncomingNotification() {
+    final notification = context.read<NotificationProvider>().takeLatestAlert();
+    if (notification == null || !mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      NotificationService().show(
+        context: context,
+        title: notification.title,
+        message: notification.message,
+        style: NotificationStyle.info,
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const NotificationScreen())),
+      );
+    });
   }
 
   void _switchTab(int index) {
@@ -104,8 +126,10 @@ class _FranchiseShellState extends State<FranchiseShell>
   Widget _buildCartAction() {
     return Consumer<OrderProvider>(
       builder: (context, provider, _) {
-        final count = provider.cartItems.values
-            .fold(0, (sum, qty) => sum + qty);
+        final count = provider.cartItems.values.fold(
+          0,
+          (sum, qty) => sum + qty,
+        );
         return Stack(
           clipBehavior: Clip.none,
           children: [
@@ -128,7 +152,10 @@ class _FranchiseShellState extends State<FranchiseShell>
                     color: AppColors.error,
                     shape: BoxShape.circle,
                   ),
-                  constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
                   child: Text(
                     count > 9 ? '9+' : '$count',
                     textAlign: TextAlign.center,
@@ -159,9 +186,9 @@ class _FranchiseShellState extends State<FranchiseShell>
             IconButton(
               icon: const Icon(Icons.headset_mic_outlined),
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ChatScreen()),
-                );
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const ChatScreen()));
               },
               tooltip: 'Support',
             ),
@@ -171,7 +198,9 @@ class _FranchiseShellState extends State<FranchiseShell>
                   icon: const Icon(Icons.notifications_outlined),
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationScreen(),
+                      ),
                     );
                   },
                 ),
@@ -180,7 +209,8 @@ class _FranchiseShellState extends State<FranchiseShell>
                   top: 8,
                   child: Consumer<NotificationProvider>(
                     builder: (_, notifier, child) {
-                      if (notifier.unreadCount == 0) return const SizedBox.shrink();
+                      if (notifier.unreadCount == 0)
+                        return const SizedBox.shrink();
                       return Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
@@ -188,8 +218,14 @@ class _FranchiseShellState extends State<FranchiseShell>
                           shape: BoxShape.circle,
                         ),
                         child: Text(
-                          notifier.unreadCount > 9 ? '9+' : '${notifier.unreadCount}',
-                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600),
+                          notifier.unreadCount > 9
+                              ? '9+'
+                              : '${notifier.unreadCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       );
                     },
@@ -204,7 +240,9 @@ class _FranchiseShellState extends State<FranchiseShell>
             ? FloatingActionButton.extended(
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CreateOrderScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const CreateOrderScreen(),
+                    ),
                   );
                 },
                 backgroundColor: AppColors.primaryGreen,
@@ -219,7 +257,10 @@ class _FranchiseShellState extends State<FranchiseShell>
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppColors.primaryGreen,
           unselectedItemColor: AppColors.textLight,
-          selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+          selectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
           unselectedLabelStyle: const TextStyle(fontSize: 11),
           items: const [
             BottomNavigationBarItem(
@@ -361,41 +402,56 @@ class _MoreTab extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         user?.franchiseName ?? user?.email ?? '',
-                        style: const TextStyle(fontSize: 12, color: Colors.white70),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
                   onPressed: () => _openProfile(context),
-                  icon: const Icon(
-                    Icons.chevron_right,
-                    color: Colors.white70,
-                  ),
+                  icon: const Icon(Icons.chevron_right, color: Colors.white70),
                   tooltip: 'View profile',
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          _buildMenuItem(context, Icons.account_circle_outlined, 'My Profile', () {
-            _openProfile(context);
-          }),
-          _buildMenuItem(context, Icons.shopping_cart_outlined, 'New Order', () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CreateOrderScreen()),
-            );
-          }),
-          _buildMenuItem(context, Icons.storefront_outlined, 'Product Catalog', () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => Scaffold(
-                  appBar: AppBar(title: const Text('Product Catalog')),
-                  body: const ProductCatalogScreen(),
+          _buildMenuItem(
+            context,
+            Icons.account_circle_outlined,
+            'My Profile',
+            () {
+              _openProfile(context);
+            },
+          ),
+          _buildMenuItem(
+            context,
+            Icons.shopping_cart_outlined,
+            'New Order',
+            () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CreateOrderScreen()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            context,
+            Icons.storefront_outlined,
+            'Product Catalog',
+            () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: const Text('Product Catalog')),
+                    body: const ProductCatalogScreen(),
+                  ),
                 ),
-              ),
-            );
-          }),
+              );
+            },
+          ),
           _buildMenuItem(context, Icons.people_outline, 'Customers', () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -407,30 +463,47 @@ class _MoreTab extends StatelessWidget {
             );
           }),
           _buildMenuItem(context, Icons.point_of_sale_outlined, 'Sales', () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const CreateSaleScreen()),
-            );
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const CreateSaleScreen()));
           }),
-          _buildMenuItem(context, Icons.account_balance_wallet_outlined, 'Payments', () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => Scaffold(
-                  appBar: AppBar(title: const Text('Payments & Transactions')),
-                  body: const PaymentScreen(),
+          _buildMenuItem(
+            context,
+            Icons.account_balance_wallet_outlined,
+            'Payments',
+            () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(
+                      title: const Text('Payments & Transactions'),
+                    ),
+                    body: const PaymentScreen(),
+                  ),
                 ),
-              ),
-            );
-          }),
-          _buildMenuItem(context, Icons.notifications_outlined, 'Notifications', () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const NotificationScreen()),
-            );
-          }),
-          _buildMenuItem(context, Icons.headset_mic_outlined, 'Support & Chat', () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ChatScreen()),
-            );
-          }),
+              );
+            },
+          ),
+          _buildMenuItem(
+            context,
+            Icons.notifications_outlined,
+            'Notifications',
+            () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const NotificationScreen()),
+              );
+            },
+          ),
+          _buildMenuItem(
+            context,
+            Icons.headset_mic_outlined,
+            'Support & Chat',
+            () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const ChatScreen()));
+            },
+          ),
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
@@ -442,7 +515,10 @@ class _MoreTab extends StatelessWidget {
                 Navigator.of(context).pushReplacementNamed('/login');
               },
               icon: const Icon(Icons.logout, color: AppColors.error),
-              label: const Text('Logout', style: TextStyle(color: AppColors.error)),
+              label: const Text(
+                'Logout',
+                style: TextStyle(color: AppColors.error),
+              ),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.error),
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -455,12 +531,17 @@ class _MoreTab extends StatelessWidget {
   }
 
   void _openProfile(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
-  Widget _buildMenuItem(BuildContext context, IconData icon, String label, VoidCallback onTap) {
+  Widget _buildMenuItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) {
     return Card(
       margin: const EdgeInsets.only(bottom: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -473,7 +554,10 @@ class _MoreTab extends StatelessWidget {
           ),
           child: Icon(icon, color: AppColors.primaryGreen, size: 20),
         ),
-        title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+        title: Text(
+          label,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        ),
         trailing: const Icon(Icons.chevron_right, color: AppColors.textLight),
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/payment_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/common/logout_dialog.dart';
+import '../../services/notification_service.dart';
 import 'finance_dashboard.dart';
 import 'payments/payment_list_screen.dart';
 import '../shared/notifications/notification_screen.dart';
@@ -26,6 +27,7 @@ class _FinanceShellState extends State<FinanceShell>
   void initState() {
     super.initState();
     _tabNotifier = ValueNotifier(_currentTab);
+    context.read<NotificationProvider>().addListener(_showIncomingNotification);
     startAutoRefresh();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
@@ -51,8 +53,26 @@ class _FinanceShellState extends State<FinanceShell>
 
   @override
   void dispose() {
+    context.read<NotificationProvider>().removeListener(
+      _showIncomingNotification,
+    );
     _tabNotifier.dispose();
     super.dispose();
+  }
+
+  void _showIncomingNotification() {
+    final notification = context.read<NotificationProvider>().takeLatestAlert();
+    if (notification == null || !mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      NotificationService().show(
+        context: context,
+        title: notification.title,
+        message: notification.message,
+        style: NotificationStyle.info,
+        onTap: () => _switchTab(3),
+      );
+    });
   }
 
   void _switchTab(int index) {
@@ -90,7 +110,8 @@ class _FinanceShellState extends State<FinanceShell>
                   top: 8,
                   child: Consumer<NotificationProvider>(
                     builder: (_, notifier, child) {
-                      if (notifier.unreadCount == 0) return const SizedBox.shrink();
+                      if (notifier.unreadCount == 0)
+                        return const SizedBox.shrink();
                       return Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
@@ -98,8 +119,14 @@ class _FinanceShellState extends State<FinanceShell>
                           shape: BoxShape.circle,
                         ),
                         child: Text(
-                          notifier.unreadCount > 9 ? '9+' : '${notifier.unreadCount}',
-                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600),
+                          notifier.unreadCount > 9
+                              ? '9+'
+                              : '${notifier.unreadCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       );
                     },
@@ -116,7 +143,10 @@ class _FinanceShellState extends State<FinanceShell>
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppColors.primaryGreen,
           unselectedItemColor: AppColors.textLight,
-          selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+          selectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
           unselectedLabelStyle: const TextStyle(fontSize: 11),
           items: const [
             BottomNavigationBarItem(
@@ -237,7 +267,10 @@ class _FinanceProfileTab extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             user?.email ?? '',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 8),
           Container(
@@ -270,7 +303,10 @@ class _FinanceProfileTab extends StatelessWidget {
                 Navigator.of(context).pushReplacementNamed('/login');
               },
               icon: const Icon(Icons.logout, color: AppColors.error),
-              label: const Text('Logout', style: TextStyle(color: AppColors.error)),
+              label: const Text(
+                'Logout',
+                style: TextStyle(color: AppColors.error),
+              ),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.error),
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -282,7 +318,12 @@ class _FinanceProfileTab extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, IconData icon, String label, VoidCallback onTap) {
+  Widget _buildMenuItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       leading: Icon(icon, color: AppColors.textSecondary),
       title: Text(label),

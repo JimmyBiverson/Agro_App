@@ -100,10 +100,7 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
         const SizedBox(height: 4),
         Text(
           Formatters.dateTime(DateTime.now()),
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -117,7 +114,8 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
         .where((p) => p.statusEnum == PaymentStatus.infoRequested)
         .length;
     final pendingTotal = Formatters.currency(
-      double.tryParse(summary['pending_payments_total']?.toString() ?? '0') ?? 0,
+      double.tryParse(summary['pending_payments_total']?.toString() ?? '0') ??
+          0,
     );
 
     if (infoRequests == 0 && pendingTotal == 'UGX 0') {
@@ -195,7 +193,11 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.2),
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 11,
+            height: 1.2,
+          ),
         ),
       ],
     );
@@ -211,12 +213,16 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
 
     final pendingCount = (summary['pending_payments_count'] ?? 0).toString();
     final pendingTotal = Formatters.currency(
-        double.tryParse(summary['pending_payments_total']?.toString() ?? '0') ?? 0);
+      double.tryParse(summary['pending_payments_total']?.toString() ?? '0') ??
+          0,
+    );
     final acceptedThisMonth = (summary['accepted_this_month'] ?? 0).toString();
     final totalOutstanding = Formatters.currency(
-        double.tryParse(summary['total_outstanding']?.toString() ?? '0') ?? 0);
+      double.tryParse(summary['total_outstanding']?.toString() ?? '0') ?? 0,
+    );
     final totalCollected = Formatters.currency(
-        double.tryParse(summary['total_collected_ytd']?.toString() ?? '0') ?? 0);
+      double.tryParse(summary['total_collected_ytd']?.toString() ?? '0') ?? 0,
+    );
 
     return Column(
       children: [
@@ -229,6 +235,7 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
                 Icons.pending_actions,
                 AppColors.warning,
                 subtitle: pendingTotal,
+                onTap: () => FinanceTabScope.of(context)?.onSwitchTab(1),
               ),
             ),
             const SizedBox(width: 12),
@@ -238,6 +245,7 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
                 acceptedThisMonth,
                 Icons.check_circle_outline,
                 AppColors.success,
+                onTap: () => FinanceTabScope.of(context)?.onSwitchTab(2),
               ),
             ),
           ],
@@ -252,6 +260,7 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
                 Icons.account_balance_wallet_outlined,
                 AppColors.error,
                 subtitle: totalOutstanding,
+                onTap: () => FinanceTabScope.of(context)?.onSwitchTab(2),
               ),
             ),
             const SizedBox(width: 12),
@@ -262,6 +271,7 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
                 Icons.savings_outlined,
                 AppColors.primaryGreen,
                 subtitle: totalCollected,
+                onTap: () => FinanceTabScope.of(context)?.onSwitchTab(2),
               ),
             ),
           ],
@@ -270,52 +280,62 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
     );
   }
 
-  Widget _buildStatCard(String label, String count, IconData icon, Color color,
-      {String? subtitle}) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          if (count.isNotEmpty)
-            Text(
-              count,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: color,
+  Widget _buildStatCard(
+    String label,
+    String count,
+    IconData icon,
+    Color color, {
+    String? subtitle,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceWhite,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            if (count.isNotEmpty)
+              Text(
+                count,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
               ),
-            ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-              height: 1.2,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          if (subtitle != null) ...[
             const SizedBox(height: 4),
             Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color,
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+                height: 1.2,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -341,10 +361,9 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
       children: pending.take(5).map((payment) {
         return AppCard(
           onTap: () {
-            Navigator.of(context).pushNamed(
-              '/finance/payment-detail',
-              arguments: payment.id,
-            );
+            Navigator.of(
+              context,
+            ).pushNamed('/finance/payment-detail', arguments: payment.id);
           },
           child: Row(
             children: [
@@ -354,7 +373,11 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
                   color: AppColors.warning.withAlpha(26),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.pending_actions, color: AppColors.warning, size: 20),
+                child: const Icon(
+                  Icons.pending_actions,
+                  color: AppColors.warning,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -363,17 +386,28 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
                   children: [
                     Text(
                       payment.paymentNumber ?? payment.id,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      payment.franchiseName.isNotEmpty ? payment.franchiseName : 'Franchise #${payment.franchiseId}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      payment.franchiseName.isNotEmpty
+                          ? payment.franchiseName
+                          : 'Franchise #${payment.franchiseId}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     if (payment.transactionReference.isNotEmpty)
                       Text(
                         'Ref: ${payment.transactionReference}',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textLight),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textLight,
+                        ),
                       ),
                   ],
                 ),
@@ -383,7 +417,10 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
                 children: [
                   Text(
                     Formatters.currency(payment.amount),
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   StatusBadge.fromPaymentStatus(payment.status),
@@ -421,10 +458,9 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
       children: recent.map((payment) {
         return AppCard(
           onTap: () {
-            Navigator.of(context).pushNamed(
-              '/finance/payment-detail',
-              arguments: payment.id,
-            );
+            Navigator.of(
+              context,
+            ).pushNamed('/finance/payment-detail', arguments: payment.id);
           },
           child: Row(
             children: [
@@ -447,12 +483,20 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
                   children: [
                     Text(
                       payment.paymentNumber ?? payment.id,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      payment.franchiseName.isNotEmpty ? payment.franchiseName : 'Franchise #${payment.franchiseId}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      payment.franchiseName.isNotEmpty
+                          ? payment.franchiseName
+                          : 'Franchise #${payment.franchiseId}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -462,7 +506,10 @@ class _FinanceDashboardState extends State<FinanceDashboard> {
                 children: [
                   Text(
                     Formatters.currency(payment.amount),
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   StatusBadge.fromPaymentStatus(payment.status),

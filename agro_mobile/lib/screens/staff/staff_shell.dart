@@ -8,6 +8,7 @@ import '../../providers/inventory_provider.dart';
 import '../../providers/payment_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/common/logout_dialog.dart';
+import '../../services/notification_service.dart';
 import 'staff_dashboard.dart';
 import '../staff/orders/staff_order_list_screen.dart';
 import '../staff/inventory/staff_inventory_screen.dart';
@@ -29,6 +30,7 @@ class _StaffShellState extends State<StaffShell>
   void initState() {
     super.initState();
     _tabNotifier = ValueNotifier(_currentTab);
+    context.read<NotificationProvider>().addListener(_showIncomingNotification);
     startAutoRefresh();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
@@ -54,8 +56,26 @@ class _StaffShellState extends State<StaffShell>
 
   @override
   void dispose() {
+    context.read<NotificationProvider>().removeListener(
+      _showIncomingNotification,
+    );
     _tabNotifier.dispose();
     super.dispose();
+  }
+
+  void _showIncomingNotification() {
+    final notification = context.read<NotificationProvider>().takeLatestAlert();
+    if (notification == null || !mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      NotificationService().show(
+        context: context,
+        title: notification.title,
+        message: notification.message,
+        style: NotificationStyle.order,
+        onTap: () => _switchTab(3),
+      );
+    });
   }
 
   void _switchTab(int index) {
@@ -91,7 +111,8 @@ class _StaffShellState extends State<StaffShell>
                   top: 8,
                   child: Consumer<NotificationProvider>(
                     builder: (_, notifier, child) {
-                      if (notifier.unreadCount == 0) return const SizedBox.shrink();
+                      if (notifier.unreadCount == 0)
+                        return const SizedBox.shrink();
                       return Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
@@ -99,8 +120,14 @@ class _StaffShellState extends State<StaffShell>
                           shape: BoxShape.circle,
                         ),
                         child: Text(
-                          notifier.unreadCount > 9 ? '9+' : '${notifier.unreadCount}',
-                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600),
+                          notifier.unreadCount > 9
+                              ? '9+'
+                              : '${notifier.unreadCount}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       );
                     },
@@ -117,7 +144,10 @@ class _StaffShellState extends State<StaffShell>
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppColors.primaryGreen,
           unselectedItemColor: AppColors.textLight,
-          selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+          selectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
           unselectedLabelStyle: const TextStyle(fontSize: 11),
           items: const [
             BottomNavigationBarItem(
@@ -238,7 +268,10 @@ class _StaffProfileTab extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             user?.email ?? '',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 8),
           Container(
@@ -257,9 +290,24 @@ class _StaffProfileTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          _buildMenuItem(context, Icons.person_outline, 'Edit Profile', () => _showEditProfileDialog(context, user)),
-          _buildMenuItem(context, Icons.lock_outline, 'Change Password', () => _showChangePasswordDialog(context)),
-          _buildMenuItem(context, Icons.help_outline, 'Help & Support', () => _showHelpSupportDialog(context)),
+          _buildMenuItem(
+            context,
+            Icons.person_outline,
+            'Edit Profile',
+            () => _showEditProfileDialog(context, user),
+          ),
+          _buildMenuItem(
+            context,
+            Icons.lock_outline,
+            'Change Password',
+            () => _showChangePasswordDialog(context),
+          ),
+          _buildMenuItem(
+            context,
+            Icons.help_outline,
+            'Help & Support',
+            () => _showHelpSupportDialog(context),
+          ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -271,7 +319,10 @@ class _StaffProfileTab extends StatelessWidget {
                 Navigator.of(context).pushReplacementNamed('/login');
               },
               icon: const Icon(Icons.logout, color: AppColors.error),
-              label: const Text('Logout', style: TextStyle(color: AppColors.error)),
+              label: const Text(
+                'Logout',
+                style: TextStyle(color: AppColors.error),
+              ),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.error),
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -283,7 +334,12 @@ class _StaffProfileTab extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, IconData icon, String label, VoidCallback onTap) {
+  Widget _buildMenuItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) {
     return ListTile(
       leading: Icon(icon, color: AppColors.textSecondary),
       title: Text(label),
@@ -332,8 +388,13 @@ class _StaffProfileTab extends StatelessWidget {
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-            child: const Text('Save Changes', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGreen,
+            ),
+            child: const Text(
+              'Save Changes',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -367,7 +428,9 @@ class _StaffProfileTab extends StatelessWidget {
             TextField(
               controller: confirmPasswordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Confirm New Password'),
+              decoration: const InputDecoration(
+                labelText: 'Confirm New Password',
+              ),
             ),
           ],
         ),
@@ -387,7 +450,8 @@ class _StaffProfileTab extends StatelessWidget {
                 );
                 return;
               }
-              if (newPasswordController.text != confirmPasswordController.text) {
+              if (newPasswordController.text !=
+                  confirmPasswordController.text) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Passwords do not match'),
@@ -404,8 +468,13 @@ class _StaffProfileTab extends StatelessWidget {
                 ),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-            child: const Text('Update Password', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGreen,
+            ),
+            child: const Text(
+              'Update Password',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -442,7 +511,11 @@ class _StaffProfileTab extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Lost or forgot your password? Please contact your System Administrator to reset your account password.',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ],
@@ -450,21 +523,57 @@ class _StaffProfileTab extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               const ListTile(
-                leading: Icon(Icons.email_outlined, color: AppColors.primaryGreen),
-                title: Text('Support Email', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                subtitle: Text('support@farmmantra.com', style: TextStyle(fontWeight: FontWeight.bold)),
+                leading: Icon(
+                  Icons.email_outlined,
+                  color: AppColors.primaryGreen,
+                ),
+                title: Text(
+                  'Support Email',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                subtitle: Text(
+                  'support@farmmantra.com',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 contentPadding: EdgeInsets.zero,
               ),
               const ListTile(
-                leading: Icon(Icons.phone_outlined, color: AppColors.primaryGreen),
-                title: Text('Helpline / Admin Desk', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                subtitle: Text('+234 (0) 800-FARM-MAN', style: TextStyle(fontWeight: FontWeight.bold)),
+                leading: Icon(
+                  Icons.phone_outlined,
+                  color: AppColors.primaryGreen,
+                ),
+                title: Text(
+                  'Helpline / Admin Desk',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                subtitle: Text(
+                  '+234 (0) 800-FARM-MAN',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 contentPadding: EdgeInsets.zero,
               ),
               const ListTile(
-                leading: Icon(Icons.schedule_outlined, color: AppColors.primaryGreen),
-                title: Text('Support Hours', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                subtitle: Text('Mon - Sat: 8:00 AM - 6:00 PM', style: TextStyle(fontWeight: FontWeight.bold)),
+                leading: Icon(
+                  Icons.schedule_outlined,
+                  color: AppColors.primaryGreen,
+                ),
+                title: Text(
+                  'Support Hours',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                subtitle: Text(
+                  'Mon - Sat: 8:00 AM - 6:00 PM',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 contentPadding: EdgeInsets.zero,
               ),
             ],
@@ -473,7 +582,9 @@ class _StaffProfileTab extends StatelessWidget {
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGreen,
+            ),
             child: const Text('Close', style: TextStyle(color: Colors.white)),
           ),
         ],

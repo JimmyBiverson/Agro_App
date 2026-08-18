@@ -53,6 +53,8 @@ class _StaffDashboardState extends State<StaffDashboard> {
             const SizedBox(height: 8),
             _buildQuickActions(),
             const SizedBox(height: 8),
+            _buildDeliverySummary(),
+            const SizedBox(height: 16),
             SectionHeader(
               title: 'Pending Orders',
               actionLabel: 'View All',
@@ -153,7 +155,11 @@ class _StaffDashboardState extends State<StaffDashboard> {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.2),
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 11,
+              height: 1.2,
+            ),
           ),
         ],
       ),
@@ -180,10 +186,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
         const SizedBox(height: 4),
         Text(
           Formatters.dateTime(DateTime.now()),
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -191,8 +194,12 @@ class _StaffDashboardState extends State<StaffDashboard> {
 
   Widget _buildQuickActions() {
     final allOrders = context.read<OrderProvider>().orders;
-    final pendingCount = allOrders.where((o) => o.statusEnum == OrderStatus.pending).length;
-    final approvedToday = allOrders.where((o) => o.statusEnum == OrderStatus.approved).length;
+    final pendingCount = allOrders
+        .where((o) => o.statusEnum == OrderStatus.pending)
+        .length;
+    final approvedToday = allOrders
+        .where((o) => o.statusEnum == OrderStatus.approved)
+        .length;
 
     return Row(
       children: [
@@ -202,6 +209,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
             '$pendingCount',
             Icons.pending_actions,
             AppColors.warning,
+            onTap: () => StaffTabScope.of(context)?.onSwitchTab(1),
           ),
         ),
         const SizedBox(width: 12),
@@ -211,6 +219,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
             '${allOrders.length}',
             Icons.receipt_long,
             AppColors.info,
+            onTap: () => StaffTabScope.of(context)?.onSwitchTab(1),
           ),
         ),
         const SizedBox(width: 12),
@@ -220,49 +229,99 @@ class _StaffDashboardState extends State<StaffDashboard> {
             '$approvedToday',
             Icons.check_circle_outline,
             AppColors.primaryGreen,
+            onTap: () => StaffTabScope.of(context)?.onSwitchTab(1),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildQuickActionCard(String label, String count, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            count,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: color,
+  Widget _buildQuickActionCard(
+    String label,
+    String count,
+    IconData icon,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceWhite,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.divider),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-              height: 1.2,
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+                height: 1.2,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
+  Widget _buildDeliverySummary() {
+    final orders = context.watch<OrderProvider>().orders;
+    final pending = orders
+        .where(
+          (o) =>
+              o.statusEnum == OrderStatus.approved &&
+              !o.isFullyCompleted &&
+              !o.isOutForDelivery,
+        )
+        .length;
+    final successful = orders.where((o) => o.isFullyCompleted).length;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _buildQuickActionCard(
+            'Pending\nDeliveries',
+            '$pending',
+            Icons.local_shipping_outlined,
+            AppColors.info,
+            onTap: () => StaffTabScope.of(context)?.onSwitchTab(1),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildQuickActionCard(
+            'Successful\nDeliveries',
+            '$successful',
+            Icons.task_alt,
+            AppColors.success,
+            onTap: () => StaffTabScope.of(context)?.onSwitchTab(1),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPendingOrders() {
-    final pendingOrders = context.read<OrderProvider>().orders
+    final pendingOrders = context
+        .read<OrderProvider>()
+        .orders
         .where((o) => o.statusEnum == OrderStatus.pending)
         .take(5)
         .toList();
@@ -272,7 +331,10 @@ class _StaffDashboardState extends State<StaffDashboard> {
         child: Center(
           child: Padding(
             padding: EdgeInsets.all(24),
-            child: Text('No pending orders', style: TextStyle(color: AppColors.success)),
+            child: Text(
+              'No pending orders',
+              style: TextStyle(color: AppColors.success),
+            ),
           ),
         ),
       );
@@ -296,7 +358,11 @@ class _StaffDashboardState extends State<StaffDashboard> {
                   color: AppColors.warning.withAlpha(26),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.pending_actions, color: AppColors.warning, size: 20),
+                child: const Icon(
+                  Icons.pending_actions,
+                  color: AppColors.warning,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -305,12 +371,18 @@ class _StaffDashboardState extends State<StaffDashboard> {
                   children: [
                     Text(
                       order.orderNumber ?? order.id,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${order.franchiseName} \u2022 ${order.items.length} items',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -320,7 +392,10 @@ class _StaffDashboardState extends State<StaffDashboard> {
                 children: [
                   Text(
                     Formatters.currency(order.totalAmount),
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   StatusBadge.fromOrderStatus(order.status),
