@@ -79,9 +79,12 @@
                 {{-- Messages List --}}
                 <div class="flex-1 overflow-y-auto p-4 space-y-3.5" id="chatMessages">
                     @forelse($activeConversation->messages as $msg)
-                    <div class="flex {{ $msg->sender_id === auth()->id() || $msg->sender?->role?->name === 'System Administrator' ? 'justify-end' : 'justify-start' }}">
-                        <div class="max-w-md rounded-2xl px-4 py-2.5 shadow-sm {{ $msg->sender_id === auth()->id() || $msg->sender?->role?->name === 'System Administrator' ? 'gradient-indigo text-white' : '' }}"
-                             style="{{ $msg->sender_id !== auth()->id() && $msg->sender?->role?->name !== 'System Administrator' ? 'background:var(--bg-input); color:var(--text-primary); border: 1px solid var(--border-color);' : '' }}">
+                    @php($isAdminMessage = $msg->sender_id === auth()->id() || $msg->sender?->role?->name === 'System Administrator')
+                    <div class="flex {{ $isAdminMessage ? 'justify-end' : 'justify-start' }}">
+                            <div class="max-w-md rounded-2xl px-4 py-2.5 shadow-sm {{ $isAdminMessage ? 'gradient-indigo text-white' : 'cursor-pointer hover:ring-2 hover:ring-indigo-400' }}"
+                             data-message-id="{{ $msg->id }}" data-message-text="{{ e($msg->message) }}" data-is-incoming="{{ $isAdminMessage ? 'false' : 'true' }}"
+                             title="{{ $isAdminMessage ? '' : 'Click to reply to this message' }}"
+                             style="{{ !$isAdminMessage ? 'background:var(--bg-input); color:var(--text-primary); border: 1px solid var(--border-color);' : '' }}">
                             <div class="flex items-center justify-between gap-3 mb-1">
                                 <span class="text-xs font-bold {{ $msg->sender_id === auth()->id() || $msg->sender?->role?->name === 'System Administrator' ? 'text-white/90' : '' }}"
                                       style="{{ $msg->sender_id !== auth()->id() && $msg->sender?->role?->name !== 'System Administrator' ? 'color:var(--accent-color);' : '' }}">
@@ -92,6 +95,9 @@
                                     {{ $msg->created_at->format('h:i A') }}
                                 </span>
                             </div>
+                            @if($msg->replyTo)
+                                <div class="mb-2 border-l-2 border-white/50 pl-2 text-xs opacity-80">Replying to {{ $msg->replyTo->sender?->name ?? 'User' }}: {{ $msg->replyTo->message }}</div>
+                            @endif
                             <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ $msg->message }}</p>
                         </div>
                     </div>
@@ -105,10 +111,17 @@
 
                 {{-- Send Message Form --}}
                 <div class="p-3" style="border-top:1px solid var(--border-color)">
+                    <div id="adminReplyContext" class="hidden mb-2 rounded-lg px-3 py-2 text-xs" style="background:var(--accent-light); color:var(--text-secondary)">
+                        <div class="flex items-center justify-between gap-2">
+                            <span>Replying to <strong id="adminReplySender">User</strong>: <span id="adminReplyText"></span></span>
+                            <button type="button" id="clearAdminReply" class="text-xs font-semibold" style="color:var(--accent-color)">Cancel</button>
+                        </div>
+                    </div>
                     <form id="adminChatForm" action="{{ route('web.admin.chat.send', ['id' => $activeConversation->id]) }}" method="POST" class="flex gap-2">
                         @csrf
-                        <input type="text" id="adminChatMessageInput" name="message" required placeholder="Type reply to {{ $activeConversation->creator?->name ?? 'user' }}..." autocomplete="off"
-                               class="flex-1 rounded-xl border px-4 py-2.5 text-sm min-w-0 focus:outline-none focus:ring-2 focus:ring-indigo-500" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)">
+                        <input type="hidden" id="adminReplyToMessageId" name="reply_to_message_id">
+                        <textarea id="adminChatMessageInput" name="message" required rows="1" placeholder="Type reply to {{ $activeConversation->creator?->name ?? 'user' }} or click a message to answer it..." autocomplete="off"
+                                  class="flex-1 rounded-xl border px-4 py-2.5 text-sm min-w-0 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" style="background:var(--bg-input); border-color:var(--border-color); color:var(--text-primary)"></textarea>
                         <button type="submit" class="px-5 py-2.5 gradient-indigo text-white rounded-xl text-sm font-semibold hover:opacity-90 transition flex-shrink-0 flex items-center gap-1.5 shadow-md">
                             <span>Send</span>
                             <i class="fas fa-paper-plane text-xs"></i>
@@ -139,6 +152,39 @@
 
         const chatForm = document.getElementById('adminChatForm');
         const messageInput = document.getElementById('adminChatMessageInput');
+        const replyContext = document.getElementById('adminReplyContext');
+        const replyToInput = document.getElementById('adminReplyToMessageId');
+        const replySender = document.getElementById('adminReplySender');
+        const replyText = document.getElementById('adminReplyText');
+        let selectedMessageId = null;
+
+        function selectMessage(messageId, senderName, message) {
+            selectedMessageId = String(messageId);
+            replyToInput.value = selectedMessageId;
+            replySender.textContent = senderName;
+            replyText.textContent = message;
+            replyContext.classList.remove('hidden');
+            messageInput.placeholder = 'Write your reply...';
+            messageInput.focus();
+        }
+
+        function clearReply() {
+            selectedMessageId = null;
+            replyToInput.value = '';
+            replyContext.classList.add('hidden');
+            messageInput.placeholder = 'Type reply to {{ $activeConversation->creator?->name ?? 'user' }} or click a message to answer it...';
+        }
+
+        function bindMessageSelection() {
+            chatBox.querySelectorAll('[data-is-incoming="true"]').forEach(function(message) {
+                message.addEventListener('click', function() {
+                    selectMessage(message.dataset.messageId, message.querySelector('.text-xs.font-bold').textContent.trim(), message.dataset.messageText);
+                });
+            });
+        }
+
+        bindMessageSelection();
+        document.getElementById('clearAdminReply').addEventListener('click', clearReply);
 
         if (chatForm && messageInput) {
             chatForm.addEventListener('submit', function(e) {
@@ -163,6 +209,7 @@
                 .then(data => {
                     if (data.status === 'success') {
                         messageInput.value = '';
+                        clearReply();
                         fetchMessages();
                     }
                 })
@@ -189,19 +236,26 @@
                     let html = '';
                     data.messages.forEach(msg => {
                         const isSelf = msg.is_admin;
+                        const isSelected = selectedMessageId === String(msg.id);
+                        const escapedMessage = escapeHtml(msg.message);
+                        const escapedSender = escapeHtml(msg.sender_name);
+                        const replyMarkup = msg.reply_to ? `<div class="mb-2 border-l-2 ${isSelf ? 'border-white/50' : 'border-indigo-400'} pl-2 text-xs opacity-80">Replying to ${escapeHtml(msg.reply_to.sender_name)}: ${escapeHtml(msg.reply_to.message)}</div>` : '';
                         html += `
                             <div class="flex ${isSelf ? 'justify-end' : 'justify-start'}">
                                 <div class="max-w-md rounded-2xl px-4 py-2.5 shadow-sm ${isSelf ? 'gradient-indigo text-white' : ''}"
+                                     data-message-id="${msg.id}" data-message-text="${escapeHtml(msg.message)}" data-is-incoming="${isSelf ? 'false' : 'true'}"
+                                     title="${isSelf ? '' : 'Click to reply to this message'}" class="${!isSelf ? 'cursor-pointer hover:ring-2 hover:ring-indigo-400' : ''} ${isSelected ? 'ring-2 ring-indigo-500' : ''}"
                                      style="${!isSelf ? 'background:var(--bg-input); color:var(--text-primary); border: 1px solid var(--border-color);' : ''}">
                                     <div class="flex items-center justify-between gap-3 mb-1">
                                         <span class="text-xs font-bold ${isSelf ? 'text-white/90' : ''}" style="${!isSelf ? 'color:var(--accent-color);' : ''}">
-                                            ${msg.sender_name}
+                                            ${escapedSender}
                                         </span>
                                         <span class="text-[10px] ${isSelf ? 'text-white/70' : ''}" style="${!isSelf ? 'color:var(--text-muted);' : ''}">
                                             ${msg.created_at}
                                         </span>
                                     </div>
-                                    <p class="text-sm leading-relaxed whitespace-pre-wrap">${msg.message}</p>
+                                    ${replyMarkup}
+                                    <p class="text-sm leading-relaxed whitespace-pre-wrap">${escapedMessage}</p>
                                 </div>
                             </div>
                         `;
@@ -209,11 +263,18 @@
                     if (chatBox) {
                         const isAtBottom = chatBox.scrollHeight - chatBox.clientHeight <= chatBox.scrollTop + 100;
                         chatBox.innerHTML = html;
+                        bindMessageSelection();
                         if (isAtBottom) chatBox.scrollTop = chatBox.scrollHeight;
                     }
                 }
             })
             .catch(err => console.error(err));
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>'"]/g, function(character) {
+                return {'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;'}[character];
+            });
         }
 
         function playNotificationChime() {

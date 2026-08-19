@@ -1945,10 +1945,10 @@ class WebController extends Controller
         $activeId = $request->query('conversation_id');
 
         if ($activeId) {
-            $activeConversation = Conversation::with(['creator:id,name,email', 'franchise:id,name', 'messages.sender:id,name'])
+            $activeConversation = Conversation::with(['creator:id,name,email', 'franchise:id,name', 'messages.sender:id,name', 'messages.replyTo.sender:id,name'])
                 ->findOrFail($activeId);
         } elseif ($conversations->isNotEmpty()) {
-            $activeConversation = Conversation::with(['creator:id,name,email', 'franchise:id,name', 'messages.sender:id,name'])
+            $activeConversation = Conversation::with(['creator:id,name,email', 'franchise:id,name', 'messages.sender:id,name', 'messages.replyTo.sender:id,name'])
                 ->find($conversations->first()->id);
         }
 
@@ -1974,6 +1974,11 @@ class WebController extends Controller
                     'sender_name' => $msg->sender?->name ?? 'System',
                     'is_admin' => $msg->sender_id === auth()->id() || $msg->sender?->role?->name === 'System Administrator',
                     'message' => $msg->message,
+                    'reply_to' => $msg->replyTo ? [
+                        'id' => $msg->replyTo->id,
+                        'sender_name' => $msg->replyTo->sender?->name ?? 'User',
+                        'message' => $msg->replyTo->message,
+                    ] : null,
                     'created_at' => $msg->created_at->format('d M Y, h:i A'),
                     'time_ago' => $msg->created_at->diffForHumans(),
                 ];
@@ -1985,14 +1990,21 @@ class WebController extends Controller
     {
         $request->validate([
             'message' => 'required|string|max:2000',
+            'reply_to_message_id' => 'nullable|integer|exists:messages,id',
         ]);
 
         $conversation = Conversation::findOrFail($id);
         $user = auth()->user();
+        $replyToMessage = null;
+
+        if ($request->filled('reply_to_message_id')) {
+            $replyToMessage = $conversation->messages()->findOrFail($request->integer('reply_to_message_id'));
+        }
 
         $message = $conversation->messages()->create([
             'sender_id' => $user->id,
             'message' => $request->message,
+            'reply_to_message_id' => $replyToMessage?->id,
         ]);
 
         $conversation->touch(); // update updated_at
@@ -2006,6 +2018,11 @@ class WebController extends Controller
                     'sender_name' => $user->name,
                     'is_admin' => true,
                     'message' => $message->message,
+                    'reply_to' => $replyToMessage ? [
+                        'id' => $replyToMessage->id,
+                        'sender_name' => $replyToMessage->sender?->name ?? 'User',
+                        'message' => $replyToMessage->message,
+                    ] : null,
                     'created_at' => $message->created_at->format('d M Y, h:i A'),
                     'time_ago' => $message->created_at->diffForHumans(),
                 ],
