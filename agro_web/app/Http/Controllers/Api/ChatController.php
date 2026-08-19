@@ -80,10 +80,8 @@ class ChatController extends Controller
     public function show(Request $request, Conversation $conversation): JsonResponse
     {
         $user = $request->user();
-        if ($user->role?->name === 'Franchise Partner') {
-            if ($conversation->franchise_id !== $user->franchise_id && $conversation->created_by !== $user->id) {
-                return response()->json(['message' => 'Unauthorized.'], 403);
-            }
+        if (! $conversation->isAccessibleBy($user)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
         $conversation->load(['messages.sender:id,name,avatar', 'creator:id,name,avatar', 'franchise:id,name,code']);
@@ -96,10 +94,8 @@ class ChatController extends Controller
         $request->validate(['message' => 'required|string']);
 
         $user = $request->user();
-        if ($user->role?->name === 'Franchise Partner') {
-            if ($conversation->franchise_id !== $user->franchise_id && $conversation->created_by !== $user->id) {
-                return response()->json(['message' => 'Unauthorized.'], 403);
-            }
+        if (! $conversation->isAccessibleBy($user)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
         $message = $conversation->messages()->create([
@@ -143,6 +139,10 @@ class ChatController extends Controller
     {
         $user = $request->user();
 
+        if (! $conversation->isAccessibleBy($user)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
         $updated = $conversation->messages()
             ->where('sender_id', '!=', $user->id)
             ->where('is_read', false)
@@ -163,10 +163,8 @@ class ChatController extends Controller
     public function messagesSince(Request $request, Conversation $conversation, ?int $afterId = null): JsonResponse
     {
         $user = $request->user();
-        if ($user->role?->name === 'Franchise Partner') {
-            if ($conversation->franchise_id !== $user->franchise_id && $conversation->created_by !== $user->id) {
-                return response()->json(['message' => 'Unauthorized.'], 403);
-            }
+        if (! $conversation->isAccessibleBy($user)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
         $query = $conversation->messages()->with('sender:id,name,avatar');

@@ -9,6 +9,7 @@ use App\Models\StockReceipt;
 use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StockReceiptController extends Controller
 {
@@ -56,55 +57,64 @@ class StockReceiptController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        foreach ($request->items as $item) {
-            $stockReceiptItem = $stockReceipt->items()->find($item['stock_receipt_item_id']);
-            if ($stockReceiptItem) {
-                $stockReceiptItem->update([
-                    'received_quantity' => $item['received_quantity'],
-                    'discrepancy_notes' => $item['discrepancy_notes'] ?? null,
+        $submittedItems = collect($request->input('items'))->keyBy('stock_receipt_item_id');
+        $receiptItemIds = $stockReceipt->items()->pluck('id')->map(fn ($id) => (string) $id);
+        if ($submittedItems->count() !== $receiptItemIds->count() || $receiptItemIds->diff($submittedItems->keys()->map(fn ($id) => (string) $id))->isNotEmpty()) {
+            return response()->json(['message' => 'Every receipt item must be explicitly reconciled.'], 422);
+        }
+
+        $stockReceipt = DB::transaction(function () use ($request, $stockReceipt, $user, $submittedItems) {
+            $lockedReceipt = StockReceipt::whereKey($stockReceipt->id)->lockForUpdate()->firstOrFail();
+            $items = $lockedReceipt->items()->with('product')->lockForUpdate()->get();
+
+            foreach ($items as $item) {
+                $input = $submittedItems->get($item->id);
+                $item->update([
+                    'received_quantity' => $input['received_quantity'],
+                    'discrepancy_notes' => $input['discrepancy_notes'] ?? null,
                 ]);
             }
-        }
 
-        $hasDiscrepancy = $stockReceipt->items->contains(function ($item) {
-            return $item->ordered_quantity != $item->received_quantity;
-        });
-
-        $stockReceipt->update([
-            'status' => 'confirmed',
-            'received_by' => $user->id,
-            'received_at' => now(),
-            'notes' => $request->notes,
-            'discrepancy_notes' => $hasDiscrepancy ? 'Discrepancy noted in received items' : null,
-        ]);
-
-        foreach ($stockReceipt->items as $item) {
-            $franchiseInventory = FranchiseInventory::firstOrNew([
-                'franchise_id' => $user->franchise_id,
-                'product_id' => $item->product_id,
+            $hasDiscrepancy = $items->contains(fn ($item) => $item->ordered_quantity != $item->received_quantity);
+            $lockedReceipt->update([
+                'status' => 'confirmed',
+                'received_by' => $user->id,
+                'received_at' => now(),
+                'notes' => $request->notes,
+                'discrepancy_notes' => $hasDiscrepancy ? 'Discrepancy noted in received items' : null,
             ]);
 
-            if ($franchiseInventory->exists) {
+            foreach ($items as $item) {
+                $franchiseInventory = FranchiseInventory::where('franchise_id', $user->franchise_id)
+                    ->where('product_id', $item->product_id)
+                    ->lockForUpdate()
+                    ->first();
+                if (! $franchiseInventory) {
+                    $franchiseInventory = new FranchiseInventory([
+                        'franchise_id' => $user->franchise_id,
+                        'product_id' => $item->product_id,
+                        'quantity' => 0,
+                    ]);
+                }
                 $franchiseInventory->quantity += $item->received_quantity;
-            } else {
-                $franchiseInventory->quantity = $item->received_quantity;
+                $franchiseInventory->total_value = $franchiseInventory->quantity * $item->product->standard_price;
+                $franchiseInventory->save();
+
+                if ($item->received_quantity > 0) {
+                    StockMovement::log('franchise_in', $item->product_id, $item->received_quantity, $item->product->standard_price, StockReceipt::class, $lockedReceipt->id, "Receipt {$lockedReceipt->receipt_number} confirmed", $user->id);
+                }
             }
 
-            $franchiseInventory->total_value = $franchiseInventory->quantity * $item->product->standard_price;
-            $franchiseInventory->save();
-
-            if ($item->received_quantity > 0) {
-                StockMovement::log('franchise_in', $item->product_id, $item->received_quantity, $item->product->standard_price, StockReceipt::class, $stockReceipt->id, "Receipt {$stockReceipt->receipt_number} confirmed", $user->id);
+            $order = $lockedReceipt->order()->lockForUpdate()->firstOrFail();
+            $order->update(['status' => 'delivered']);
+            $franchise = $user->franchise()->lockForUpdate()->first();
+            if ($franchise) {
+                $franchise->account_balance += $order->total_amount;
+                $franchise->save();
             }
-        }
 
-        $stockReceipt->order->update(['status' => 'delivered']);
-
-        $franchise = $user->franchise;
-        if ($franchise) {
-            $franchise->account_balance += $stockReceipt->order->total_amount;
-            $franchise->save();
-        }
+            return $lockedReceipt->fresh(['items.product']);
+        });
 
         ActivityLogger::orderDelivered($stockReceipt->order, $user->id);
 

@@ -12,6 +12,7 @@ use App\Services\ActivityLogger;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class FinanceController extends Controller
 {
@@ -42,7 +43,7 @@ class FinanceController extends Controller
     public function verify(Request $request, PaymentSubmission $paymentSubmission): JsonResponse
     {
         $request->validate([
-            'verified_amount' => 'required|numeric|min:0',
+            'verified_amount' => ['required', 'numeric', 'min:0', 'max:'.$paymentSubmission->amount],
             'finance_notes' => 'nullable|string',
         ]);
 
@@ -84,28 +85,38 @@ class FinanceController extends Controller
             return response()->json(['message' => 'Payment must be verified first.'], 422);
         }
 
-        $paymentSubmission->update([
-            'status' => 'accepted',
-            'accepted_by' => $request->user()->id,
-            'accepted_at' => now(),
-        ]);
+        [$paymentSubmission, $franchise, $linkedOrders] = DB::transaction(function () use ($request, $paymentSubmission) {
+            $payment = PaymentSubmission::whereKey($paymentSubmission->id)->lockForUpdate()->firstOrFail();
+            if ($payment->status !== 'verified') {
+                abort(422, 'Payment must be verified first.');
+            }
+            $payment->update([
+                'status' => 'accepted',
+                'accepted_by' => $request->user()->id,
+                'accepted_at' => now(),
+            ]);
 
-        $franchise = Franchise::find($paymentSubmission->franchise_id);
-        $franchise->account_balance -= $paymentSubmission->verified_amount;
-        $franchise->save();
+            $franchise = Franchise::whereKey($payment->franchise_id)->lockForUpdate()->firstOrFail();
+            $franchise->account_balance -= $payment->verified_amount;
+            $franchise->save();
+
+            $linkedOrders = $payment->orders()->lockForUpdate()->get();
+            foreach ($linkedOrders as $order) {
+                $order->update([
+                    'delivery_status' => 'ready_for_delivery',
+                    'status' => 'approved',
+                    'finance_verified_by' => $request->user()->id,
+                    'finance_verified_at' => now(),
+                ]);
+            }
+
+            return [$payment->fresh(['franchise', 'orders']), $franchise->fresh(), $linkedOrders];
+        });
 
         ActivityLogger::paymentAccepted($paymentSubmission, $request->user()->id);
 
         // Advance any linked orders into the Ready-for-Delivery stage.
-        $linkedOrders = $paymentSubmission->orders()->get();
         foreach ($linkedOrders as $order) {
-            $order->update([
-                'delivery_status' => 'ready_for_delivery',
-                'status' => 'approved',
-                'finance_verified_by' => $request->user()->id,
-                'finance_verified_at' => now(),
-            ]);
-
             event(new OrderStatusChanged($order, 'approved', 'ready_for_delivery'));
 
             $franchiseUser = User::where('franchise_id', $order->franchise_id)
@@ -125,7 +136,7 @@ class FinanceController extends Controller
         }
 
         $staffIds = User::staffOnly()->pluck('id')->all();
-        if (! empty($linkedOrders)) {
+        if ($linkedOrders->isNotEmpty()) {
             NotificationService::send(
                 $staffIds,
                 'Payment Verified — Ready for Delivery',
@@ -141,7 +152,7 @@ class FinanceController extends Controller
             'message' => 'Payment accepted. Franchise balance updated and orders marked ready for delivery.',
             'data' => [
                 'payment' => $paymentSubmission->fresh(['franchise', 'orders']),
-                'new_balance' => $franchise->fresh()->account_balance,
+                'new_balance' => $franchise->account_balance,
             ],
         ]);
     }

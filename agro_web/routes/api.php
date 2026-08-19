@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // ─── Public ──────────────────────────────────────────────────────
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 Route::get('/settings/public', [SettingsController::class, 'public']);
 Route::get('/slides', [\App\Http\Controllers\Api\NewsController::class, 'slides']);
 Route::get('/news', [\App\Http\Controllers\Api\NewsController::class, 'news']);

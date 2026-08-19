@@ -73,13 +73,24 @@ class Conversation extends Model
             return $query;
         }
 
-        return $query->where('subject', 'like', "%{$term}%")
-            ->orWhereHas('franchise', function ($q) use ($term) {
-                $q->where('name', 'like', "%{$term}%")
-                    ->orWhere('code', 'like', "%{$term}%");
-            })
-            ->orWhereHas('creator', function ($q) use ($term) {
-                $q->where('name', 'like', "%{$term}%");
-            });
+        return $query->where(function ($q) use ($term) {
+            $q->where('subject', 'like', "%{$term}%")
+                ->orWhereHas('franchise', function ($franchiseQuery) use ($term) {
+                    $franchiseQuery->where('name', 'like', "%{$term}%")
+                        ->orWhere('code', 'like', "%{$term}%");
+                })
+                ->orWhereHas('creator', function ($creatorQuery) use ($term) {
+                    $creatorQuery->where('name', 'like', "%{$term}%");
+                });
+        });
+    }
+
+    public function isAccessibleBy(User $user): bool
+    {
+        if ($user->role?->name !== 'Franchise Partner') {
+            return true;
+        }
+
+        return $this->franchise_id === $user->franchise_id || $this->created_by === $user->id;
     }
 }

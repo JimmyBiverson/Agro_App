@@ -26,6 +26,7 @@ class ReportController extends Controller
 
         $dateFrom = $request->date_from ? now()->parse($request->date_from)->startOfDay() : now()->startOfMonth()->startOfDay();
         $dateTo = $request->date_to ? now()->parse($request->date_to)->endOfDay() : now()->endOfDay();
+        $categoryId = $request->category_id;
 
         $query = Sale::query()
             ->whereBetween('sale_date', [$dateFrom, $dateTo])
@@ -34,11 +35,15 @@ class ReportController extends Controller
         if ($request->franchise_id) {
             $query->where('franchise_id', $request->franchise_id);
         }
+        if ($categoryId) {
+            $query->whereHas('items.product', fn ($q) => $q->where('category_id', $categoryId));
+        }
 
         $sales = $query->latest('sale_date')->paginate(50);
 
         $summary = Sale::whereBetween('sale_date', [$dateFrom, $dateTo])
             ->when($request->franchise_id, fn ($q) => $q->where('franchise_id', $request->franchise_id))
+            ->when($categoryId, fn ($q) => $q->whereHas('items.product', fn ($itemQuery) => $itemQuery->where('category_id', $categoryId)))
             ->select(
                 DB::raw('COUNT(*) as total_transactions'),
                 DB::raw('SUM(total_amount) as gross_sales'),
@@ -54,12 +59,14 @@ class ReportController extends Controller
             ->join('categories', 'categories.id', '=', 'products.category_id')
             ->whereBetween('sales.sale_date', [$dateFrom, $dateTo])
             ->when($request->franchise_id, fn ($q) => $q->where('sales.franchise_id', $request->franchise_id))
+            ->when($categoryId, fn ($q) => $q->where('products.category_id', $categoryId))
             ->select('categories.name as category', DB::raw('SUM(sale_items.quantity) as qty'), DB::raw('SUM(sale_items.subtotal) as revenue'))
             ->groupBy('categories.name')
             ->orderByDesc('revenue')
             ->get();
 
         $byFranchise = Sale::whereBetween('sale_date', [$dateFrom, $dateTo])
+            ->when($categoryId, fn ($q) => $q->whereHas('items.product', fn ($itemQuery) => $itemQuery->where('category_id', $categoryId)))
             ->select('franchise_id', DB::raw('COUNT(*) as transactions'), DB::raw('SUM(final_amount) as revenue'))
             ->groupBy('franchise_id')
             ->with('franchise:id,name,code')
@@ -71,6 +78,7 @@ class ReportController extends Controller
             ->join('products', 'products.id', '=', 'sale_items.product_id')
             ->whereBetween('sales.sale_date', [$dateFrom, $dateTo])
             ->when($request->franchise_id, fn ($q) => $q->where('sales.franchise_id', $request->franchise_id))
+            ->when($categoryId, fn ($q) => $q->where('products.category_id', $categoryId))
             ->select('products.id', 'products.name', 'products.sku', DB::raw('SUM(sale_items.quantity) as qty'), DB::raw('SUM(sale_items.subtotal) as revenue'))
             ->groupBy('products.id', 'products.name', 'products.sku')
             ->orderByDesc('revenue')
