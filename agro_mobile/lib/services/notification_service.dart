@@ -1,5 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'api/api_service.dart';
+import '../screens/shared/notifications/notification_screen.dart';
+
+const _notificationChannelId = 'agro_alerts';
+const _unreadBadgeKey = 'notification_unread_count';
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {
+    // Firebase may be unavailable in local builds without native config.
+  }
+  await NotificationService().showRemoteMessage(message);
+}
 
 /// Plays a synthesized professional chime using a pure Dart tone via
 /// HapticFeedback (no native plugin required). For richer audio, swap
@@ -11,8 +32,136 @@ class NotificationService {
 
   OverlayEntry? _overlayEntry;
   final GlobalKey<_NotificationHostState> _hostKey = GlobalKey();
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+  ApiService? _apiService;
+  FirebaseMessaging? _messaging;
+  bool _initialized = false;
+  int _unreadCount = 0;
 
-  void init() {}
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
+  static Future<void> initializeFirebase() async {
+    // Firebase initialization is performed in main before this handler runs.
+  }
+
+  Future<void> init({ApiService? apiService}) async {
+    if (_initialized) return;
+    _apiService = apiService;
+    final preferences = await SharedPreferences.getInstance();
+    _unreadCount = preferences.getInt(_unreadBadgeKey) ?? 0;
+
+    await _initializeLocalNotifications();
+    try {
+      final messaging = FirebaseMessaging.instance;
+      _messaging = messaging;
+      await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        criticalAlert: false,
+        provisional: false,
+      );
+      await messaging.setForegroundNotificationPresentationOptions(
+        alert: false,
+        badge: false,
+        sound: false,
+      );
+      messaging.onTokenRefresh.listen((token) async {
+        await _apiService?.updateDeviceToken(token);
+      });
+      FirebaseMessaging.onMessage.listen(showRemoteMessage);
+    } catch (error) {
+      debugPrint('Push notifications unavailable: $error');
+    }
+    _initialized = true;
+  }
+
+  Future<void> _initializeLocalNotifications() async {
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const ios = DarwinInitializationSettings();
+    await _localNotifications.initialize(
+      const InitializationSettings(android: android, iOS: ios),
+      onDidReceiveNotificationResponse: _onNotificationResponse,
+    );
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    await androidPlugin?.requestNotificationsPermission();
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _notificationChannelId,
+        'Agro alerts',
+        description: 'Important order, payment, and delivery alerts.',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      ),
+    );
+  }
+
+  Future<void> registerAuthenticatedDevice() async {
+    final messaging = _messaging;
+    if (messaging == null) return;
+    final token = await messaging.getToken();
+    if (token != null) await _apiService?.updateDeviceToken(token);
+  }
+
+  Future<void> showRemoteMessage(RemoteMessage message) async {
+    await _initializeLocalNotifications();
+    final notification = message.notification;
+    final title = notification?.title ?? message.data['title']?.toString();
+    final body = notification?.body ?? message.data['message']?.toString();
+    if (title == null || body == null) return;
+
+    final suppliedCount = int.tryParse(
+      message.data['unread_count']?.toString() ?? '',
+    );
+    await setUnreadCount(suppliedCount ?? (_unreadCount + 1));
+
+    await _localNotifications.show(
+      message.messageId?.hashCode ?? message.hashCode,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _notificationChannelId,
+          'Agro alerts',
+          channelDescription: 'Important order, payment, and delivery alerts.',
+          importance: Importance.max,
+          priority: Priority.max,
+          playSound: true,
+          enableVibration: true,
+          fullScreenIntent: false,
+          number: _unreadCount,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          badgeNumber: _unreadCount,
+        ),
+      ),
+      payload: jsonEncode(message.data),
+    );
+  }
+
+  Future<void> setUnreadCount(int count) async {
+    _unreadCount = count < 0 ? 0 : count;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setInt(_unreadBadgeKey, _unreadCount);
+  }
+
+  void _onNotificationResponse(NotificationResponse response) {
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) return;
+    navigator.push(
+      MaterialPageRoute(builder: (_) => const NotificationScreen()),
+    );
+  }
 
   /// Shows an animated banner notification at the top of the screen.
   void show({

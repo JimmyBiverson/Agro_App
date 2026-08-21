@@ -6,11 +6,13 @@ import 'providers/auth_provider.dart';
 import 'screens/splash/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/franchise/franchise_shell.dart';
+import 'screens/franchise/payments/payment_screen.dart';
 import 'screens/staff/staff_shell.dart';
 import 'screens/finance/finance_shell.dart';
 import 'screens/finance/payments/payment_detail_screen.dart';
 import 'screens/franchise/orders/order_detail_screen.dart';
 import 'screens/staff/orders/staff_order_detail_screen.dart';
+import 'services/notification_service.dart';
 
 class FarmmantraApp extends StatelessWidget {
   const FarmmantraApp({super.key});
@@ -19,19 +21,16 @@ class FarmmantraApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Farmmantra',
+      navigatorKey: NotificationService.navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       initialRoute: '/',
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/':
-            return MaterialPageRoute(
-              builder: (_) => const SplashScreen(),
-            );
+            return MaterialPageRoute(builder: (_) => const SplashScreen());
           case '/login':
-            return MaterialPageRoute(
-              builder: (_) => const LoginScreen(),
-            );
+            return MaterialPageRoute(builder: (_) => const LoginScreen());
           case '/franchise/dashboard':
             return MaterialPageRoute(
               builder: (_) => _requireAuth(
@@ -74,6 +73,14 @@ class FarmmantraApp extends StatelessWidget {
                 allowedRoles: [UserRole.franchisePartner],
               ),
             );
+          case '/franchise/payment':
+            return MaterialPageRoute(
+              builder: (_) => _requireAuth(
+                context,
+                const PaymentScreen(),
+                allowedRoles: [UserRole.franchisePartner],
+              ),
+            );
           case '/staff/order-detail':
           case '/staff/orders/detail':
             final orderId = settings.arguments as String?;
@@ -85,9 +92,7 @@ class FarmmantraApp extends StatelessWidget {
               ),
             );
           default:
-            return MaterialPageRoute(
-              builder: (_) => const LoginScreen(),
-            );
+            return MaterialPageRoute(builder: (_) => const LoginScreen());
         }
       },
     );

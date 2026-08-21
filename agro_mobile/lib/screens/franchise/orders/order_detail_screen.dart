@@ -37,9 +37,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Order ${widget.orderId}'),
-      ),
+      appBar: AppBar(title: Text('Order ${widget.orderId}')),
       body: Consumer<OrderProvider>(
         builder: (context, provider, _) {
           if (provider.isLoading) {
@@ -142,7 +140,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
+              const Icon(
+                Icons.calendar_today,
+                size: 14,
+                color: AppColors.textSecondary,
+              ),
               const SizedBox(width: 6),
               Text(
                 Formatters.dateTime(order.createdAt),
@@ -156,7 +158,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(Icons.person_outline, size: 14, color: AppColors.textSecondary),
+              const Icon(
+                Icons.person_outline,
+                size: 14,
+                color: AppColors.textSecondary,
+              ),
               const SizedBox(width: 6),
               Text(
                 order.franchiseName,
@@ -226,10 +232,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ? AppColors.primaryGreen.withAlpha(26)
                     : AppColors.backgroundLight,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: color,
-                  width: 2,
-                ),
+                border: Border.all(color: color, width: 2),
               ),
               child: Icon(icon, size: 16, color: color),
             ),
@@ -351,10 +354,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             flex: 2,
             child: Text(
               Formatters.currency(item.totalPrice),
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               textAlign: TextAlign.right,
             ),
           ),
@@ -365,7 +365,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   Widget _buildOrderTotal(Order order) {
     final displayAmount = order.adjustedAmount ?? order.totalAmount;
-    final hasAdjustment = order.adjustedAmount != null &&
+    final hasAdjustment =
+        order.adjustedAmount != null &&
         order.adjustedAmount != order.totalAmount;
 
     return AppCard(
@@ -463,7 +464,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildPaymentStatus(Order order) {
-    final needsPayment = !order.isPaymentReady &&
+    final needsPayment =
+        !order.isPaymentReady &&
         !order.isOutForDelivery &&
         order.statusEnum != OrderStatus.delivered;
 
@@ -516,8 +518,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.payments_outlined,
-                    color: AppColors.warning, size: 22),
+                const Icon(
+                  Icons.payments_outlined,
+                  color: AppColors.warning,
+                  size: 22,
+                ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
@@ -567,8 +572,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.verified_outlined,
-                    color: AppColors.primaryGreen, size: 22),
+                const Icon(
+                  Icons.verified_outlined,
+                  color: AppColors.primaryGreen,
+                  size: 22,
+                ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
@@ -726,7 +734,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               children: [
                 const Text(
                   'Adjusted Amount',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 Text(
                   Formatters.currency(order.adjustedAmount),
@@ -783,7 +794,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       },
       {
         'title': 'Under Review',
-        'subtitle': order.statusEnum != OrderStatus.pending ? 'Reviewed' : 'Pending',
+        'subtitle': order.statusEnum != OrderStatus.pending
+            ? 'Reviewed'
+            : 'Pending',
         'icon': Icons.rate_review_outlined,
         'isActive': order.statusEnum != OrderStatus.pending,
       },
@@ -812,7 +825,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ? 'Payment verified'
             : 'Awaiting payment verification',
         'icon': Icons.account_balance_wallet_outlined,
-        'isActive': order.isPaymentReady,
+        'isActive': order.isPaymentComplete,
       });
 
       steps.add({
@@ -823,7 +836,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ? 'Ready for dispatch'
             : 'Pending',
         'icon': Icons.local_shipping_outlined,
-        'isActive': order.isOutForDelivery,
+        'isActive': order.isDispatchComplete,
       });
 
       if (order.statusEnum == OrderStatus.adjusted) {

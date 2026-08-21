@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/enums/user_role.dart';
 import '../../../models/notification.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/notification_provider.dart';
 import '../../../widgets/common/app_card.dart';
 import '../../../widgets/common/error_view.dart';
@@ -126,11 +128,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         Expanded(
                           child: Text(
                             notification.title,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: notification.isRead
-                                  ? FontWeight.normal
-                                  : FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: notification.isRead
+                                      ? FontWeight.normal
+                                      : FontWeight.bold,
+                                ),
                           ),
                         ),
                         if (!notification.isRead)
@@ -215,15 +218,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   void _navigateToReference(NotificationItem notification) {
-    final route = notification.route?.trim();
+    final route = notification.route?.trim().replaceFirst(RegExp(r'^/+'), '');
     final referenceId = notification.referenceId;
 
     if (route != null && route.isNotEmpty) {
       switch (route) {
         case 'staff/orders/detail':
         case 'staff/order-detail':
-        case 'franchise/orders/detail':
-        case 'franchise/order-detail':
           if (referenceId == null) return;
           Navigator.pushNamed(
             context,
@@ -231,14 +232,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
             arguments: referenceId,
           );
           return;
-        case 'finance/payments/detail':
-        case 'finance/payment-detail':
+        case 'franchise/orders/detail':
+        case 'franchise/order-detail':
           if (referenceId == null) return;
           Navigator.pushNamed(
             context,
-            '/finance/payment-detail',
+            '/franchise/order-detail',
             arguments: referenceId,
           );
+          return;
+        case 'finance/payments/detail':
+        case 'finance/payment-detail':
+          if (referenceId == null) return;
+          Navigator.pushNamed(context, _paymentRoute, arguments: referenceId);
           return;
         default:
           break;
@@ -253,19 +259,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
       case 'order':
         Navigator.pushNamed(
           context,
-          '/staff/orders/detail',
+          context.read<AuthProvider>().userRole == UserRole.franchisePartner
+              ? '/franchise/order-detail'
+              : '/staff/orders/detail',
           arguments: referenceId,
         );
         break;
       case 'payment':
-        Navigator.pushNamed(
-          context,
-          '/finance/payment-detail',
-          arguments: referenceId,
-        );
+        Navigator.pushNamed(context, _paymentRoute, arguments: referenceId);
         break;
       default:
         break;
     }
+  }
+
+  String get _paymentRoute {
+    return context.read<AuthProvider>().userRole == UserRole.financeDepartment
+        ? '/finance/payment-detail'
+        : '/franchise/payment';
   }
 }

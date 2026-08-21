@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/enums/app_enums.dart';
@@ -14,6 +15,7 @@ import 'staff_dashboard.dart';
 import '../staff/orders/staff_order_list_screen.dart';
 import '../staff/inventory/staff_inventory_screen.dart';
 import '../shared/notifications/notification_screen.dart';
+import '../../widgets/common/exit_dialog.dart';
 
 class StaffShell extends StatefulWidget {
   const StaffShell({super.key});
@@ -25,7 +27,9 @@ class StaffShell extends StatefulWidget {
 class _StaffShellState extends State<StaffShell>
     with AutoRefreshMixin<StaffShell> {
   int _currentTab = 0;
+  bool _isExiting = false;
   OrderStatus? _ordersFilter;
+  final List<int> _tabHistory = [];
   late final ValueNotifier<int> _tabNotifier;
 
   @override
@@ -81,7 +85,14 @@ class _StaffShellState extends State<StaffShell>
   }
 
   void _switchTab(int index) {
+    if (index == _currentTab) return;
     if (index != 1) _ordersFilter = null;
+    _tabHistory.add(_currentTab);
+    if (_tabHistory.length > 50) _tabHistory.removeAt(0);
+    _setTab(index);
+  }
+
+  void _setTab(int index) {
     setState(() => _currentTab = index);
     _tabNotifier.value = index;
     _refreshTabData(index);
@@ -105,89 +116,109 @@ class _StaffShellState extends State<StaffShell>
       tabNotifier: _tabNotifier,
       onSwitchTab: _switchTab,
       onSwitchToOrders: _switchToOrders,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(_getAppBarTitle()),
-          actions: [
-            Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () => _switchTab(3),
-                ),
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Consumer<NotificationProvider>(
-                    builder: (_, notifier, child) {
-                      if (notifier.unreadCount == 0)
-                        return const SizedBox.shrink();
-                      return Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.error,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          notifier.unreadCount > 9
-                              ? '9+'
-                              : '${notifier.unreadCount}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      );
-                    },
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (_, __) => _handleBack(),
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(_getAppBarTitle()),
+            actions: [
+              Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined),
+                    onPressed: () => _switchTab(3),
                   ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        body: _buildBody(),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentTab,
-          onTap: _switchTab,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.primaryGreen,
-          unselectedItemColor: AppColors.textLight,
-          selectedLabelStyle: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Consumer<NotificationProvider>(
+                      builder: (_, notifier, child) {
+                        if (notifier.unreadCount == 0)
+                          return const SizedBox.shrink();
+                        return Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            notifier.unreadCount > 9
+                                ? '9+'
+                                : '${notifier.unreadCount}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          unselectedLabelStyle: const TextStyle(fontSize: 11),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Home',
+          body: _buildBody(),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentTab,
+            onTap: _switchTab,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: AppColors.primaryGreen,
+            unselectedItemColor: AppColors.textLight,
+            selectedLabelStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.assignment_outlined),
-              activeIcon: Icon(Icons.assignment),
-              label: 'Orders',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.warehouse_outlined),
-              activeIcon: Icon(Icons.warehouse),
-              label: 'Inventory',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_outlined),
-              activeIcon: Icon(Icons.notifications),
-              label: 'Alerts',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
+            unselectedLabelStyle: const TextStyle(fontSize: 11),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard_outlined),
+                activeIcon: Icon(Icons.dashboard),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.assignment_outlined),
+                activeIcon: Icon(Icons.assignment),
+                label: 'Orders',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.warehouse_outlined),
+                activeIcon: Icon(Icons.warehouse),
+                label: 'Inventory',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.notifications_outlined),
+                activeIcon: Icon(Icons.notifications),
+                label: 'Alerts',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleBack() async {
+    if (_isExiting) return;
+    if (_tabHistory.isNotEmpty) {
+      _setTab(_tabHistory.removeLast());
+      return;
+    }
+    _isExiting = true;
+    final shouldExit = await confirmExit(context);
+    if (!mounted) return;
+    if (shouldExit) {
+      await context.read<AuthProvider>().logout();
+      await SystemNavigator.pop();
+    }
+    _isExiting = false;
   }
 
   String _getAppBarTitle() {

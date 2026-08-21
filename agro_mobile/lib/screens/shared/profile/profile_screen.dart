@@ -7,9 +7,12 @@ import '../../../models/user.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../widgets/common/app_card.dart';
 import '../../../widgets/common/logout_dialog.dart';
+import '../support/chat_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool showAppBar;
+
+  const ProfileScreen({super.key, this.showAppBar = true});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -24,7 +27,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = context.read<AuthProvider>();
       auth.refreshProfile();
-      auth.registerDeviceToken('flutter-device');
     });
   }
 
@@ -47,7 +49,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success ? 'Profile photo updated' : auth.error ?? 'Upload failed'),
+        content: Text(
+          success ? 'Profile photo updated' : auth.error ?? 'Upload failed',
+        ),
         backgroundColor: success ? AppColors.primaryGreen : AppColors.error,
         behavior: SnackBarBehavior.floating,
       ),
@@ -74,8 +78,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   controller: nameController,
                   decoration: const InputDecoration(labelText: 'Full Name'),
                   textInputAction: TextInputAction.next,
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty) ? 'Name is required' : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Name is required'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -112,8 +117,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(success ? 'Profile updated' : auth.error ?? 'Update failed'),
-                    backgroundColor: success ? AppColors.primaryGreen : AppColors.error,
+                    content: Text(
+                      success
+                          ? 'Profile updated'
+                          : auth.error ?? 'Update failed',
+                    ),
+                    backgroundColor: success
+                        ? AppColors.primaryGreen
+                        : AppColors.error,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -144,11 +155,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 TextFormField(
                   controller: currentController,
-                  decoration: const InputDecoration(labelText: 'Current Password'),
+                  decoration: const InputDecoration(
+                    labelText: 'Current Password',
+                  ),
                   obscureText: true,
                   textInputAction: TextInputAction.next,
-                  validator: (value) =>
-                      (value == null || value.isEmpty) ? 'Enter current password' : null,
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Enter current password'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -157,7 +171,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   obscureText: true,
                   textInputAction: TextInputAction.next,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Enter new password';
+                    if (value == null || value.isEmpty)
+                      return 'Enter new password';
                     if (value.length < 6) return 'At least 6 characters';
                     return null;
                   },
@@ -165,7 +180,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: confirmController,
-                  decoration: const InputDecoration(labelText: 'Confirm New Password'),
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm New Password',
+                  ),
                   obscureText: true,
                   textInputAction: TextInputAction.done,
                   validator: (value) => value != newController.text
@@ -194,9 +211,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      success ? 'Password changed' : auth.error ?? 'Change failed',
+                      success
+                          ? 'Password changed'
+                          : auth.error ?? 'Change failed',
                     ),
-                    backgroundColor: success ? AppColors.primaryGreen : AppColors.error,
+                    backgroundColor: success
+                        ? AppColors.primaryGreen
+                        : AppColors.error,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -223,25 +244,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
-    return Scaffold(
-      appBar: AppBar(title: const Text('My Profile')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Column(
-          children: [
-            _buildHeader(user),
-            const SizedBox(height: 16),
-            _buildContactCard(user),
-            const SizedBox(height: 16),
-            _buildNotificationPreferences(user),
-            const SizedBox(height: 16),
-            _buildFranchiseCard(user),
-            const SizedBox(height: 16),
-            _buildAccountActions(context),
-            const SizedBox(height: 24),
-          ],
-        ),
+    final content = SingleChildScrollView(
+      padding: const EdgeInsets.all(AppConstants.defaultPadding),
+      child: Column(
+        children: [
+          _buildHeader(user),
+          const SizedBox(height: 16),
+          _buildContactCard(user),
+          const SizedBox(height: 16),
+          _buildNotificationPreferences(user),
+          const SizedBox(height: 16),
+          _buildFranchiseCard(user),
+          const SizedBox(height: 16),
+          _buildAccountActions(context),
+          const SizedBox(height: 24),
+        ],
       ),
+    );
+
+    return Scaffold(
+      appBar: widget.showAppBar
+          ? AppBar(title: const Text('My Profile'))
+          : null,
+      body: content,
     );
   }
 
@@ -336,7 +361,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: const TextStyle(fontSize: 12, color: Colors.white),
             ),
           ),
-          if (user?.franchiseName != null && user!.franchiseName!.isNotEmpty) ...[
+          if (user?.franchiseName != null &&
+              user!.franchiseName!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
               user.franchiseName!,
@@ -403,8 +429,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.notifications_outlined,
-                  size: 18, color: AppColors.primaryGreen),
+              Icon(
+                Icons.notifications_outlined,
+                size: 18,
+                color: AppColors.primaryGreen,
+              ),
               SizedBox(width: 8),
               Text(
                 'Notification Preferences',
@@ -436,19 +465,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            title: const Text(
-              'Order updates',
-              style: TextStyle(fontSize: 13),
-            ),
+            title: const Text('Order updates', style: TextStyle(fontSize: 13)),
             value: user.wantsOrderNotifications && user.isNotificationEnabled,
             activeTrackColor: AppColors.primaryGreen,
             onChanged: user.isNotificationEnabled
                 ? (value) => _togglePreference(
-                      context.read<AuthProvider>(),
-                      user,
-                      'orders',
-                      value,
-                    )
+                    context.read<AuthProvider>(),
+                    user,
+                    'orders',
+                    value,
+                  )
                 : null,
           ),
           SwitchListTile(
@@ -462,11 +488,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             activeTrackColor: AppColors.primaryGreen,
             onChanged: user.isNotificationEnabled
                 ? (value) => _togglePreference(
-                      context.read<AuthProvider>(),
-                      user,
-                      'payments',
-                      value,
-                    )
+                    context.read<AuthProvider>(),
+                    user,
+                    'payments',
+                    value,
+                  )
                 : null,
           ),
           SwitchListTile(
@@ -476,15 +502,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               'Delivery updates',
               style: TextStyle(fontSize: 13),
             ),
-            value: user.wantsDeliveryNotifications && user.isNotificationEnabled,
+            value:
+                user.wantsDeliveryNotifications && user.isNotificationEnabled,
             activeTrackColor: AppColors.primaryGreen,
             onChanged: user.isNotificationEnabled
                 ? (value) => _togglePreference(
-                      context.read<AuthProvider>(),
-                      user,
-                      'deliveries',
-                      value,
-                    )
+                    context.read<AuthProvider>(),
+                    user,
+                    'deliveries',
+                    value,
+                  )
                 : null,
           ),
         ],
@@ -596,6 +623,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const ChatScreen()));
+            },
+            icon: const Icon(Icons.help_outline, color: AppColors.primaryGreen),
+            label: const Text(
+              'Help & Support',
+              style: TextStyle(color: AppColors.primaryGreen),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.primaryGreen),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
             onPressed: _showChangePasswordDialog,
             icon: const Icon(Icons.lock_outline, color: AppColors.primaryGreen),
             label: const Text(
@@ -619,7 +666,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Navigator.of(context).pushReplacementNamed('/login');
             },
             icon: const Icon(Icons.logout, color: AppColors.error),
-            label: const Text('Logout', style: TextStyle(color: AppColors.error)),
+            label: const Text(
+              'Logout',
+              style: TextStyle(color: AppColors.error),
+            ),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.error),
               padding: const EdgeInsets.symmetric(vertical: 14),

@@ -5,11 +5,13 @@ import '../../core/refresh/auto_refresh_mixin.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/payment_provider.dart';
 import '../../providers/notification_provider.dart';
-import '../../widgets/common/logout_dialog.dart';
 import '../../services/notification_service.dart';
 import 'finance_dashboard.dart';
 import 'payments/payment_list_screen.dart';
 import '../shared/notifications/notification_screen.dart';
+import '../shared/profile/profile_screen.dart';
+import '../../widgets/common/exit_dialog.dart';
+import 'package:flutter/services.dart';
 
 class FinanceShell extends StatefulWidget {
   const FinanceShell({super.key});
@@ -21,6 +23,8 @@ class FinanceShell extends StatefulWidget {
 class _FinanceShellState extends State<FinanceShell>
     with AutoRefreshMixin<FinanceShell> {
   int _currentTab = 0;
+  bool _isExiting = false;
+  final List<int> _tabHistory = [];
   late final ValueNotifier<int> _tabNotifier;
 
   @override
@@ -76,6 +80,13 @@ class _FinanceShellState extends State<FinanceShell>
   }
 
   void _switchTab(int index) {
+    if (index == _currentTab) return;
+    _tabHistory.add(_currentTab);
+    if (_tabHistory.length > 50) _tabHistory.removeAt(0);
+    _setTab(index);
+  }
+
+  void _setTab(int index) {
     setState(() => _currentTab = index);
     _tabNotifier.value = index;
     _refreshTabData(index);
@@ -95,89 +106,109 @@ class _FinanceShellState extends State<FinanceShell>
     return FinanceTabScope(
       tabNotifier: _tabNotifier,
       onSwitchTab: _switchTab,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(_getAppBarTitle()),
-          actions: [
-            Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () => _switchTab(3),
-                ),
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Consumer<NotificationProvider>(
-                    builder: (_, notifier, child) {
-                      if (notifier.unreadCount == 0)
-                        return const SizedBox.shrink();
-                      return Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.error,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          notifier.unreadCount > 9
-                              ? '9+'
-                              : '${notifier.unreadCount}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      );
-                    },
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (_, __) => _handleBack(),
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(_getAppBarTitle()),
+            actions: [
+              Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined),
+                    onPressed: () => _switchTab(3),
                   ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        body: _buildBody(),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentTab,
-          onTap: _switchTab,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.primaryGreen,
-          unselectedItemColor: AppColors.textLight,
-          selectedLabelStyle: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Consumer<NotificationProvider>(
+                      builder: (_, notifier, child) {
+                        if (notifier.unreadCount == 0)
+                          return const SizedBox.shrink();
+                        return Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            notifier.unreadCount > 9
+                                ? '9+'
+                                : '${notifier.unreadCount}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          unselectedLabelStyle: const TextStyle(fontSize: 11),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Home',
+          body: _buildBody(),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentTab,
+            onTap: _switchTab,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: AppColors.primaryGreen,
+            unselectedItemColor: AppColors.textLight,
+            selectedLabelStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.payments_outlined),
-              activeIcon: Icon(Icons.payments),
-              label: 'Payments',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_outlined),
-              activeIcon: Icon(Icons.receipt_long),
-              label: 'History',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_outlined),
-              activeIcon: Icon(Icons.notifications),
-              label: 'Alerts',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
+            unselectedLabelStyle: const TextStyle(fontSize: 11),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard_outlined),
+                activeIcon: Icon(Icons.dashboard),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.payments_outlined),
+                activeIcon: Icon(Icons.payments),
+                label: 'Payments',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.receipt_long_outlined),
+                activeIcon: Icon(Icons.receipt_long),
+                label: 'History',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.notifications_outlined),
+                activeIcon: Icon(Icons.notifications),
+                label: 'Alerts',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleBack() async {
+    if (_isExiting) return;
+    if (_tabHistory.isNotEmpty) {
+      _setTab(_tabHistory.removeLast());
+      return;
+    }
+    _isExiting = true;
+    final shouldExit = await confirmExit(context);
+    if (!mounted) return;
+    if (shouldExit) {
+      await context.read<AuthProvider>().logout();
+      await SystemNavigator.pop();
+    }
+    _isExiting = false;
   }
 
   String _getAppBarTitle() {
@@ -208,7 +239,7 @@ class _FinanceShellState extends State<FinanceShell>
       case 3:
         return const NotificationScreen();
       case 4:
-        return const _FinanceProfileTab();
+        return const ProfileScreen(showAppBar: false);
       default:
         return const FinanceDashboard();
     }
@@ -233,104 +264,5 @@ class FinanceTabScope extends InheritedWidget {
   @override
   bool updateShouldNotify(FinanceTabScope oldWidget) {
     return tabNotifier != oldWidget.tabNotifier;
-  }
-}
-
-class _FinanceProfileTab extends StatelessWidget {
-  const _FinanceProfileTab();
-
-  @override
-  Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().user;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: AppColors.primaryGreen.withAlpha(26),
-            child: Text(
-              user?.initials ?? '?',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryGreen,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            user?.name ?? '',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            user?.email ?? '',
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.info.withAlpha(26),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              user?.role.displayName ?? '',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.info,
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-          _buildMenuItem(context, Icons.person_outline, 'Edit Profile', () {}),
-          _buildMenuItem(context, Icons.lock_outline, 'Change Password', () {}),
-          _buildMenuItem(context, Icons.help_outline, 'Help & Support', () {}),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () async {
-                final confirmed = await confirmLogout(context);
-                if (!confirmed || !context.mounted) return;
-                context.read<AuthProvider>().logout();
-                Navigator.of(context).pushReplacementNamed('/login');
-              },
-              icon: const Icon(Icons.logout, color: AppColors.error),
-              label: const Text(
-                'Logout',
-                style: TextStyle(color: AppColors.error),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.error),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuItem(
-    BuildContext context,
-    IconData icon,
-    String label,
-    VoidCallback onTap,
-  ) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.textSecondary),
-      title: Text(label),
-      trailing: const Icon(Icons.chevron_right, color: AppColors.textLight),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/exceptions/app_exception.dart';
 import '../models/notification.dart';
 import '../services/api/api_service.dart';
+import '../services/notification_service.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final ApiService _apiService;
@@ -52,6 +53,7 @@ class NotificationProvider extends ChangeNotifier {
       _notifications = loaded;
       if (unreadOnly != true) {
         _unreadCount = _notifications.where((n) => !n.isRead).length;
+        await NotificationService().setUnreadCount(_unreadCount);
       }
       _hasLoaded = true;
       _isLoading = false;
@@ -70,6 +72,7 @@ class NotificationProvider extends ChangeNotifier {
       if (index != -1 && !_notifications[index].isRead) {
         _notifications[index] = _notifications[index].copyWith(isRead: true);
         _unreadCount = (_unreadCount - 1).clamp(0, _notifications.length);
+        await NotificationService().setUnreadCount(_unreadCount);
         notifyListeners();
       }
     } catch (e) {
@@ -85,6 +88,7 @@ class NotificationProvider extends ChangeNotifier {
           .map((n) => n.copyWith(isRead: true))
           .toList();
       _unreadCount = 0;
+      await NotificationService().setUnreadCount(0);
       notifyListeners();
     } catch (e) {
       _error = errorMessageOf(e, 'Failed to mark all as read');
@@ -95,6 +99,7 @@ class NotificationProvider extends ChangeNotifier {
   Future<void> refreshUnreadCount() async {
     try {
       _unreadCount = await _apiService.getUnreadNotificationCount();
+      await NotificationService().setUnreadCount(_unreadCount);
       notifyListeners();
     } catch (_) {
       // Silently fail for background count refresh

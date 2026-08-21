@@ -12,15 +12,32 @@ import 'services/api/api_service.dart';
 import 'services/api/http_api_service.dart';
 import 'providers/site_settings_provider.dart';
 import 'services/storage/local_storage_service.dart';
+import 'services/notification_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  await firebaseMessagingBackgroundHandler(message);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  } catch (error) {
+    debugPrint('Firebase is not configured: $error');
+  }
 
   final localStorage = LocalStorageService();
   await localStorage.initialize();
 
   final apiService = HttpApiService();
   await apiService.initialize();
+  await NotificationService().init(apiService: apiService);
 
   // Restore saved token if any
   final savedToken = localStorage.getToken();

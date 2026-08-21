@@ -6,6 +6,7 @@ import '../core/exceptions/app_exception.dart';
 import '../models/user.dart';
 import '../services/api/api_service.dart';
 import '../services/storage/local_storage_service.dart';
+import '../services/notification_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService;
@@ -14,8 +15,8 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider({
     required ApiService apiService,
     required LocalStorageService storage,
-  })  : _apiService = apiService,
-        _storage = storage;
+  }) : _apiService = apiService,
+       _storage = storage;
 
   User? _user;
   String? _token;
@@ -50,6 +51,7 @@ class AuthProvider extends ChangeNotifier {
         _syncToken(savedToken);
         _user = await _apiService.getProfile();
         _syncRole(_user?.role);
+        await NotificationService().registerAuthenticatedDevice();
       }
     } catch (e) {
       // Token invalid or network error — clear and proceed to login
@@ -75,6 +77,7 @@ class AuthProvider extends ChangeNotifier {
 
       _user = User.fromJson(response['user']);
       _syncRole(_user?.role);
+      await NotificationService().registerAuthenticatedDevice();
 
       await _storage.saveToken(token!);
       if (response['refresh_token'] != null) {

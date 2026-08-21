@@ -22,6 +22,8 @@ import '../../widgets/common/logout_dialog.dart';
 import '../shared/profile/profile_screen.dart';
 import '../shared/support/chat_screen.dart';
 import '../../services/notification_service.dart';
+import '../../widgets/common/exit_dialog.dart';
+import 'package:flutter/services.dart';
 
 class FranchiseShell extends StatefulWidget {
   const FranchiseShell({super.key});
@@ -33,6 +35,8 @@ class FranchiseShell extends StatefulWidget {
 class _FranchiseShellState extends State<FranchiseShell>
     with AutoRefreshMixin<FranchiseShell> {
   int _currentTab = 0;
+  bool _isExiting = false;
+  final List<int> _tabHistory = [];
   late final ValueNotifier<int> _tabNotifier;
   late final NotificationProvider _notificationProvider;
 
@@ -103,6 +107,13 @@ class _FranchiseShellState extends State<FranchiseShell>
   }
 
   void _switchTab(int index) {
+    if (index == _currentTab) return;
+    _tabHistory.add(_currentTab);
+    if (_tabHistory.length > 50) _tabHistory.removeAt(0);
+    _setTab(index);
+  }
+
+  void _setTab(int index) {
     setState(() => _currentTab = index);
     _tabNotifier.value = index;
     _refreshTabData(index);
@@ -178,120 +189,140 @@ class _FranchiseShellState extends State<FranchiseShell>
     return FranchiseTabScope(
       tabNotifier: _tabNotifier,
       onSwitchTab: _switchTab,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(_getAppBarTitle()),
-          actions: [
-            _buildCartAction(),
-            IconButton(
-              icon: const Icon(Icons.headset_mic_outlined),
-              onPressed: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const ChatScreen()));
-              },
-              tooltip: 'Support',
-            ),
-            Stack(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const NotificationScreen(),
-                      ),
-                    );
-                  },
-                ),
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Consumer<NotificationProvider>(
-                    builder: (_, notifier, child) {
-                      if (notifier.unreadCount == 0)
-                        return const SizedBox.shrink();
-                      return Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.error,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          notifier.unreadCount > 9
-                              ? '9+'
-                              : '${notifier.unreadCount}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                          ),
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (_, __) => _handleBack(),
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(_getAppBarTitle()),
+            actions: [
+              _buildCartAction(),
+              IconButton(
+                icon: const Icon(Icons.headset_mic_outlined),
+                onPressed: () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const ChatScreen()));
+                },
+                tooltip: 'Support',
+              ),
+              Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationScreen(),
                         ),
                       );
                     },
                   ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        body: _buildBody(),
-        floatingActionButton: _currentTab == 0
-            ? FloatingActionButton.extended(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const CreateOrderScreen(),
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Consumer<NotificationProvider>(
+                      builder: (_, notifier, child) {
+                        if (notifier.unreadCount == 0)
+                          return const SizedBox.shrink();
+                        return Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            notifier.unreadCount > 9
+                                ? '9+'
+                                : '${notifier.unreadCount}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
-                icon: const Icon(Icons.add_shopping_cart),
-                label: const Text('New Order'),
-              )
-            : null,
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _currentTab,
-          onTap: _switchTab,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.primaryGreen,
-          unselectedItemColor: AppColors.textLight,
-          selectedLabelStyle: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
+                  ),
+                ],
+              ),
+            ],
           ),
-          unselectedLabelStyle: const TextStyle(fontSize: 11),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Dashboard',
+          body: _buildBody(),
+          floatingActionButton: _currentTab == 0
+              ? FloatingActionButton.extended(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const CreateOrderScreen(),
+                      ),
+                    );
+                  },
+                  backgroundColor: AppColors.primaryGreen,
+                  foregroundColor: Colors.white,
+                  icon: const Icon(Icons.add_shopping_cart),
+                  label: const Text('New Order'),
+                )
+              : null,
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentTab,
+            onTap: _switchTab,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: AppColors.primaryGreen,
+            unselectedItemColor: AppColors.textLight,
+            selectedLabelStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_bag_outlined),
-              activeIcon: Icon(Icons.shopping_bag),
-              label: 'Orders',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.storefront_outlined),
-              activeIcon: Icon(Icons.storefront),
-              label: 'Products',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.inventory_2_outlined),
-              activeIcon: Icon(Icons.inventory_2),
-              label: 'Stock',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'More',
-            ),
-          ],
+            unselectedLabelStyle: const TextStyle(fontSize: 11),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard_outlined),
+                activeIcon: Icon(Icons.dashboard),
+                label: 'Dashboard',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.shopping_bag_outlined),
+                activeIcon: Icon(Icons.shopping_bag),
+                label: 'Orders',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.storefront_outlined),
+                activeIcon: Icon(Icons.storefront),
+                label: 'Products',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.inventory_2_outlined),
+                activeIcon: Icon(Icons.inventory_2),
+                label: 'Stock',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'More',
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleBack() async {
+    if (_isExiting) return;
+    if (_tabHistory.isNotEmpty) {
+      _setTab(_tabHistory.removeLast());
+      return;
+    }
+    _isExiting = true;
+    final shouldExit = await confirmExit(context);
+    if (!mounted) return;
+    if (shouldExit) {
+      await context.read<AuthProvider>().logout();
+      await SystemNavigator.pop();
+    }
+    _isExiting = false;
   }
 
   String _getAppBarTitle() {

@@ -45,9 +45,9 @@ class _StaffInventoryScreenState extends State<StaffInventoryScreen>
         title: const Text('Inventory'),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primaryGreen,
-          unselectedLabelColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primaryGreen,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
           indicatorWeight: 3,
           tabs: const [
             Tab(text: 'Warehouse'),
