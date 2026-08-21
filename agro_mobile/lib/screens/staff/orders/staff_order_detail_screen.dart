@@ -102,7 +102,8 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     StatusBadge.fromOrderStatus(order.status),
-                    if (order.statusEnum == OrderStatus.approved) ...[
+                    if (order.statusEnum == OrderStatus.approved ||
+                        order.statusEnum == OrderStatus.delivered) ...[
                       const SizedBox(height: 4),
                       StatusBadge.fromDeliveryStatus(order.deliveryStatusEnum),
                     ],
@@ -317,11 +318,15 @@ class _StaffOrderDetailScreenState extends State<StaffOrderDetailScreen> {
         Icons.check_circle,
         order.statusEnum != OrderStatus.pending,
       ),
-      _TimelineStep('Payment Accepted', Icons.verified, order.financeApproved),
+      _TimelineStep(
+        'Payment Accepted',
+        Icons.verified,
+        order.isPaymentComplete,
+      ),
       _TimelineStep(
         'Out for Delivery',
         Icons.local_shipping,
-        order.isOutForDelivery || order.isFullyCompleted,
+        order.isDispatchComplete,
       ),
       _TimelineStep(
         'Delivered',

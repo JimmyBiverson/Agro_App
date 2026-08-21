@@ -8,7 +8,6 @@ import '../../../models/product.dart';
 import '../../../providers/order_provider.dart';
 import '../../../providers/product_provider.dart';
 import '../../../widgets/common/app_button.dart';
-import '../../../widgets/common/app_card.dart';
 import '../../../widgets/common/app_text_field.dart';
 import '../../../widgets/common/error_view.dart';
 import '../../../widgets/common/loading_view.dart';
@@ -137,9 +136,8 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
         if (provider.error != null) {
           return ErrorView(
             message: provider.error!,
-            onRetry: () => provider.loadProducts(
-              categoryId: provider.selectedCategory,
-            ),
+            onRetry: () =>
+                provider.loadProducts(categoryId: provider.selectedCategory),
           );
         }
 
@@ -154,9 +152,8 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
         final columns = Responsive.isTablet(context) ? 3 : 2;
 
         return RefreshIndicator(
-          onRefresh: () => provider.loadProducts(
-            categoryId: provider.selectedCategory,
-          ),
+          onRefresh: () =>
+              provider.loadProducts(categoryId: provider.selectedCategory),
           child: GridView.builder(
             padding: const EdgeInsets.fromLTRB(
               AppConstants.defaultPadding,
@@ -185,14 +182,15 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
         final cartQty = orderProv.cartItems[product.id] ?? 0;
         final hasBulkDiscount = product.priceSlabs.length > 1;
         final cheapestSlab = hasBulkDiscount
-            ? product.priceSlabs.reduce((a, b) =>
-                a.pricePerUnit < b.pricePerUnit ? a : b)
+            ? product.priceSlabs.reduce(
+                (a, b) => a.pricePerUnit < b.pricePerUnit ? a : b,
+              )
             : null;
         final savingPct = cheapestSlab != null && product.standardPrice > 0
             ? ((product.standardPrice - cheapestSlab.pricePerUnit) /
-                    product.standardPrice *
-                    100)
-                .round()
+                      product.standardPrice *
+                      100)
+                  .round()
             : 0;
 
         return GestureDetector(
@@ -214,8 +212,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
               children: [
                 // ── Image Area ──────────────────────────────────────
                 ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(14)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(14),
+                  ),
                   child: Stack(
                     children: [
                       ProductImage(
@@ -229,7 +228,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                       ),
                       // Gradient overlay
                       Positioned(
-                        bottom: 0, left: 0, right: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
                         child: Container(
                           height: 40,
                           decoration: const BoxDecoration(
@@ -244,10 +245,13 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                       // Bulk discount badge
                       if (hasBulkDiscount && savingPct > 0)
                         Positioned(
-                          top: 8, left: 8,
+                          top: 8,
+                          left: 8,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 3),
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFE65100), Color(0xFFF57C00)],
@@ -268,7 +272,8 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                       // Cart quantity badge
                       if (cartQty > 0)
                         Positioned(
-                          top: 8, right: 8,
+                          top: 8,
+                          right: 8,
                           child: Container(
                             width: 22,
                             height: 22,
@@ -301,7 +306,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                         // Category chip
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primaryGreen.withAlpha(22),
                             borderRadius: BorderRadius.circular(4),
@@ -385,8 +392,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
                                   child: const Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.add_shopping_cart_rounded,
-                                          size: 14),
+                                      Icon(
+                                        Icons.add_shopping_cart_rounded,
+                                        size: 14,
+                                      ),
                                       SizedBox(width: 5),
                                       Text(
                                         'Add to Cart',
@@ -435,8 +444,11 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
               child: const SizedBox(
                 width: 36,
                 height: 34,
-                child: Icon(Icons.remove_rounded,
-                    size: 16, color: AppColors.primaryGreen),
+                child: Icon(
+                  Icons.remove_rounded,
+                  size: 16,
+                  color: AppColors.primaryGreen,
+                ),
               ),
             ),
           ),
@@ -484,8 +496,10 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
         final products = context.read<ProductProvider>().allProducts;
         final total = provider.getCartTotal(products);
-        final count = provider.cartItems.values
-            .fold(0, (sum, qty) => sum + qty);
+        final count = provider.cartItems.values.fold(
+          0,
+          (sum, qty) => sum + qty,
+        );
 
         return Container(
           width: double.infinity,
@@ -553,9 +567,9 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
   }
 
   void _openCart() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const CreateOrderScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const CreateOrderScreen()));
   }
 
   void _addToOrder(Product product) {
@@ -596,9 +610,10 @@ class _PriceSlabSheetState extends State<_PriceSlabSheet> {
   Widget build(BuildContext context) {
     final images = widget.product.imageUrls.isNotEmpty
         ? widget.product.imageUrls
-        : (widget.product.imageUrl != null && widget.product.imageUrl!.isNotEmpty
-            ? [widget.product.imageUrl!]
-            : <String>[]);
+        : (widget.product.imageUrl != null &&
+                  widget.product.imageUrl!.isNotEmpty
+              ? [widget.product.imageUrl!]
+              : <String>[]);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -722,64 +737,66 @@ class _PriceSlabSheetState extends State<_PriceSlabSheet> {
                   ),
                 )
               else
-                ...widget.product.priceSlabs.map((slab) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryGreen.withAlpha(26),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.inventory,
-                              size: 16,
-                              color: AppColors.primaryGreen,
-                            ),
+                ...widget.product.priceSlabs.map(
+                  (slab) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryGreen.withAlpha(26),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                          child: const Icon(
+                            Icons.inventory,
+                            size: 16,
+                            color: AppColors.primaryGreen,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                slab.displayLabel,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              if (slab.label != null)
                                 Text(
-                                  slab.displayLabel,
+                                  slab.label!,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary,
                                   ),
                                 ),
-                                if (slab.label != null)
-                                  Text(
-                                    slab.label!,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                              ],
-                            ),
+                            ],
                           ),
-                          Text(
-                            Formatters.currency(slab.pricePerUnit),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: AppColors.primaryGreen,
-                            ),
+                        ),
+                        Text(
+                          Formatters.currency(slab.pricePerUnit),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            color: AppColors.primaryGreen,
                           ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            '/unit',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                            ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          '/unit',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
                           ),
-                        ],
-                      ),
-                    )),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         );

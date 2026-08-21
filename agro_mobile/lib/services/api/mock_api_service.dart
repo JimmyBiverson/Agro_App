@@ -60,13 +60,16 @@ class MockApiService implements ApiService {
   Map<String, dynamic> _mockLoginResponse(String email, UserRole role) {
     final user = User(
       id: '1',
-      name: role == UserRole.franchisePartner ? 'Kampala Franchise' : 'John Staff',
+      name: role == UserRole.franchisePartner
+          ? 'Kampala Franchise'
+          : 'John Staff',
       email: email,
       phone: '+256700000000',
       role: role,
       franchiseId: role == UserRole.franchisePartner ? 'F001' : null,
-      franchiseName:
-          role == UserRole.franchisePartner ? 'Kampala Franchise Partner' : null,
+      franchiseName: role == UserRole.franchisePartner
+          ? 'Kampala Franchise Partner'
+          : null,
       createdAt: DateTime.now(),
     );
     _currentUser = user;
@@ -107,7 +110,10 @@ class MockApiService implements ApiService {
   }
 
   @override
-  Future<void> changePassword(String currentPassword, String newPassword) async {
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
     await _simulateDelay();
   }
 
@@ -171,9 +177,26 @@ class MockApiService implements ApiService {
         packagingDetails: '1L, 5L, 20L',
         standardPrice: 45000,
         priceSlabs: const [
-          PriceSlab(id: 's1', productId: '1', minQuantity: 1, maxQuantity: 9, pricePerUnit: 45000),
-          PriceSlab(id: 's2', productId: '1', minQuantity: 10, maxQuantity: 49, pricePerUnit: 42000),
-          PriceSlab(id: 's3', productId: '1', minQuantity: 50, pricePerUnit: 38000),
+          PriceSlab(
+            id: 's1',
+            productId: '1',
+            minQuantity: 1,
+            maxQuantity: 9,
+            pricePerUnit: 45000,
+          ),
+          PriceSlab(
+            id: 's2',
+            productId: '1',
+            minQuantity: 10,
+            maxQuantity: 49,
+            pricePerUnit: 42000,
+          ),
+          PriceSlab(
+            id: 's3',
+            productId: '1',
+            minQuantity: 50,
+            pricePerUnit: 38000,
+          ),
         ],
       ),
       Product(
@@ -186,8 +209,19 @@ class MockApiService implements ApiService {
         packagingDetails: '1L, 5L',
         standardPrice: 35000,
         priceSlabs: const [
-          PriceSlab(id: 's4', productId: '2', minQuantity: 1, maxQuantity: 19, pricePerUnit: 35000),
-          PriceSlab(id: 's5', productId: '2', minQuantity: 20, pricePerUnit: 32000),
+          PriceSlab(
+            id: 's4',
+            productId: '2',
+            minQuantity: 1,
+            maxQuantity: 19,
+            pricePerUnit: 35000,
+          ),
+          PriceSlab(
+            id: 's5',
+            productId: '2',
+            minQuantity: 20,
+            pricePerUnit: 32000,
+          ),
         ],
       ),
       Product(
@@ -200,8 +234,19 @@ class MockApiService implements ApiService {
         packagingDetails: '1kg, 5kg',
         standardPrice: 55000,
         priceSlabs: const [
-          PriceSlab(id: 's6', productId: '3', minQuantity: 1, maxQuantity: 9, pricePerUnit: 55000),
-          PriceSlab(id: 's7', productId: '3', minQuantity: 10, pricePerUnit: 50000),
+          PriceSlab(
+            id: 's6',
+            productId: '3',
+            minQuantity: 1,
+            maxQuantity: 9,
+            pricePerUnit: 55000,
+          ),
+          PriceSlab(
+            id: 's7',
+            productId: '3',
+            minQuantity: 10,
+            pricePerUnit: 50000,
+          ),
         ],
       ),
       Product(
@@ -214,8 +259,19 @@ class MockApiService implements ApiService {
         packagingDetails: '500ml, 1L',
         standardPrice: 25000,
         priceSlabs: const [
-          PriceSlab(id: 's8', productId: '4', minQuantity: 1, maxQuantity: 24, pricePerUnit: 25000),
-          PriceSlab(id: 's9', productId: '4', minQuantity: 25, pricePerUnit: 22000),
+          PriceSlab(
+            id: 's8',
+            productId: '4',
+            minQuantity: 1,
+            maxQuantity: 24,
+            pricePerUnit: 25000,
+          ),
+          PriceSlab(
+            id: 's9',
+            productId: '4',
+            minQuantity: 25,
+            pricePerUnit: 22000,
+          ),
         ],
       ),
       Product(
@@ -228,9 +284,26 @@ class MockApiService implements ApiService {
         packagingDetails: '2kg, 10kg',
         standardPrice: 18000,
         priceSlabs: const [
-          PriceSlab(id: 's10', productId: '5', minQuantity: 1, maxQuantity: 9, pricePerUnit: 18000),
-          PriceSlab(id: 's11', productId: '5', minQuantity: 10, maxQuantity: 49, pricePerUnit: 16000),
-          PriceSlab(id: 's12', productId: '5', minQuantity: 50, pricePerUnit: 14000),
+          PriceSlab(
+            id: 's10',
+            productId: '5',
+            minQuantity: 1,
+            maxQuantity: 9,
+            pricePerUnit: 18000,
+          ),
+          PriceSlab(
+            id: 's11',
+            productId: '5',
+            minQuantity: 10,
+            maxQuantity: 49,
+            pricePerUnit: 16000,
+          ),
+          PriceSlab(
+            id: 's12',
+            productId: '5',
+            minQuantity: 50,
+            pricePerUnit: 14000,
+          ),
         ],
       ),
       Product(
@@ -243,9 +316,26 @@ class MockApiService implements ApiService {
         packagingDetails: '5kg, 50kg',
         standardPrice: 12000,
         priceSlabs: const [
-          PriceSlab(id: 's13', productId: '6', minQuantity: 1, maxQuantity: 19, pricePerUnit: 12000),
-          PriceSlab(id: 's14', productId: '6', minQuantity: 20, maxQuantity: 99, pricePerUnit: 10500),
-          PriceSlab(id: 's15', productId: '6', minQuantity: 100, pricePerUnit: 9000),
+          PriceSlab(
+            id: 's13',
+            productId: '6',
+            minQuantity: 1,
+            maxQuantity: 19,
+            pricePerUnit: 12000,
+          ),
+          PriceSlab(
+            id: 's14',
+            productId: '6',
+            minQuantity: 20,
+            maxQuantity: 99,
+            pricePerUnit: 10500,
+          ),
+          PriceSlab(
+            id: 's15',
+            productId: '6',
+            minQuantity: 100,
+            pricePerUnit: 9000,
+          ),
         ],
       ),
       Product(
@@ -258,8 +348,19 @@ class MockApiService implements ApiService {
         packagingDetails: '250g, 1kg',
         standardPrice: 85000,
         priceSlabs: const [
-          PriceSlab(id: 's16', productId: '7', minQuantity: 1, maxQuantity: 4, pricePerUnit: 85000),
-          PriceSlab(id: 's17', productId: '7', minQuantity: 5, pricePerUnit: 78000),
+          PriceSlab(
+            id: 's16',
+            productId: '7',
+            minQuantity: 1,
+            maxQuantity: 4,
+            pricePerUnit: 85000,
+          ),
+          PriceSlab(
+            id: 's17',
+            productId: '7',
+            minQuantity: 5,
+            pricePerUnit: 78000,
+          ),
         ],
       ),
     ];
@@ -299,12 +400,22 @@ class MockApiService implements ApiService {
         franchiseName: 'Kampala Franchise',
         items: const [
           OrderItem(
-            id: '1', productId: '1', productName: 'Roundup PowerMax',
-            categoryName: 'Herbicides', quantity: 20, unitPrice: 42000, totalPrice: 840000,
+            id: '1',
+            productId: '1',
+            productName: 'Roundup PowerMax',
+            categoryName: 'Herbicides',
+            quantity: 20,
+            unitPrice: 42000,
+            totalPrice: 840000,
           ),
           OrderItem(
-            id: '2', productId: '6', productName: 'NPK 17:17:17',
-            categoryName: 'Fertilizers', quantity: 50, unitPrice: 10500, totalPrice: 525000,
+            id: '2',
+            productId: '6',
+            productName: 'NPK 17:17:17',
+            categoryName: 'Fertilizers',
+            quantity: 50,
+            unitPrice: 10500,
+            totalPrice: 525000,
           ),
         ],
         totalAmount: 1365000,
@@ -318,8 +429,13 @@ class MockApiService implements ApiService {
         franchiseName: 'Kampala Franchise',
         items: const [
           OrderItem(
-            id: '3', productId: '2', productName: 'Thunder 145-SE',
-            categoryName: 'Insecticides', quantity: 10, unitPrice: 35000, totalPrice: 350000,
+            id: '3',
+            productId: '2',
+            productName: 'Thunder 145-SE',
+            categoryName: 'Insecticides',
+            quantity: 10,
+            unitPrice: 35000,
+            totalPrice: 350000,
           ),
         ],
         totalAmount: 350000,
@@ -334,12 +450,19 @@ class MockApiService implements ApiService {
         franchiseName: 'Jinja Franchise',
         items: const [
           OrderItem(
-            id: '4', productId: '3', productName: 'Ridomil Gold',
-            categoryName: 'Fungicides', quantity: 5, unitPrice: 55000, totalPrice: 275000,
+            id: '4',
+            productId: '3',
+            productName: 'Ridomil Gold',
+            categoryName: 'Fungicides',
+            quantity: 5,
+            unitPrice: 55000,
+            totalPrice: 275000,
           ),
         ],
         totalAmount: 275000,
         status: 'delivered',
+        deliveryStatus: 'delivered',
+        paymentVerifiedCount: 1,
         deliveredAt: now.subtract(const Duration(days: 2)),
         createdAt: now.subtract(const Duration(days: 7)),
         updatedAt: now.subtract(const Duration(days: 2)),
@@ -348,9 +471,7 @@ class MockApiService implements ApiService {
 
     var filtered = orders;
     if (status != null) {
-      filtered = filtered
-          .where((o) => o.status == status)
-          .toList();
+      filtered = filtered.where((o) => o.status == status).toList();
     }
     if (deliveryStatus != null) {
       filtered = filtered
@@ -392,6 +513,7 @@ class MockApiService implements ApiService {
       taxAmount: order.taxAmount,
       status: 'delivered',
       deliveryStatus: 'delivered',
+      paymentVerifiedCount: 1,
       deliveredAt: DateTime.now(),
       createdAt: order.createdAt,
       updatedAt: DateTime.now(),
@@ -443,7 +565,11 @@ class MockApiService implements ApiService {
   }
 
   @override
-  Future<Order> approveOrder(String id, {String? deliveryDate, String? notes}) async {
+  Future<Order> approveOrder(
+    String id, {
+    String? deliveryDate,
+    String? notes,
+  }) async {
     await _simulateDelay();
     final order = await getOrder(id);
     return Order(
@@ -488,7 +614,8 @@ class MockApiService implements ApiService {
       franchiseId: order.franchiseId,
       franchiseName: order.franchiseName,
       items: order.items,
-      totalAmount: adjustments['adjusted_amount']?.toDouble() ?? order.totalAmount,
+      totalAmount:
+          adjustments['adjusted_amount']?.toDouble() ?? order.totalAmount,
       adjustedAmount: adjustments['adjusted_amount']?.toDouble(),
       status: 'adjusted',
       adjustmentNotes: adjustments['notes'],
@@ -521,71 +648,125 @@ class MockApiService implements ApiService {
     final now = DateTime.now();
     return [
       InventoryItem(
-        id: 'inv-1', productId: '1', productName: 'Roundup PowerMax',
-        categoryName: 'Herbicides', quantity: 45, unitOfMeasure: 'Litres',
-        unitCost: 42000, totalValue: 1890000, reorderLevel: 10,
-        alertLevel: InventoryAlertLevel.normal, lastUpdated: now,
+        id: 'inv-1',
+        productId: '1',
+        productName: 'Roundup PowerMax',
+        categoryName: 'Herbicides',
+        quantity: 45,
+        unitOfMeasure: 'Litres',
+        unitCost: 42000,
+        totalValue: 1890000,
+        reorderLevel: 10,
+        alertLevel: InventoryAlertLevel.normal,
+        lastUpdated: now,
       ),
       InventoryItem(
-        id: 'inv-2', productId: '2', productName: 'Thunder 145-SE',
-        categoryName: 'Insecticides', quantity: 8, unitOfMeasure: 'Litres',
-        unitCost: 35000, totalValue: 280000, reorderLevel: 10,
-        alertLevel: InventoryAlertLevel.low, lastUpdated: now,
+        id: 'inv-2',
+        productId: '2',
+        productName: 'Thunder 145-SE',
+        categoryName: 'Insecticides',
+        quantity: 8,
+        unitOfMeasure: 'Litres',
+        unitCost: 35000,
+        totalValue: 280000,
+        reorderLevel: 10,
+        alertLevel: InventoryAlertLevel.low,
+        lastUpdated: now,
       ),
       InventoryItem(
-        id: 'inv-3', productId: '3', productName: 'Ridomil Gold',
-        categoryName: 'Fungicides', quantity: 2, unitOfMeasure: 'Kg',
-        unitCost: 55000, totalValue: 110000, reorderLevel: 5,
-        alertLevel: InventoryAlertLevel.critical, lastUpdated: now,
+        id: 'inv-3',
+        productId: '3',
+        productName: 'Ridomil Gold',
+        categoryName: 'Fungicides',
+        quantity: 2,
+        unitOfMeasure: 'Kg',
+        unitCost: 55000,
+        totalValue: 110000,
+        reorderLevel: 5,
+        alertLevel: InventoryAlertLevel.critical,
+        lastUpdated: now,
       ),
       InventoryItem(
-        id: 'inv-4', productId: '5', productName: 'NAARI 505 Maize Seed',
-        categoryName: 'Seeds', quantity: 120, unitOfMeasure: 'Kg',
-        unitCost: 18000, totalValue: 2160000, reorderLevel: 20,
-        alertLevel: InventoryAlertLevel.normal, lastUpdated: now,
+        id: 'inv-4',
+        productId: '5',
+        productName: 'NAARI 505 Maize Seed',
+        categoryName: 'Seeds',
+        quantity: 120,
+        unitOfMeasure: 'Kg',
+        unitCost: 18000,
+        totalValue: 2160000,
+        reorderLevel: 20,
+        alertLevel: InventoryAlertLevel.normal,
+        lastUpdated: now,
       ),
       InventoryItem(
-        id: 'inv-5', productId: '6', productName: 'NPK 17:17:17',
-        categoryName: 'Fertilizers', quantity: 0, unitOfMeasure: 'Kg',
-        unitCost: 12000, totalValue: 0, reorderLevel: 15,
-        alertLevel: InventoryAlertLevel.outOfStock, lastUpdated: now,
+        id: 'inv-5',
+        productId: '6',
+        productName: 'NPK 17:17:17',
+        categoryName: 'Fertilizers',
+        quantity: 0,
+        unitOfMeasure: 'Kg',
+        unitCost: 12000,
+        totalValue: 0,
+        reorderLevel: 15,
+        alertLevel: InventoryAlertLevel.outOfStock,
+        lastUpdated: now,
       ),
     ];
   }
 
   @override
-  Future<List<InventoryMovement>> getInventoryMovements({String? productId}) async {
+  Future<List<InventoryMovement>> getInventoryMovements({
+    String? productId,
+  }) async {
     await _simulateDelay();
     final now = DateTime.now();
     return [
       InventoryMovement(
-        id: 'mov-1', productName: 'Roundup PowerMax', type: 'inbound',
-        quantity: 50, previousQuantity: 0, newQuantity: 50,
-        referenceId: 'ORD-0999', createdAt: now.subtract(const Duration(days: 5)),
+        id: 'mov-1',
+        productName: 'Roundup PowerMax',
+        type: 'inbound',
+        quantity: 50,
+        previousQuantity: 0,
+        newQuantity: 50,
+        referenceId: 'ORD-0999',
+        createdAt: now.subtract(const Duration(days: 5)),
       ),
       InventoryMovement(
-        id: 'mov-2', productName: 'Roundup PowerMax', type: 'outbound',
-        quantity: 5, previousQuantity: 50, newQuantity: 45,
-        referenceId: 'SAL-001', createdAt: now.subtract(const Duration(days: 2)),
+        id: 'mov-2',
+        productName: 'Roundup PowerMax',
+        type: 'outbound',
+        quantity: 5,
+        previousQuantity: 50,
+        newQuantity: 45,
+        referenceId: 'SAL-001',
+        createdAt: now.subtract(const Duration(days: 2)),
       ),
     ];
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getSales({String? dateFrom, String? dateTo}) async {
+  Future<List<Map<String, dynamic>>> getSales({
+    String? dateFrom,
+    String? dateTo,
+  }) async {
     await _simulateDelay();
     return [
       {
         'id': 'SAL-001',
         'customer_name': 'John Farmer',
-        'date': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+        'date': DateTime.now()
+            .subtract(const Duration(days: 1))
+            .toIso8601String(),
         'total_amount': 450000,
         'items': 2,
       },
       {
         'id': 'SAL-002',
         'customer_name': 'Mary Trader',
-        'date': DateTime.now().subtract(const Duration(days: 3)).toIso8601String(),
+        'date': DateTime.now()
+            .subtract(const Duration(days: 3))
+            .toIso8601String(),
         'total_amount': 250000,
         'items': 1,
       },
@@ -607,12 +788,18 @@ class MockApiService implements ApiService {
     await _simulateDelay();
     return [
       Customer(
-        id: 'c1', name: 'John Farmer', phone: '+256712345678',
-        location: 'Kampala', createdAt: DateTime.now().subtract(const Duration(days: 30)),
+        id: 'c1',
+        name: 'John Farmer',
+        phone: '+256712345678',
+        location: 'Kampala',
+        createdAt: DateTime.now().subtract(const Duration(days: 30)),
       ),
       Customer(
-        id: 'c2', name: 'Mary Trader', phone: '+256787654321',
-        location: 'Mukono', createdAt: DateTime.now().subtract(const Duration(days: 15)),
+        id: 'c2',
+        name: 'Mary Trader',
+        phone: '+256787654321',
+        location: 'Mukono',
+        createdAt: DateTime.now().subtract(const Duration(days: 15)),
       ),
     ];
   }
@@ -643,17 +830,27 @@ class MockApiService implements ApiService {
     final now = DateTime.now();
     return [
       Payment(
-        id: 'PAY-5001', franchiseId: 'F001', franchiseName: 'Kampala Franchise',
-        amount: 2000000, transactionReference: 'REF-2024-001',
-        bankName: 'Stanbic Bank', paymentMethod: 'Bank Transfer',
-        status: 'pending', submittedAt: now.subtract(const Duration(hours: 6)),
+        id: 'PAY-5001',
+        franchiseId: 'F001',
+        franchiseName: 'Kampala Franchise',
+        amount: 2000000,
+        transactionReference: 'REF-2024-001',
+        bankName: 'Stanbic Bank',
+        paymentMethod: 'Bank Transfer',
+        status: 'pending',
+        submittedAt: now.subtract(const Duration(hours: 6)),
         updatedAt: now.subtract(const Duration(hours: 6)),
       ),
       Payment(
-        id: 'PAY-5002', franchiseId: 'F001', franchiseName: 'Kampala Franchise',
-        amount: 1500000, transactionReference: 'REF-2024-002',
-        bankName: 'Centenary Bank', paymentMethod: 'Mobile Money',
-        status: 'accepted', verifiedBy: 'Finance Admin',
+        id: 'PAY-5002',
+        franchiseId: 'F001',
+        franchiseName: 'Kampala Franchise',
+        amount: 1500000,
+        transactionReference: 'REF-2024-002',
+        bankName: 'Centenary Bank',
+        paymentMethod: 'Mobile Money',
+        status: 'accepted',
+        verifiedBy: 'Finance Admin',
         verifiedAt: now.subtract(const Duration(days: 1)),
         submittedAt: now.subtract(const Duration(days: 2)),
         updatedAt: now.subtract(const Duration(days: 1)),
@@ -687,23 +884,37 @@ class MockApiService implements ApiService {
   }
 
   @override
-  Future<String> uploadPaymentProof(String paymentId, List<int> fileBytes, String fileName) async {
+  Future<String> uploadPaymentProof(
+    String paymentId,
+    List<int> fileBytes,
+    String fileName,
+  ) async {
     await _simulateDelay();
     return 'https://storage.farmmantra.co.ug/payments/$paymentId/$fileName';
   }
 
   @override
-  Future<Payment> verifyPayment(String id, {double? verifiedAmount, String? notes}) async {
+  Future<Payment> verifyPayment(
+    String id, {
+    double? verifiedAmount,
+    String? notes,
+  }) async {
     await _simulateDelay();
     final payment = await getPayment(id);
     return Payment(
-      id: payment.id, franchiseId: payment.franchiseId,
-      franchiseName: payment.franchiseName, amount: payment.amount,
+      id: payment.id,
+      franchiseId: payment.franchiseId,
+      franchiseName: payment.franchiseName,
+      amount: payment.amount,
       transactionReference: payment.transactionReference,
-      bankName: payment.bankName, paymentMethod: payment.paymentMethod,
-      status: 'verified', proofUrl: payment.proofUrl,
-      verifiedBy: 'Finance Team', verifiedAt: DateTime.now(),
-      submittedAt: payment.submittedAt, updatedAt: DateTime.now(),
+      bankName: payment.bankName,
+      paymentMethod: payment.paymentMethod,
+      status: 'verified',
+      proofUrl: payment.proofUrl,
+      verifiedBy: 'Finance Team',
+      verifiedAt: DateTime.now(),
+      submittedAt: payment.submittedAt,
+      updatedAt: DateTime.now(),
     );
   }
 
@@ -712,13 +923,19 @@ class MockApiService implements ApiService {
     await _simulateDelay();
     final payment = await getPayment(id);
     return Payment(
-      id: payment.id, franchiseId: payment.franchiseId,
-      franchiseName: payment.franchiseName, amount: payment.amount,
+      id: payment.id,
+      franchiseId: payment.franchiseId,
+      franchiseName: payment.franchiseName,
+      amount: payment.amount,
       transactionReference: payment.transactionReference,
-      bankName: payment.bankName, paymentMethod: payment.paymentMethod,
-      status: 'accepted', proofUrl: payment.proofUrl,
-      verifiedBy: 'Finance Admin', verifiedAt: DateTime.now(),
-      submittedAt: payment.submittedAt, updatedAt: DateTime.now(),
+      bankName: payment.bankName,
+      paymentMethod: payment.paymentMethod,
+      status: 'accepted',
+      proofUrl: payment.proofUrl,
+      verifiedBy: 'Finance Admin',
+      verifiedAt: DateTime.now(),
+      submittedAt: payment.submittedAt,
+      updatedAt: DateTime.now(),
     );
   }
 
@@ -727,11 +944,15 @@ class MockApiService implements ApiService {
     await _simulateDelay();
     final payment = await getPayment(id);
     return Payment(
-      id: payment.id, franchiseId: payment.franchiseId,
-      franchiseName: payment.franchiseName, amount: payment.amount,
+      id: payment.id,
+      franchiseId: payment.franchiseId,
+      franchiseName: payment.franchiseName,
+      amount: payment.amount,
       transactionReference: payment.transactionReference,
-      status: 'rejected', rejectionReason: reason,
-      submittedAt: payment.submittedAt, updatedAt: DateTime.now(),
+      status: 'rejected',
+      rejectionReason: reason,
+      submittedAt: payment.submittedAt,
+      updatedAt: DateTime.now(),
     );
   }
 
@@ -740,16 +961,23 @@ class MockApiService implements ApiService {
     await _simulateDelay();
     final payment = await getPayment(id);
     return Payment(
-      id: payment.id, franchiseId: payment.franchiseId,
-      franchiseName: payment.franchiseName, amount: payment.amount,
+      id: payment.id,
+      franchiseId: payment.franchiseId,
+      franchiseName: payment.franchiseName,
+      amount: payment.amount,
       transactionReference: payment.transactionReference,
-      status: 'info_requested', infoRequestNote: note,
-      submittedAt: payment.submittedAt, updatedAt: DateTime.now(),
+      status: 'info_requested',
+      infoRequestNote: note,
+      submittedAt: payment.submittedAt,
+      updatedAt: DateTime.now(),
     );
   }
 
   @override
-  Future<List<Payment>> getFinancePayments({String? status, String? franchiseId}) async {
+  Future<List<Payment>> getFinancePayments({
+    String? status,
+    String? franchiseId,
+  }) async {
     await _simulateDelay();
     return await getPayments(status: status);
   }
@@ -895,22 +1123,30 @@ class MockApiService implements ApiService {
         'subject': 'Order issue for ORD-1002',
         'priority': 'normal',
         'status': 'open',
-        'created_at': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
+        'created_at': DateTime.now()
+            .subtract(const Duration(hours: 2))
+            .toIso8601String(),
         'messages': [
           {
             'id': 'm1',
             'sender_id': '1',
-            'message': 'Hello, my order is missing some standard packaging details.',
-            'created_at': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
+            'message':
+                'Hello, my order is missing some standard packaging details.',
+            'created_at': DateTime.now()
+                .subtract(const Duration(hours: 2))
+                .toIso8601String(),
           },
           {
             'id': 'm2',
             'sender_id': 'admin',
-            'message': 'Understood. We are checking this with the warehouse staff.',
-            'created_at': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
-          }
-        ]
-      }
+            'message':
+                'Understood. We are checking this with the warehouse staff.',
+            'created_at': DateTime.now()
+                .subtract(const Duration(hours: 1))
+                .toIso8601String(),
+          },
+        ],
+      },
     ];
   }
 
@@ -933,8 +1169,8 @@ class MockApiService implements ApiService {
           'sender_id': '1',
           'message': initialMessage,
           'created_at': DateTime.now().toIso8601String(),
-        }
-      ]
+        },
+      ],
     };
   }
 
@@ -946,20 +1182,27 @@ class MockApiService implements ApiService {
       'subject': 'Mock ticket $id',
       'priority': 'normal',
       'status': 'open',
-      'created_at': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
+      'created_at': DateTime.now()
+          .subtract(const Duration(hours: 2))
+          .toIso8601String(),
       'messages': [
         {
           'id': 'm_mock',
           'sender_id': '1',
           'message': 'Initial test message for conversation $id',
-          'created_at': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-        }
-      ]
+          'created_at': DateTime.now()
+              .subtract(const Duration(hours: 2))
+              .toIso8601String(),
+        },
+      ],
     };
   }
 
   @override
-  Future<Map<String, dynamic>> sendMessage(String conversationId, String message) async {
+  Future<Map<String, dynamic>> sendMessage(
+    String conversationId,
+    String message,
+  ) async {
     await _simulateDelay();
     return {
       'id': 'msg_${DateTime.now().millisecondsSinceEpoch}',
@@ -991,7 +1234,8 @@ class MockApiService implements ApiService {
       NotificationItem(
         id: 'n1',
         title: 'Order Approved',
-        message: 'Your order ORD-1002 has been approved. Expected delivery: 3 days.',
+        message:
+            'Your order ORD-1002 has been approved. Expected delivery: 3 days.',
         type: 'order',
         isRead: false,
         createdAt: now.subtract(const Duration(hours: 1)),
@@ -1011,7 +1255,8 @@ class MockApiService implements ApiService {
       NotificationItem(
         id: 'n3',
         title: 'Low Stock Alert',
-        message: 'Thunder 145-SE is below reorder level. Current stock: 8 litres.',
+        message:
+            'Thunder 145-SE is below reorder level. Current stock: 8 litres.',
         type: 'inventory',
         isRead: true,
         createdAt: now.subtract(const Duration(days: 1)),
@@ -1019,7 +1264,8 @@ class MockApiService implements ApiService {
       NotificationItem(
         id: 'n4',
         title: 'New Price Update',
-        message: 'Product prices have been updated. Check the latest catalogue.',
+        message:
+            'Product prices have been updated. Check the latest catalogue.',
         type: 'system',
         isRead: true,
         createdAt: now.subtract(const Duration(days: 3)),

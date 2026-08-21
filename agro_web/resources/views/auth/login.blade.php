@@ -187,9 +187,9 @@
     <div class="particles" id="particles"></div>
 
     <div class="login-container">
-        <div class="glass-card p-8 sm:p-10 lg:p-12">
-            {{-- Logo & Brand --}}
-            <div class="text-center mb-8">
+        <div class="glass-card p-8 m-8 sm:p-10 lg:p-12">
+            {{-- Logo & Brand --}}<br>
+            <div class="text-center m-8"  style="margin-left: 20px;">
                 <div class="brand-logo mx-auto mb-6 overflow-hidden">
                     @if(!empty($site['site_logo']) && \Illuminate\Support\Facades\Storage::disk('public')->exists($site['site_logo']))
                     <img src="{{ asset('storage/'.$site['site_logo']) }}" alt="{{ $site['site_name'] ?? 'FM' }}" class="h-full w-full object-contain p-1">
@@ -217,24 +217,24 @@
             @endif
 
             {{-- Form --}}
-            <form method="POST" action="{{ route('web.login.submit') }}" class="space-y-5">
+            <form method="POST" action="{{ route('web.login.submit') }}" class="space-y-5 p-8 px-5">
                 @csrf
-                <div class="input-group">
-                    <label class="input-label">Email Address</label>
+                <div class="input-group" style="margin-left: 20px; margin-right: 20px">
+                    <label class="input-label">&nbsp; &nbsp; Email Address</label>
                     <i class="fas fa-envelope input-icon"></i>
                     <input type="email" name="email" id="email" value="{{ old('email') }}" required autofocus
                         class="glass-input" placeholder="you@example.com">
-                </div>
-                <div class="input-group">
-                    <label class="input-label">Password</label>
+                </div>&nbsp; &nbsp;
+                <div class="input-group" style="margin-left: 20px; margin-right: 20px">
+                    <label class="input-label">&nbsp; &nbsp; Password</label>
                     <i class="fas fa-lock input-icon"></i>
                     <input type="password" name="password" id="password" required
                         class="glass-input pr-12" placeholder="Enter your password">
                     <span class="password-toggle" onclick="const p=document.getElementById('password'); p.type=p.type==='password'?'text':'password'; this.querySelector('i').classList.toggle('fa-eye'); this.querySelector('i').classList.toggle('fa-eye-slash')">
                         <i class="fas fa-eye"></i>
                     </span>
-                </div>
-                <div class="pt-2">
+                </div><br>
+                <div class="pt-2 mt-6" style="margin-left: 20px; margin-right: 20px">
                     <button type="submit" class="glass-btn">
                         <span class="relative z-10 flex items-center justify-center gap-2">
                             <i class="fas fa-arrow-right-to-bracket text-sm"></i>
@@ -244,18 +244,18 @@
                 </div>
             </form>
 
-            {{-- Feature pills --}}
-            <div class="flex flex-wrap gap-2 justify-center mt-8">
+            {{-- Feature pills --}}<br>
+            <div class="flex flex-wrap gap-2 justify-center mt-20">
                 <span class="feature-pill"><i class="fas fa-shield-halved text-indigo-400"></i> Secure Login</span>
                 <span class="feature-pill"><i class="fas fa-bolt text-amber-400"></i> Real-time</span>
                 <span class="feature-pill"><i class="fas fa-mobile-screen text-cyan-400"></i> Mobile Ready</span>
-            </div>
+            </div><br>
 
             {{-- Footer --}}
             <div class="text-center mt-8 pt-6" style="border-top:1px solid rgba(255,255,255,0.06)">
                 <p class="text-[10px]" style="color:rgba(255,255,255,0.25)">Franchise Distribution Management System</p>
                 <p class="text-[10px] mt-1.5" style="color:rgba(255,255,255,0.15)">&copy; {{ date('Y') }} {{ $site['site_name'] ?? 'Farmmantra' }} {{ $site['site_tagline'] ?? 'Agro Chemicals Ltd' }}</p>
-            </div>
+            </div><br>
         </div>
     </div>
 

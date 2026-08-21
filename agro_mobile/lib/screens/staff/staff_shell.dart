@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/enums/app_enums.dart';
 import '../../core/refresh/auto_refresh_mixin.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
@@ -24,6 +25,7 @@ class StaffShell extends StatefulWidget {
 class _StaffShellState extends State<StaffShell>
     with AutoRefreshMixin<StaffShell> {
   int _currentTab = 0;
+  OrderStatus? _ordersFilter;
   late final ValueNotifier<int> _tabNotifier;
 
   @override
@@ -79,9 +81,15 @@ class _StaffShellState extends State<StaffShell>
   }
 
   void _switchTab(int index) {
+    if (index != 1) _ordersFilter = null;
     setState(() => _currentTab = index);
     _tabNotifier.value = index;
     _refreshTabData(index);
+  }
+
+  void _switchToOrders(OrderStatus? filter) {
+    _ordersFilter = filter;
+    _switchTab(1);
   }
 
   void _refreshTabData(int index) {
@@ -96,6 +104,7 @@ class _StaffShellState extends State<StaffShell>
     return StaffTabScope(
       tabNotifier: _tabNotifier,
       onSwitchTab: _switchTab,
+      onSwitchToOrders: _switchToOrders,
       child: Scaffold(
         appBar: AppBar(
           title: Text(_getAppBarTitle()),
@@ -203,7 +212,7 @@ class _StaffShellState extends State<StaffShell>
       case 0:
         return const StaffDashboard();
       case 1:
-        return const StaffOrderListScreen();
+        return StaffOrderListScreen(initialFilter: _ordersFilter);
       case 2:
         return const StaffInventoryScreen();
       case 3:
@@ -219,11 +228,13 @@ class _StaffShellState extends State<StaffShell>
 class StaffTabScope extends InheritedWidget {
   final ValueNotifier<int> tabNotifier;
   final void Function(int) onSwitchTab;
+  final void Function(OrderStatus?) onSwitchToOrders;
 
   const StaffTabScope({
     super.key,
     required this.tabNotifier,
     required this.onSwitchTab,
+    required this.onSwitchToOrders,
     required super.child,
   });
 

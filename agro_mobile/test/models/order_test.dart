@@ -102,6 +102,16 @@ void main() {
       expect(order.financeApproved, isTrue);
     });
 
+    test('completed delivery marks payment and dispatch complete', () {
+      final order = Order.fromJson({
+        'status': 'approved',
+        'delivery_status': 'delivered',
+      });
+
+      expect(order.isPaymentComplete, isTrue);
+      expect(order.isDispatchComplete, isTrue);
+    });
+
     test('statusEnum maps all statuses correctly', () {
       expect(
         const Order(

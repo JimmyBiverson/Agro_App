@@ -39,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
+    )..forward();
 
     _logoFade = CurvedAnimation(parent: _logoController, curve: Curves.easeOut);
     _logoScale = Tween<double>(begin: 0.6, end: 1.0).animate(
@@ -150,20 +150,29 @@ class _SplashScreenState extends State<SplashScreen>
             Positioned(
               top: 120,
               left: 20,
-              child: Icon(Icons.eco_rounded,
-                  size: 36, color: Colors.white.withAlpha(18)),
+              child: Icon(
+                Icons.eco_rounded,
+                size: 36,
+                color: Colors.white.withAlpha(18),
+              ),
             ),
             Positioned(
               top: 60,
               right: 40,
-              child: Icon(Icons.grass_rounded,
-                  size: 24, color: Colors.white.withAlpha(15)),
+              child: Icon(
+                Icons.grass_rounded,
+                size: 24,
+                color: Colors.white.withAlpha(15),
+              ),
             ),
             Positioned(
               bottom: 140,
               right: 30,
-              child: Icon(Icons.energy_savings_leaf_rounded,
-                  size: 30, color: Colors.white.withAlpha(15)),
+              child: Icon(
+                Icons.energy_savings_leaf_rounded,
+                size: 30,
+                color: Colors.white.withAlpha(15),
+              ),
             ),
 
             // Main content
@@ -177,17 +186,17 @@ class _SplashScreenState extends State<SplashScreen>
                     scale: _logoScale,
                     child: AnimatedBuilder(
                       animation: _pulse,
-                      builder: (context, child) => Transform.scale(
-                        scale: _pulse.value,
-                        child: child,
-                      ),
+                      builder: (context, child) =>
+                          Transform.scale(scale: _pulse.value, child: child),
                       child: Container(
                         padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
                           color: Colors.white.withAlpha(22),
                           borderRadius: BorderRadius.circular(32),
                           border: Border.all(
-                              color: Colors.white.withAlpha(45), width: 1.5),
+                            color: Colors.white.withAlpha(45),
+                            width: 1.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.accentGold.withAlpha(60),
@@ -230,12 +239,15 @@ class _SplashScreenState extends State<SplashScreen>
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 5),
+                            horizontal: 16,
+                            vertical: 5,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.accentGold.withAlpha(35),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: AppColors.accentGold.withAlpha(60)),
+                              color: AppColors.accentGold.withAlpha(60),
+                            ),
                           ),
                           child: const Text(
                             AppConstants.appTagline,
@@ -255,10 +267,7 @@ class _SplashScreenState extends State<SplashScreen>
                 const SizedBox(height: 56),
 
                 // Animated loading dots
-                FadeTransition(
-                  opacity: _textFade,
-                  child: _LoadingDots(),
-                ),
+                FadeTransition(opacity: _textFade, child: _LoadingDots()),
               ],
             ),
 
@@ -303,7 +312,7 @@ class _LoadingDotsState extends State<_LoadingDots>
     _c = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
-    )..repeat();
+    )..forward();
   }
 
   @override

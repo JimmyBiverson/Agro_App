@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
@@ -35,8 +34,8 @@ class _LoginScreenState extends State<LoginScreen>
 
     _bgController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 800),
+    )..forward();
 
     _formController = AnimationController(
       vsync: this,
@@ -164,15 +163,18 @@ class _LoginScreenState extends State<LoginScreen>
             // Leaf accents
             const Positioned(top: 40, left: 30, child: _LeafIcon(angle: -0.3)),
             const Positioned(top: 100, right: 60, child: _LeafIcon(angle: 0.5)),
-            const Positioned(bottom: 160, left: 40, child: _LeafIcon(angle: 0.2)),
+            const Positioned(
+              bottom: 160,
+              left: 40,
+              child: _LeafIcon(angle: 0.2),
+            ),
 
             // Main content
             SafeArea(
               child: Center(
                 child: SingleChildScrollView(
                   padding: EdgeInsets.symmetric(
-                    horizontal:
-                        Responsive.isTablet(context) ? 80 : 24,
+                    horizontal: Responsive.isTablet(context) ? 80 : 24,
                     vertical: 24,
                   ),
                   child: ConstrainedBox(
@@ -310,8 +312,11 @@ class _LoginScreenState extends State<LoginScreen>
                         color: AppColors.primaryGreen.withAlpha(20),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.lock_person_rounded,
-                          color: AppColors.primaryGreen, size: 20),
+                      child: const Icon(
+                        Icons.lock_person_rounded,
+                        color: AppColors.primaryGreen,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     const Column(
@@ -377,7 +382,10 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                     child: const Text(
                       'Forgot Password?',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -392,14 +400,18 @@ class _LoginScreenState extends State<LoginScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.verified_user_outlined,
-                        size: 12, color: AppColors.success.withAlpha(180)),
+                    Icon(
+                      Icons.verified_user_outlined,
+                      size: 12,
+                      color: AppColors.success.withAlpha(180),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Secured with 256-bit encryption',
                       style: TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textLight.withAlpha(180)),
+                        fontSize: 10,
+                        color: AppColors.textLight.withAlpha(180),
+                      ),
                     ),
                   ],
                 ),
@@ -424,8 +436,11 @@ class _LoginScreenState extends State<LoginScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.info_outline,
-                  size: 13, color: AppColors.accentGold.withAlpha(220)),
+              Icon(
+                Icons.info_outline,
+                size: 13,
+                color: AppColors.accentGold.withAlpha(220),
+              ),
               const SizedBox(width: 6),
               const Text(
                 'Demo Credentials',
@@ -470,15 +485,19 @@ class _LoginScreenState extends State<LoginScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(role,
-              style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            role,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(width: 6),
-          Text(email,
-              style:
-                  const TextStyle(color: Colors.white54, fontSize: 10)),
+          Text(
+            email,
+            style: const TextStyle(color: Colors.white54, fontSize: 10),
+          ),
         ],
       ),
     );

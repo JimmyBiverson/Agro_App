@@ -206,6 +206,10 @@ class Order {
       deliveryStatusEnum == DeliveryStatus.delivered ||
       deliveryStatusEnum == DeliveryStatus.confirmed;
 
+  bool get isPaymentComplete => isFullyCompleted || financeApproved;
+
+  bool get isDispatchComplete => isFullyCompleted || isOutForDelivery;
+
   /// Payment status summary for this order.
   String get paymentStatusLabel {
     if (financeApproved) return 'Approved by Finance';

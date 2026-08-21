@@ -12,7 +12,9 @@ import '../../../widgets/common/error_view.dart';
 import '../../../widgets/common/loading_view.dart';
 
 class StaffOrderListScreen extends StatefulWidget {
-  const StaffOrderListScreen({super.key});
+  final OrderStatus? initialFilter;
+
+  const StaffOrderListScreen({super.key, this.initialFilter});
 
   @override
   State<StaffOrderListScreen> createState() => _StaffOrderListScreenState();
@@ -24,6 +26,7 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedFilter = widget.initialFilter;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<OrderProvider>();
       provider.loadOrders(silent: provider.orders.isNotEmpty);
@@ -70,8 +73,8 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
           final filteredOrders = _selectedFilter == null
               ? provider.orders
               : provider.orders
-                  .where((o) => o.statusEnum == _selectedFilter)
-                  .toList();
+                    .where((o) => o.statusEnum == _selectedFilter)
+                    .toList();
 
           if (filteredOrders.isEmpty) {
             return const EmptyView(
@@ -114,6 +117,8 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
           _buildChip('Pending', OrderStatus.pending),
           const SizedBox(width: 8),
           _buildChip('Approved', OrderStatus.approved),
+          const SizedBox(width: 8),
+          _buildChip('Delivered', OrderStatus.delivered),
           const SizedBox(width: 8),
           _buildChip('Rejected', OrderStatus.declined),
         ],
@@ -199,8 +204,8 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
         color: isPending
             ? AppColors.warning.withValues(alpha: 0.05)
             : isDeclined
-                ? AppColors.error.withValues(alpha: 0.05)
-                : null,
+            ? AppColors.error.withValues(alpha: 0.05)
+            : null,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -215,16 +220,14 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
                       children: [
                         Text(
                           order.franchiseName,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Order #${order.id}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
                         ),
                       ],
                     ),
@@ -264,13 +267,18 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.report_problem_outlined,
-                          size: 16, color: AppColors.error),
+                      const Icon(
+                        Icons.report_problem_outlined,
+                        size: 16,
+                        color: AppColors.error,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -301,9 +309,9 @@ class _StaffOrderListScreenState extends State<StaffOrderListScreen> {
         const SizedBox(width: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );

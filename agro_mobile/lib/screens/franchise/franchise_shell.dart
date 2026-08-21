@@ -34,12 +34,14 @@ class _FranchiseShellState extends State<FranchiseShell>
     with AutoRefreshMixin<FranchiseShell> {
   int _currentTab = 0;
   late final ValueNotifier<int> _tabNotifier;
+  late final NotificationProvider _notificationProvider;
 
   @override
   void initState() {
     super.initState();
     _tabNotifier = ValueNotifier(_currentTab);
-    context.read<NotificationProvider>().addListener(_showIncomingNotification);
+    _notificationProvider = context.read<NotificationProvider>();
+    _notificationProvider.addListener(_showIncomingNotification);
     startAutoRefresh();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
@@ -78,9 +80,7 @@ class _FranchiseShellState extends State<FranchiseShell>
 
   @override
   void dispose() {
-    context.read<NotificationProvider>().removeListener(
-      _showIncomingNotification,
-    );
+    _notificationProvider.removeListener(_showIncomingNotification);
     _tabNotifier.dispose();
     super.dispose();
   }

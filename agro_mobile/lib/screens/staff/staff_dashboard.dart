@@ -59,7 +59,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
               title: 'Pending Orders',
               actionLabel: 'View All',
               onAction: () {
-                StaffTabScope.of(context)?.onSwitchTab(1);
+                StaffTabScope.of(
+                  context,
+                )?.onSwitchToOrders(OrderStatus.pending);
               },
             ),
             _buildPendingOrders(),
@@ -209,7 +211,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
             '$pendingCount',
             Icons.pending_actions,
             AppColors.warning,
-            onTap: () => StaffTabScope.of(context)?.onSwitchTab(1),
+            onTap: () => StaffTabScope.of(
+              context,
+            )?.onSwitchToOrders(OrderStatus.pending),
           ),
         ),
         const SizedBox(width: 12),
@@ -219,7 +223,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
             '${allOrders.length}',
             Icons.receipt_long,
             AppColors.info,
-            onTap: () => StaffTabScope.of(context)?.onSwitchTab(1),
+            onTap: () => StaffTabScope.of(
+              context,
+            )?.onSwitchToOrders(OrderStatus.approved),
           ),
         ),
         const SizedBox(width: 12),
@@ -229,7 +235,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
             '$approvedToday',
             Icons.check_circle_outline,
             AppColors.primaryGreen,
-            onTap: () => StaffTabScope.of(context)?.onSwitchTab(1),
+            onTap: () => StaffTabScope.of(context)?.onSwitchToOrders(null),
           ),
         ),
       ],
@@ -301,7 +307,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
             '$pending',
             Icons.local_shipping_outlined,
             AppColors.info,
-            onTap: () => StaffTabScope.of(context)?.onSwitchTab(1),
+            onTap: () => StaffTabScope.of(
+              context,
+            )?.onSwitchToOrders(OrderStatus.approved),
           ),
         ),
         const SizedBox(width: 12),
@@ -311,7 +319,9 @@ class _StaffDashboardState extends State<StaffDashboard> {
             '$successful',
             Icons.task_alt,
             AppColors.success,
-            onTap: () => StaffTabScope.of(context)?.onSwitchTab(1),
+            onTap: () => StaffTabScope.of(
+              context,
+            )?.onSwitchToOrders(OrderStatus.delivered),
           ),
         ),
       ],
